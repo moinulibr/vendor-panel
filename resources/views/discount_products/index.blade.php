@@ -1,0 +1,170 @@
+@extends('layouts.app')
+@section('content')
+<div class="content">
+	<div class="page-header">
+		<div class="add-item d-flex">
+			<div class="page-title">
+				<h4 class="fw-bold">Discount Product</h4>
+				<h6>Manage your Discount Product</h6>
+			</div>
+		</div>
+		<ul class="table-top-head">
+			<!--<li>-->
+			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Pdf"><img src="assets/img/icons/pdf.svg" alt="img"></a>-->
+			<!--</li>-->
+			<!--<li>-->
+			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Excel"><img src="assets/img/icons/excel.svg" alt="img"></a>-->
+			<!--</li>-->
+			<!--<li>-->
+			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i class="ti ti-refresh"></i></a>-->
+			<!--</li>-->
+			<li>
+				<a data-bs-toggle="tooltip" data-bs-placement="top" title="Collapse" id="collapse-header"><i class="ti ti-chevron-up"></i></a>
+			</li>
+		</ul>
+		<div class="page-btn">
+			<a href="{{ route('discount_products.create')}}" class="btn btn-primary btn_modal"><i class="ti ti-circle-plus me-1"></i>Add Discount</a>
+		</div>
+	</div>
+	<!-- /product list -->
+	<div class="card">
+		<div class="card-header">
+    		<div class="d-flex align-items-center flex-wrap gap-3">
+        
+                <!-- Search (70%) -->
+                <div class="flex-grow-1 search-wrapper">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="ti ti-search"></i>
+                        </span>
+                        <input
+                            type="text"
+                            id="search"
+                            class="form-control"
+                            placeholder="Search..."
+                        >
+                    </div>
+                </div>
+        
+                <!-- Right Section (30%) -->
+                <div class="filter-wrapper d-flex justify-content-end gap-2">
+                    <div class="dropdown">
+                        <select class="form-control" id="status">
+                            <option value=""> All Status </option>
+                            <option value="1"> Active </option>
+                            <option value="0"> Inactive </option>
+                        </select>
+                    </div>
+        
+                    <div class="dropdown">
+                        <select class="form-control" id="sort">
+                            <option value="latest">Sort : Latest</option>
+                            <option value="asc">Sort : Ascending</option>
+                            <option value="desc">Sort : Descending</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+		</div>	
+		<div class="card-body p-0" id="data">										
+			
+		</div>
+	</div>
+	<!-- /product list -->
+</div>
+@endsection
+
+@push('js')
+
+
+<script type="text/javascript">
+  $(document).ready(function () {
+    
+    getData();
+    $('#search').keyup(function(){
+        getData();
+    });
+    
+    $('#status').change(function(){
+        getData();
+    });
+    
+    $('#sort').change(function(){
+        getData();
+    });
+    
+    $(document).on('click', ".pagination a", function(e) {
+        e.preventDefault();
+
+        $('li').removeClass('active');
+        $(this).parent('li').addClass('active');
+
+        var page = $(this).attr('href').split('page=')[1];
+        getData(page);
+    });
+  
+    function getData(page=null){
+        let q=$('#search').val();
+        let status=$('#status').val();
+        let sort = $('#sort').val();
+    
+        $('#member_data').html('');
+        $.ajax({
+            url: '{{ route("discount_products.index")}}?page='+page,
+            type: 'GET',
+            data:{q,status,sort},
+            dataType: 'html',
+            success: function(data) {
+                $('#data').html(data);
+            }
+        });
+    }
+  });
+  
+    
+    $(document).on('shown.bs.modal', '#common_modal', function () {
+
+        console.log('Modal opened');
+    
+        let select = $('#product_select');
+    
+        // Destroy previous Select2 (important)
+        if (select.hasClass('select2-hidden-accessible')) {
+            select.select2('destroy');
+        }
+    
+        console.log('Initializing Select2 with AJAX');
+    
+        select.select2({
+            dropdownParent: $('#common_modal'),
+            placeholder: 'Search products...',
+            minimumInputLength: 1,
+            width: '100%',
+            ajax: {
+                url: "{{ route('discount_products.search') }}",
+                dataType: 'json',
+                delay: 300,
+                data: function (params) {
+                    console.log('Searching:', params.term);
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    console.log('Response:', data);
+                    return { results: data };
+                }
+            }
+        });
+    
+    });
+
+
+
+	
+	
+	$('#common_modal').on('hidden.bs.modal', function () {
+        $('#product_select').select2('destroy');
+    });
+
+	
+</script>
+@endpush

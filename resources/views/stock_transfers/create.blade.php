@@ -1,0 +1,98 @@
+<div class="modal-dialog modal-xl">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Stock Transfer</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+
+    <form action="{{ route('stock_transfers.update',[$transaction->id])}}" method="post" id="ajax_form">
+      @method('PATCH')
+      @csrf
+
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <!-- Location From -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Location From<span class="text-danger ms-1">*</span></label>
+            <select class="form-select" name="location_id" id="location_id_from">
+              <option value="">Select</option>
+              @foreach($locations as $location)
+                <option value="{{$location->id}}" >{{$location->name}}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <!-- Location To -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Location To<span class="text-danger ms-1">*</span></label>
+            <select class="form-select" name="location_id_to">
+              <option value="">Select</option>
+              @foreach($locations as $location)
+                <option value="{{$location->id}}" >{{$location->name}}</option>
+              @endforeach
+            </select>
+          </div>
+
+          <!-- Date -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Date<span class="text-danger ms-1">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text"><i data-feather="calendar"></i></span>
+              <input type="text" class="form-control datetimepicker" placeholder="dd/mm/yyyy" name="transaction_date" value="{{ $transaction->transaction_date??date('Y-m-d')}}">
+            </div>
+          </div>
+           <!-- Reference -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <label class="form-label">Reference<span class="text-danger ms-1">*</span></label>
+            <input type="text" class="form-control" name="invoice_no" value="{{ $transaction->invoice_no}}">
+          </div>
+
+          <!-- Products Table -->
+          <div class="col-12">
+            <div class="modal-body-table mt-3">
+                <!-- Product Search -->
+              <div class="col-12">
+                <!--<label class="form-label">Product<span class="text-danger ms-1">*</span></label>-->
+                <input type="text" class="form-control" placeholder="Search Product" id="purchases_product">
+              </div>
+              <table class="table table-bordered table-hover rounded-1" id="purchase_product">
+                <thead class="table-light">
+                  <tr>
+                    <th>Product</th>
+                    <th>Sku</th>
+                    <th>Qty</th>
+                    <th>Unit Cost($)</th>
+                    <th>Total Cost(%)</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic rows will be inserted here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Total Amount -->
+          <div class="col-12 col-sm-6 col-lg-3">
+            <label class="form-label">Total Amount<span class="text-danger ms-1">*</span></label>
+            <input type="text" class="form-control final_amount" name="final_amount" value="{{ $transaction->final_amount}}">
+          </div>
+
+          <!-- Note -->
+          <div class="col-12 col-sm-6 col-lg-9">
+            <label class="form-label">Note</label>
+            <textarea class="form-control" name="note" rows="3">{{ $transaction->note}}</textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </form>
+  </div>
+</div>
