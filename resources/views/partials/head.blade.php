@@ -91,19 +91,5 @@
             z-index: 999999 !important;
         }
     </style>
-    <script>
-    $(document).ready(function () {
-    
-        $('#productModal').on('shown.bs.modal', function () {
-    
-            $('.select2').select2({
-                dropdownParent: $('#productModal'),
-                width: '100%'
-            });
-    
-        });
-    
-    });
-    </script>
 
 </head>
