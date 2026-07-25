@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers as CN;
 
+//for product image size restore
+use App\Models\Product;
+use App\Models\ProductImage;
+use Illuminate\Http\Request;
+
    
 Route::get('/', function () {
     return redirect('/login');
@@ -177,4 +182,102 @@ Route::group(['middleware' => ['auth']], function() {
         
     });
 
+});
+
+
+Route::get('/update-image-sizes', function (Request $request) {
+    // Parameter থেকে Product ID-র Range নেওয়া
+    // Example: /update-image-sizes?from_id=1&to_id=100
+    $fromId = $request->get('from_id');
+    $toId   = $request->get('to_id');
+
+    // যদি URL-এ specific ID range না দেওয়া থাকে, তবে অটো প্রথম ৫০টি প্রোডাক্টের ID বের করে নিবে
+    if (!$fromId || !$toId) {
+        $limit = (int) $request->get('limit', 50); // ৫০টি প্রোডাক্টের ব্যাচ
+
+        // যেসব প্রোডাক্টের image_size এখনো NULL, সেখান থেকে প্রথম ৫০টি প্রোডাক্টের ID pluck করে নেওয়া
+        $productIds = Product::whereNull('image_size')
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($productIds)) {
+            return response()->json([
+                'status' => 'Completed',
+                'message' => 'All products and gallery images are already processed!'
+            ]);
+        }
+
+        $fromId = min($productIds);
+        $toId   = max($productIds);
+    } else {
+        $fromId = (int) $fromId;
+        $toId   = (int) $toId;
+    }
+
+    $updatedProductsCount = 0;
+    $updatedGalleryImagesCount = 0;
+
+    // ১. Target Range-এর মধ্যে থাকা Products নিয়ে কাজ করা
+    $products = Product::whereBetween('id', [$fromId, $toId])
+        ->whereNull('image_size')
+        ->whereNotNull('image')
+        ->where('image', '!=', '')
+        ->get();
+
+    foreach ($products as $product) {
+        $path = public_path('products/' . $product->image);
+
+        if (file_exists($path) && is_file($path)) {
+            $product->update([
+                'image_size' => filesize($path)
+            ]);
+            $updatedProductsCount++;
+        } else {
+            // ছবি ফোল্ডারে না থাকলে ০ দিয়ে দেওয়া হচ্ছে যাতে লুপে বারবার না আসে
+            $product->update([
+                'image_size' => 0
+            ]);
+        }
+    }
+
+    // ২. ঐ একই Product Range-এর অধীনে থাকা সব ProductImage (Gallery) আপডেট করা
+    // এখানে target করা হচ্ছে Product ID (product_id) ধরে
+    $galleryImages = ProductImage::whereBetween('product_id', [$fromId, $toId])
+        ->whereNull('image_size')
+        ->whereNotNull('image')
+        ->where('image', '!=', '')
+        ->get();
+
+    foreach ($galleryImages as $img) {
+        $path = public_path('products/' . $img->image);
+
+        if (file_exists($path) && is_file($path)) {
+            $img->update([
+                'image_size' => filesize($path)
+            ]);
+            $updatedGalleryImagesCount++;
+        } else {
+            $img->update([
+                'image_size' => 0
+            ]);
+        }
+    }
+
+    // বাকী আর কয়টি প্রোডাক্ট প্রসেস করা বাকী আছে তা দেখা
+    $remainingProducts = Product::whereNull('image_size')->count();
+
+    return response()->json([
+        'status' => 'Success',
+        'current_processed_range' => "Product ID from {$fromId} to {$toId}",
+        'processed' => [
+            'products_updated' => $updatedProductsCount,
+            'gallery_images_updated' => $updatedGalleryImagesCount,
+        ],
+        'remaining_unprocessed_products' => $remainingProducts,
+        'next_url' => $remainingProducts > 0
+            ? url("/update-image-sizes?limit=50")
+            : null
+    ]);
 });

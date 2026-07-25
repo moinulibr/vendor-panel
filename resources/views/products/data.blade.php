@@ -24,6 +24,7 @@
 				<th>Trending</th>
 				<th> Vendor </th>
 				<th class="no-sort">Status</th>
+				<th> Image Size </th>
 				
 			</tr>
 		</thead>
@@ -78,7 +79,7 @@
 				</td>
 				<td>
 					<div class="d-flex align-items-center">
-						<a href="javascript:void(0);" class="avatar avatar-md bg-light-900 p-1 me-2">
+						<a href="{{ route('products.show',[$item->id]) }}" class="avatar avatar-md bg-light-900 p-1 me-2 btn_modal">
 							<img class="object-fit-contain" src="{{ getImage('products',$item->image)}}" alt="img">
 						</a>
 						<a href="javascript:void(0);">{{ $item->name}}</a>
@@ -104,7 +105,7 @@
 				    @endif
 				    
 				</td>
-
+				<td>{{ $item->formatted_size }}</td>
 				
 			</tr>
 
