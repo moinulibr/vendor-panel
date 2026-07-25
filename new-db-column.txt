@@ -1,0 +1,22 @@
+
+    products table 
+        not now- parent_id -> bigInteger -> nullable   -unsigned
+        not now- attributes -> json -> nullable
+        - image_size -> unsigned bigInteger
+    product_images table
+        - image_size -> unsigned bigInteger
+
+
+    model- not useing this yet now. 
+        Product.php -> 
+            // Parent Product Relationship
+            public function parent()
+            {
+                return $this->belongsTo(Product::class, 'parent_id');
+            }
+
+            // Child Variants Relationship
+            public function childVariants()
+            {
+                return $this->hasMany(Product::class, 'parent_id');
+            }

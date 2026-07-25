@@ -216,8 +216,6 @@ class ProductController extends Controller
             'estimate_delivery_day' => '',
         ]);
         
-
-        
         if (!empty($request->video_link) && $request->video_link !== $product->video_link) {
 
             $videoId = $this->getYoutubeId($request->video_link);
@@ -225,16 +223,12 @@ class ProductController extends Controller
             $data['video_link'] = $videoId;
         }
 
-        
-        
-        
         $data['stock_manage']=isset($request->stock_manage)?1:null;
         $data['warranty_available']=isset($request->warranty_available)?1:null;
         $data['return_available']=isset($request->return_available)?1:null;
         if($product->is_new==1){
             $data['is_new']=0;
         }
-        
         
         if ($data['type']=='variable') {
             $variations=$request->variations;

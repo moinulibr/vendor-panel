@@ -75,7 +75,7 @@
                     <div class="col-lg-4 col-md-12">
                         <div class="card h-100 shadow-sm">
                             <div class="card-header fw-bold">
-                                Media
+                                Media - {{ $product->formatted_size }}
                             </div>
                             <div class="card-body text-center">
                                 <img
@@ -138,7 +138,7 @@
                 </div>
 
                 <!-- GALLERY -->
-               @if($product->images)
+               {{--@if($product->images)
                     <div class="card shadow-sm mb-3">
                         <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                             <span>Product Gallery</span>
@@ -172,7 +172,62 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                @endif --}}
+
+                <!-- GALLERY -->
+                @if($product->images && count($product->images) > 0)
+                    <div class="card shadow-sm border-0 mb-4 rounded-3">
+                        <!-- Card Header -->
+                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom-0">
+                            <h6 class="fw-bold m-0 text-dark">
+                                <i class="bi bi-images me-1 text-primary"></i> Product Gallery
+                            </h6>
+                            <span class="badge bg-primary-subtle text-primary fw-semibold px-3 py-2 rounded-pill">
+                                {{ count($product->images) }} Images
+                            </span>
+                        </div>
+                    
+                        <!-- Card Body -->
+                        <div class="card-body pt-0">
+                            <div class="row g-3">
+                                @foreach($product->images as $img)
+                                <!-- Grid: Mobile-এ 12/6, Tablet-এ 4, Desktop-এ 3/2 -->
+                                <div class="col-6 col-sm-6 col-md-4 col-lg-3 col-xl-2">
+                                    <div class="card h-100 shadow-sm border rounded-3 overflow-hidden position-relative gallery-card">
+                                        
+                                        <!-- Delete Button (Top Right Absolute Badge) -->
+                                        <a href="{{ route('multiImageDelete', $img->id) }}"
+                                        class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 rounded-circle p-0 d-flex align-items-center justify-content-center delete-btn"
+                                        style="width: 28px; height: 28px; z-index: 10; opacity: 0.9;"
+                                        title="Delete Image"
+                                        onclick="return confirm('Are you sure you want to delete this image?');">
+                                        ✖
+                                        </a>
+
+                                        <!-- Image Wrapper -->
+                                        <div class="bg-light d-flex align-items-center justify-content-center overflow-hidden" style="height: 150px;">
+                                            <img src="{{ getImage('products', $img->image) }}"
+                                                alt="Product Image"
+                                                class="w-100 h-100 img-fluid"
+                                                style="object-fit: cover; transition: transform 0.3s ease;">
+                                        </div>
+                                        @if($img->formatted_size)
+                                        <!-- Card Footer / Image Info Section -->
+                                        <div class="card-footer bg-white border-top-0 p-2 text-center pb-0">
+                                            <!-- Image File Size (DB-তে size column থাকলে) -->
+                                            <small class="text-muted d-block fw-medium" style="font-size: 13px;">
+                                                <i class="bi bi-hdd-fill me-1"></i>
+                                                {{ isset($img->formatted_size) ? $img->formatted_size : 'N/A' }} 
+                                            </small>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
 
                 <!-- VARIATIONS -->

@@ -1,5 +1,26 @@
 @extends('layouts.app')
 @section('content')
+@push('css')
+    <style>
+        .gallery-card {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .gallery-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .delete-btn:hover {
+            opacity: 1 !important;
+            transform: scale(1.1);
+        }
+    </style>
+@endpush
 <div class="content">
 	<div class="page-header">
 		<div class="add-item d-flex">

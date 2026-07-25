@@ -14,7 +14,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Utils\ProductUtil;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Str;
 
 class VendorController extends Controller
 {
@@ -95,7 +95,7 @@ class VendorController extends Controller
             'name' => 'required',
             'last_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|same:password_confirmation','password' => 'required|same:confirm_password',
+            'password' => 'required|same:password_confirmation',
             'mobile'    => 'required|unique:users,mobile',
             'roles' => 'required',
             'gender' => 'nullable',
