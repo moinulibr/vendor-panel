@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 
 use App\Models\Setting;
+use App\Repositories\User\Interface\UserRepositoryInterface;
+use App\Repositories\User\UserRepository;
 use Illuminate\Support\Facades\Cache;
 
 
@@ -16,7 +18,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            UserRepositoryInterface::class,
+            UserRepository::class
+        );
     }
 
     /**
