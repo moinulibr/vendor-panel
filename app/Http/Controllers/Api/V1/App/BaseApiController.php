@@ -39,4 +39,28 @@ abstract class BaseApiController extends Controller
 
         return response()->json($response, $statusCode);
     }
+
+    /*protected function jsonResponse(
+        bool $success,
+        string $message,
+        mixed $data = null,
+        array $extra = [],
+        int $statusCode = 200
+    ) {
+        $response = [
+            'success' => $success,
+            'message' => $message,
+        ];
+
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
+
+        // Merge extra metadata if passed
+        if (!empty($extra)) {
+            $response = array_merge($response, $extra);
+        }
+
+        return response()->json($response, $statusCode);
+    }*/
 }

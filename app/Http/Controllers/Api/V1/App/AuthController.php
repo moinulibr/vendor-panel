@@ -7,83 +7,66 @@ use App\Http\Resources\Api\V1\App\UserResource;
 use App\Http\Swagger\AuthSwagger;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
-use OpenApi\Attributes as OA;
 use Exception;
 
 class AuthController extends BaseApiController implements AuthSwagger
 {
-    protected $authService;
+    protected AuthService $authService;
 
     public function __construct(AuthService $authService)
     {
         $this->authService = $authService;
     }
 
-    
     public function login(LoginRequest $request)
     {
         try {
             $result = $this->authService->authenticate($request->validated());
 
             return $this->jsonResponse(
-                true,
-                'User logged in successfully.',
-                [
+                success: true,
+                message: 'User logged in successfully.',
+                data: [
                     'token' => $result['token'],
-                    'user'  => new UserResource($result['user'])
+                    'user'  => new UserResource($result['user']),
+                    // ভবিষ্যতে বাড়তি ডেটা এখানে খুব সহজেই দিতে পারবেন
                 ],
-                200
+                statusCode: 200
             );
         } catch (Exception $e) {
             $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
 
             return $this->jsonResponse(
-                false,
-                $e->getMessage(),
-                null,
-                $statusCode
+                success: false,
+                message: $e->getMessage(),
+                data: null,
+                statusCode: $statusCode
             );
         }
     }
 
-    #[OA\Get(
-        path: "/api/v1/app/profile",
-        summary: "Get Authenticated Profile Details",
-        tags: ["Authentication"],
-        security: [["sanctum" => []]],
-        responses: [
-            new OA\Response(response: 200, description: "Profile retrieved successfully"),
-            new OA\Response(response: 401, description: "Unauthenticated")
-        ]
-    )]
     public function profile(Request $request)
     {
         return $this->jsonResponse(
-            true,
-            'Profile fetched successfully.',
-            new UserResource($request->user()),
-            200
+            success: true,
+            message: 'Profile fetched successfully.',
+            data: [
+                'user' => new UserResource($request->user()),
+                // এখানে পরবর্তীতে অতিরিক্ত ইউজার ডাটা (যেমন: permissions, settings) যুক্ত করতে পারবেন
+            ],
+            statusCode: 200
         );
     }
 
-    #[OA\Post(
-        path: "/api/v1/app/logout",
-        summary: "Logout User & Revoke Token",
-        tags: ["Authentication"],
-        security: [["sanctum" => []]],
-        responses: [
-            new OA\Response(response: 200, description: "Logged out successfully")
-        ]
-    )]
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
         return $this->jsonResponse(
-            true,
-            'Logged out successfully.',
-            null,
-            200
+            success: true,
+            message: 'Logged out successfully.',
+            data: null,
+            statusCode: 200
         );
     }
 }

@@ -8,6 +8,10 @@ class UserRepository implements UserRepositoryInterface
 {
     public function findByCredentials(string $loginCredential)
     {
+        return User::where('mobile', $loginCredential)
+            //->orWhere('phone', $loginCredential)
+            //->orWhere('employee_id', $loginCredential)
+            ->first();
         return User::where('email', $loginCredential)
             ->orWhere('phone', $loginCredential)
             //->orWhere('employee_id', $loginCredential)

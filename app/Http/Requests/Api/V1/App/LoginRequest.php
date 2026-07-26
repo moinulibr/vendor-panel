@@ -14,7 +14,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'login'    => 'required|string', // Supports Email, Phone, or Employee ID
+            'mobile'    => 'required|string', // Supports Email, Phone, or Employee ID
             'password' => 'required|string',
         ];
     }
