@@ -3,7 +3,7 @@ name: Deploy vendor.businesssafeit.com
 on:
   push:
     branches:
-      - main # আপনার যে ব্র্যাঞ্চে পুশ করলে লাইভ হবে (main/master)
+      - main
 
 jobs:
   deploy:
@@ -19,4 +19,21 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd /home/businesssafeit-vendor/htdocs/vendor.businesssafeit.com
+          
+          # Clean local untracked/cache changes to avoid pull conflicts
+          git reset --hard HEAD
+          git clean -fd
           git pull origin main
+
+          # Install packages and run migrations
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          php artisan migrate --force
+
+          # Generate Swagger Docs automatically on deploy
+          php artisan l5-swagger:generate
+
+          # Clear & Cache Configurations
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan optimize
