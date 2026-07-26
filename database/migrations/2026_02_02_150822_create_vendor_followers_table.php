@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendor_followers', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('vendor_id');
-            $table->unsignedBigInteger('customer_id');
-            $table->timestamps();
+        if(!Schema::hasTable('vendor_followers')) {
+            Schema::create('vendor_followers', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('vendor_id');
+                $table->unsignedBigInteger('customer_id');
+                $table->timestamps();
 
-            $table->unique(['vendor_id', 'customer_id']);
+                $table->unique(['vendor_id', 'customer_id']);
 
-            $table->foreign('vendor_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
-        });
+                $table->foreign('vendor_id')->references('id')->on('users')->onDelete('cascade');
+                $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
 
     }
 
@@ -30,6 +32,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendor_followers');
+        if (Schema::hasTable('vendor_followers')) {
+            Schema::dropIfExists('vendor_followers');
+        }
     }
 };
