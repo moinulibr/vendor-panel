@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
+use App\Http\Swagger\AuthSwagger;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Exception;
 
-class AuthController extends BaseApiController
+class AuthController extends BaseApiController implements AuthSwagger
 {
     protected $authService;
 
@@ -18,26 +19,7 @@ class AuthController extends BaseApiController
         $this->authService = $authService;
     }
 
-    #[OA\Post(
-        path: "/api/v1/app/login",
-        summary: "SR and Merchant Login Endpoint",
-        tags: ["Authentication"],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["login", "password"],
-                properties: [
-                    new OA\Property(property: "login", type: "string", example: "SR-101"),
-                    new OA\Property(property: "password", type: "string", example: "12345678")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: "Login Success"),
-            new OA\Response(response: 401, description: "Invalid Credentials"),
-            new OA\Response(response: 403, description: "Forbidden / Inactive Account")
-        ]
-    )]
+    
     public function login(LoginRequest $request)
     {
         try {

@@ -18,15 +18,23 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1/app')->group(function () {
 
-    // Public API Endpoint
+    // Public routes
     Route::post('/login', [AuthController::class, 'login']);
 
-    // Protected API Endpoints (Requires Sanctum Token & SR/Merchant Middleware Check)
-    Route::middleware(['auth:sanctum', 'app.user:sr,merchant'])->group(function () {
+    // Protected routes requiring Sanctum token
+    Route::middleware(['auth:sanctum'])->group(function () {
 
         Route::get('/profile', [AuthController::class, 'profile']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
-        // Next: Product, Category, and Order endpoints will be attached here
+        // Internal Staff Only Routes (access_type = 1)
+        Route::middleware(['access.type:1'])->group(function () {
+            // SR / Staff specific APIs
+        });
+
+        // External / Retailer Routes (access_type = 2)
+        Route::middleware(['access.type:2'])->group(function () {
+            // Merchant specific APIs
+        });
     });
 });
