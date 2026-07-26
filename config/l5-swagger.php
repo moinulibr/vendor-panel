@@ -51,7 +51,7 @@ return [
     ],
     'defaults' => [
         'routes' => [
-            'assets' => 'docs/asset',//new added
+            'assets' => 'vendor/l5-swagger',//new added
             /*
              * Route for accessing parsed swagger annotations.
              */
