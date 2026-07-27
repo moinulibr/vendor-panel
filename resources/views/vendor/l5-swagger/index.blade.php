@@ -18,7 +18,7 @@
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
-                url: "{{ route('l5-swagger.default.docs') }}", // <-- এখানে লারাভেলের Built-in Route নাম দেওয়া হয়েছে
+                url: "{{ url('docs/api-docs.json') }}", // <-- সরাসরি ফাইল পাথ
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
