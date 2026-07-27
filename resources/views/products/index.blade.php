@@ -457,6 +457,43 @@
     });
   	
 
+    //multiple image delete section- single image delete
+    $(document).on('click', '.ajax-delete-btn', function (e) {
+        e.preventDefault();
+
+        if (!confirm('Are you sure you want to delete this image?')) {
+            return false;
+        }
+
+        let button = $(this);
+        let deleteUrl = button.data('url');
+        let cardWrapper = button.closest('.image-card-wrapper');
+
+        $.ajax({
+            url: deleteUrl,
+            type: 'DELETE',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            success: function (response) {
+                if (response.status === true) {
+                    cardWrapper.fadeOut(300, function () {
+                        $(this).remove();
+                        let currentCount = parseInt($('.image-count-badge').text());
+                        if (!isNaN(currentCount) && currentCount > 0) {
+                            $('.image-count-badge').text((currentCount - 1) + ' Images');
+                        }
+                    });
+                } else {
+                    alert(response.msg || 'Failed to delete image!');
+                }
+            },
+            error: function (xhr) {
+                alert('Something went wrong while deleting!');
+            }
+        });
+    });
+
 </script>
 @endpush
 
