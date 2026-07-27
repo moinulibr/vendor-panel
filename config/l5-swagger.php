@@ -13,6 +13,7 @@ return [
                  * Route for accessing api documentation interface
                  */
                 'api' => 'api/documentation',
+                'assets' => 'vendor/l5-swagger',
             ],
             'paths' => [
                 /*
@@ -289,6 +290,7 @@ return [
          * Swagger UI configuration parameters
          */
         'ui' => [
+            'assets_website_root' => 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/',
             'display' => [
                 'dark_mode' => env('L5_SWAGGER_UI_DARK_MODE', false),
                 /*
