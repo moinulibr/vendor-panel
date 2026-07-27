@@ -17,7 +17,14 @@ return [
                 'docs_yaml' => 'api-docs.yaml',
                 'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
                 'annotations' => [
-                    base_path('app'),
+                    base_path('app/Http/Controllers'),
+                    base_path('app/Http/Requests'),
+                    base_path('app/Http/Resources'),
+                    base_path('app/Http/Swagger'),
+                ],
+                'excludes' => [
+                    base_path('app/Repositories'),
+                    base_path('app/Services'),
                 ],
             ],
         ],

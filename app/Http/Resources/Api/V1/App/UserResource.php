@@ -13,12 +13,22 @@ class UserResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'email'       => $this->email,
-            'phone'       => $this->mobile,
+            'mobile'       => $this->mobile,
             'user_type'   => $this->user_type,
-            'employee_id' => $this->employee_id,
-            'shop_name'   => $this->shop_name,
-            'address'     => $this->address,
-            'is_active'   => (bool) $this->is_active,
+            //'is_active'   => (bool) $this->is_active,
+
+            'access_type' => $this->access_type,
+            'retailer'    => $this->whenLoaded('retailer', function () {
+                return [
+                    'shop_name'     => $this->retailer->shop_name,
+                    'trade_license' => $this->retailer->trade_license,
+                    'address'       => $this->retailer->address,
+                    'area'          => $this->retailer->area,
+                    'status'        => $this->retailer->status,
+                ];
+            }),
+            'created_at'  => $this->created_at?->toIso8601String(),
+
         ];
     }
 }
