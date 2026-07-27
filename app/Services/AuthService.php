@@ -23,9 +23,10 @@ class AuthService
             throw new Exception("Invalid login credentials provided.", 401);
         }
 
-        //if (!in_array($user->user_type, [2, 2])) {
-          //  throw new Exception("Unauthorized access. Only SR and Merchants can access this app.", 403);
-        //}
+        // check user access type is SR or Retailer mean id = 2
+        if (!($user->access_type == 2)) {
+            throw new Exception("Unauthorized access. Only SR and Retailer can access this app.", 403);
+        }
 
         //if (!$user->is_active) {
           //  throw new Exception("Your account status is inactive. Contact Admin.", 403);

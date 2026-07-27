@@ -27,14 +27,15 @@ Route::prefix('v1/app')->group(function () {
         Route::get('/profile', [AuthController::class, 'profile']);
         Route::post('/logout', [AuthController::class, 'logout']);
 
-        // Internal Staff Only Routes (access_type = 1)
+        // Internal Staff Only Routes (access_type = 1) - SR only
         Route::middleware(['access.type:1'])->group(function () {
             // SR / Staff specific APIs
         });
 
-        // External / Retailer Routes (access_type = 2)
+        // External / Retailer Routes (access_type = 2) = Retailer only
         Route::middleware(['access.type:2'])->group(function () {
             // Merchant specific APIs
         });
+        
     });
 });

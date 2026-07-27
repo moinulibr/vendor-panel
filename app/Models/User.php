@@ -63,4 +63,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(VendorAddress::class, 'user_id');
     }
+
+    public function retailer()
+    {
+        return $this->hasOne(Retailer::class);
+    }
+    
 }
