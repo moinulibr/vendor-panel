@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ config('l5-swagger.defaults.api.title', 'L5 Swagger UI') }}</title>
+    <title>API Documentation</title>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css">
     <style>
         html { box-sizing: border-box; overflow-y: scroll; }
@@ -18,7 +18,7 @@
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
-                url: "{{ route('l5-swagger.default.docs', config('l5-swagger.documentations.default.paths.docs_json', 'api-docs.json')) }}",
+                url: "{{ route('l5-swagger.default.docs') }}", // <-- এখানে লারাভেলের Built-in Route নাম দেওয়া হয়েছে
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
@@ -28,7 +28,8 @@
                 plugins: [
                     SwaggerUIBundle.plugins.DownloadUrl
                 ],
-                layout: "StandaloneLayout"
+                layout: "StandaloneLayout",
+                validatorUrl: null
             });
             window.ui = ui;
         };
