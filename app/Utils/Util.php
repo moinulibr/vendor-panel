@@ -20,7 +20,6 @@ class Util {
                 'nagad'=>'Nagad',
         ];
     }
-    
 
     public function sendSms($number,$message){
 
@@ -121,8 +120,6 @@ class Util {
     
     public function sendNotificationOld($business_id, $transaction, $type){
 
-
-        
         $template=NotificationTamplate::where([
                 'business_id'=>$business_id,
                 'type'=>$type,

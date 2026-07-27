@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 
 use App\Models\Setting;
+use App\Repositories\Otp\Interface\OtpRepositoryInterface;
+use App\Repositories\Otp\OtpRepository;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
             UserRepositoryInterface::class,
             UserRepository::class
         );
+        $this->app->bind(
+            OtpRepositoryInterface::class,
+            OtpRepository::class);
     }
 
     /**
