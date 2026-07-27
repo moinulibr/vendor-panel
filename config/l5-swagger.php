@@ -36,7 +36,7 @@ return [
         ],
 
         'paths' => [
-            'docs' => storage_path('api-docs'),
+            'docs' => public_path('api-docs'), //storage_path('api-docs'),
             'views' => base_path('resources/views/vendor/l5-swagger'),
             'base' => env('L5_SWAGGER_BASE_PATH', null),
             'excludes' => [],
