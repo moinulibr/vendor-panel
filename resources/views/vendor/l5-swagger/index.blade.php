@@ -18,7 +18,7 @@
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
-                url: "{{ url('docs/api-docs.json') }}", // <-- সরাসরি ফাইল পাথ
+                url: "{{ asset('api-docs/api-docs.json') }}", // Public folder reference
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
