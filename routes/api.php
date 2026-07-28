@@ -21,6 +21,8 @@ Route::prefix('v1/app')->group(function () {
     // Guest Routes - Public routes
     Route::post('/send-otp', [AuthController::class, 'sendOtp']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 

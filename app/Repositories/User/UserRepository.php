@@ -19,6 +19,12 @@ class UserRepository implements UserRepositoryInterface
             //->orWhere('employee_id', $loginCredential)
             ->first();
     }
+    
+    public function findByMobileNumber(string $mobile)
+    {
+        return User::where('mobile', $mobile)
+            ->first();
+    }
 
     public function findById(int $id)
     {
@@ -57,12 +63,16 @@ class UserRepository implements UserRepositoryInterface
     {
         // Delete related retailer data if exists
         if ($user->retailer) {
-            $user->retailer()->delete();
+            $user->retailer()->update(['status' => 'deleted']);
         }
+
+        $mobile = "d_" . $user->mobile;
+        $email = "d_" . $user->email;
+        $user->update(['mobile' => $mobile, 'email' => $email, 'status' => 0]);
 
         // Revoke all tokens and delete user
         $user->tokens()->delete();
-        return $user->delete();
+        return true;
     }
     
 }

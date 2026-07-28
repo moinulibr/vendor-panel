@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Retailer;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Utils\SmsUtil;
 use Illuminate\Support\Facades\DB;
@@ -105,11 +104,18 @@ class AuthService
 
     public function resetPassword(array $data): void
     {
-        $this->verifyOtpCode($data['mobile'], $data['otp'], 'reset_password');
-
         $user = $this->userRepo->findByCredentials($data['mobile']);
         if (!$user) {
             throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+        }
+
+        if ($data['reset_by'] === 'otp') {
+            $this->verifyOtpCode($data['mobile'], $data['otp'], 'reset_password');
+        } else {
+            // Old Password ম্যাচিং চেক
+            if (!$user->password || !Hash::check($data['old_password'], $user->password)) {
+                throw new Exception("আপনার প্রদানকৃত বর্তমান পাসওয়ার্ডটি ভুল।", 422);
+            }
         }
 
         $this->userRepo->updatePassword($user, Hash::make($data['password']));
@@ -126,48 +132,7 @@ class AuthService
     {
         $this->userRepo->deleteAccount($user);
     }
-    /*
-    public function registerUser(array $data): array
-    {
-        $this->verifyOtpCode($data['mobile'], $data['otp'], 'register');
 
-        return DB::transaction(function () use ($data) {
-            $user = $this->userRepo->create([
-                'name'        => $data['name'],
-                'mobile'      => $data['mobile'],
-                'password'    => isset($data['password']) ? Hash::make($data['password']) : null,
-                'access_type' => 2, // Default 2 for Mobile App SR/Retailer
-            ]);
-
-            if ($data['user_type'] === 'retailer') {
-                Retailer::create([
-                    'user_id'   => $user->id,
-                    'shop_name' => $data['shop_name'] ?? null,
-                    'address'   => $data['address'] ?? null,
-                ]);
-            }
-
-            $token = $user->createToken('app-mobile-access-token')->plainTextToken;
-
-            return [
-                'user'  => $user->load('retailer'),
-                'token' => $token,
-            ];
-        });
-    }
-
-    public function resetPassword(array $data): void
-    {
-        $this->verifyOtpCode($data['mobile'], $data['otp'], 'reset_password');
-
-        $user = $this->userRepo->findByCredentials($data['mobile']);
-        if (!$user) {
-            throw new Exception("User not found.", 404);
-        }
-
-        $user->update(['password' => Hash::make($data['password'])]);
-    }
-    */
 
     private function verifyOtpCode(string $mobile, string $code, string $purpose): void
     {
@@ -180,72 +145,14 @@ class AuthService
         $this->otpRepo->markAsUsed($otp);
     }
 
-    /*
-    public function sendOtp(string $mobile, string $purpose): array
+    public function verifyOtpOnly(array $data): void
     {
-        $code = config('app.env') === 'local' ? '1234' : (string) rand(1000, 9999);
+        $otp = $this->otpRepo->findValidOtp($data['mobile'], $data['purpose']);
 
-        // আগের অব্যবহৃত OTP নিষ্ক্রিয় করা
-        Otp::where('mobile', $mobile)
-            ->where('purpose', $purpose)
-            ->where('is_used', false)
-            ->update(['is_used' => true]);
-
-        Otp::create([
-            'mobile'     => $mobile,
-            'code'       => $code,
-            'purpose'    => $purpose,
-            'expires_at' => now()->addMinutes(5),
-        ]);
-
-        // Send SMS via Utility
-        $msg = "Your OTP for verification is: {$code}. Valid for 5 minutes.";
-        SmsUtil::sendSms($mobile, $msg);
-
-        return [
-            'code' => $code,
-        ];
-    }
-
-    public function verifyOtp(string $mobile, string $code, string $purpose): bool
-    {
-        $otp = Otp::valid($mobile, $purpose)->latest()->first();
-
-        if (!$otp || $otp->code !== $code) {
-            return false;
+        if (!$otp || $otp->code !== $data['otp']) {
+            throw new Exception("অবৈধ বা মেয়াদোত্তীর্ণ ওটিপি প্রদান করা হয়েছে।", 422);
         }
-
-        $otp->update(['is_used' => true]);
-        return true;
+        $this->otpRepo->markAsUsed($otp);
     }
-
-    public function registerUser(array $data): User
-    {
-        return DB::transaction(function () use ($data) {
-            $user = User::create([
-                'name'     => $data['name'],
-                'mobile'   => $data['mobile'],
-                'password' => isset($data['password']) ? Hash::make($data['password']) : null,
-                'role'     => $data['user_type'],
-            ]);
-
-            if ($data['user_type'] === 'retailer') {
-                Retailer::create([
-                    'user_id'   => $user->id,
-                    'shop_name' => $data['shop_name'] ?? null,
-                    'address'   => $data['address'] ?? null,
-                ]);
-            }
-
-            return $user;
-        });
-    }
-
-    public function resetPassword(string $mobile, string $newPassword): void
-    {
-        User::where('mobile', $mobile)->update([
-            'password' => Hash::make($newPassword)
-        ]);
-    }
-        */
+    
 }

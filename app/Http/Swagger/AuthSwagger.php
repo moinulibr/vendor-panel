@@ -6,6 +6,7 @@ use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
+use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use OpenApi\Attributes as OA;
 
 interface AuthSwagger
@@ -84,26 +85,29 @@ interface AuthSwagger
 
     #[OA\Post(
         path: "/api/v1/app/reset-password",
-        summary: "Reset Password via OTP",
+        summary: "Reset or Change Password (via OTP or Old Password)",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["mobile", "otp", "password", "password_confirmation"],
+                required: ["mobile", "reset_by", "password", "password_confirmation"],
                 properties: [
                     new OA\Property(property: "mobile", type: "string", example: "01700000001"),
-                    new OA\Property(property: "otp", type: "string", example: "1234"),
-                    new OA\Property(property: "password", type: "string", example: "12345678"),
-                    new OA\Property(property: "password_confirmation", type: "string", example: "12345678")
+                    new OA\Property(property: "reset_by", type: "string", example: "otp", enum: ["otp", "old_password"]),
+                    new OA\Property(property: "otp", type: "string", example: "1234", nullable: true),
+                    new OA\Property(property: "old_password", type: "string", example: "oldpass123", nullable: true),
+                    new OA\Property(property: "password", type: "string", example: "newpass123"),
+                    new OA\Property(property: "password_confirmation", type: "string", example: "newpass123")
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: "Password Reset Success"),
+            new OA\Response(response: 200, description: "Password Changed Successfully"),
             new OA\Response(response: 422, description: "Validation Error")
         ]
     )]
     public function resetPassword(ResetPasswordRequest $request);
+    
 
     #[OA\Get(
         path: "/api/v1/app/profile",
@@ -139,4 +143,26 @@ interface AuthSwagger
         ]
     )]
     public function deleteAccount(Request $request);
+
+    #[OA\Post(
+        path: "/api/v1/app/verify-otp",
+        summary: "Verify OTP Code Only",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["mobile", "otp", "purpose"],
+                properties: [
+                    new OA\Property(property: "mobile", type: "string", example: "01700000001"),
+                    new OA\Property(property: "otp", type: "string", example: "1234"),
+                    new OA\Property(property: "purpose", type: "string", example: "reset_password / register / login", enum: ["login", "register", "reset_password"])
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "OTP Verified Successfully"),
+            new OA\Response(response: 422, description: "Invalid or Expired OTP")
+        ]
+    )]
+    public function verifyOtp(VerifyOtpRequest $request);
 }
