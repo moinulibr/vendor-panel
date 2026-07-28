@@ -15,7 +15,6 @@ return new class extends Migration
                 $table->string('shop_name')->nullable();
                 $table->string('trade_license')->nullable();
                 $table->text('address')->nullable();
-                $table->string('area')->nullable();
                 $table->string('status')->default('active'); // active, pending, suspended
                 $table->timestamps();
             });

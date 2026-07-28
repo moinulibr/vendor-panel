@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Repositories\User;
+
+use App\Models\Retailer;
 use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 
@@ -22,4 +24,45 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::findOrFail($id);
     }
+
+    public function createUser(array $data): User
+    {
+        return User::create([
+            'name'        => $data['name'],
+            'mobile'      => $data['mobile'],
+            'email'       => $data['email'] ?? null,
+            'password'    => $data['password'] ?? null,
+            'status'      => 1,
+            'access_type' => $data['access_type'] ?? 2,
+        ]);
+    }
+
+    public function createRetailer(array $data)
+    {
+        return Retailer::create([
+            'user_id'   => $data['user_id'],
+            'shop_name' => $data['shop_name'] ?? null,
+            'address'   => $data['address'] ?? null,
+            'trade_license' => $data['trade_license'] ?? null,
+            //and others fields will be added here
+        ]);
+    }
+
+    public function updatePassword(User $user, string $newPassword): bool
+    {
+        return $user->update(['password' => $newPassword]);
+    }
+
+    public function deleteAccount(User $user): bool
+    {
+        // Delete related retailer data if exists
+        if ($user->retailer) {
+            $user->retailer()->delete();
+        }
+
+        // Revoke all tokens and delete user
+        $user->tokens()->delete();
+        return $user->delete();
+    }
+    
 }
