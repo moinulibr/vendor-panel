@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Http\Controllers\Controller;
 use OpenApi\Attributes as OA;
 
+if (!defined('L5_SWAGGER_CONST_HOST')) {
+    define('L5_SWAGGER_CONST_HOST', config('app.url'));
+}
+
 #[OA\Info(
     version: "1.0.0",
     title: "OriginalPonno SR & Retailer - Mobile App API",
     description: "RESTful API documentation for SR & Retailer mobile application."
 )]
 #[OA\Server(
-    url: "http://127.0.0.1:8000",
+    url: L5_SWAGGER_CONST_HOST,
     description: "Local Development Server"
 )]
 #[OA\SecurityScheme(
