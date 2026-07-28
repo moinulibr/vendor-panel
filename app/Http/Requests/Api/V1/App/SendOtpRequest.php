@@ -23,7 +23,7 @@ class SendOtpRequest extends FormRequest
     {
         return [
             'mobile.required' => 'মোবাইল নম্বর দেওয়া বাধ্যতামূলক।',
-            'mobile.regex'    => 'সঠিক ১-ডিজিটের বাংলাদেশি নম্বর দিন।',
+            'mobile.regex'    => 'সঠিক ১১-ডিজিটের বাংলাদেশি নম্বর দিন।',
             'purpose.in'      => 'উদ্দেশ্যটি (purpose) সঠিক নয়।',
         ];
     }
