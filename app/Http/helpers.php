@@ -1,6 +1,9 @@
 <?php
 use App\Models\Discount;
 
+function sendingOptToMobile(){
+	return false;
+}
 
 function activeMeny($segment){
     

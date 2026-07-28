@@ -14,8 +14,8 @@ class UserResource extends JsonResource
             'name'        => $this->name,
             'email'       => $this->email,
             'mobile'       => $this->mobile,
-            'user_type'   => $this->user_type,
-            //'is_active'   => (bool) $this->is_active,
+            //'user_type'   => $this->user_type,
+            'status'      => (bool) $this->status == 1 ? "active" : 'inactive',
 
             'access_type' => $this->access_type,
             'retailer'    => $this->whenLoaded('retailer', function () {
@@ -23,7 +23,6 @@ class UserResource extends JsonResource
                     'shop_name'     => $this->retailer->shop_name,
                     'trade_license' => $this->retailer->trade_license,
                     'address'       => $this->retailer->address,
-                    'area'          => $this->retailer->area,
                     'status'        => $this->retailer->status,
                 ];
             }),

@@ -29,7 +29,7 @@ class AuthController extends BaseApiController implements AuthSwagger
             return $this->jsonResponse(
                 success: true,
                 message: 'OTP sent successfully.',
-                data: config('app.env') === 'local' ? ['debug_code' => $code] : null,
+                data: config('app.env') === 'local' ? ['otp' => $code] : null,
                 statusCode: 200
             );
         } catch (Exception $e) {

@@ -1,38 +1,15 @@
 <?php
-
 namespace App\Http\Swagger;
 
 use Illuminate\Http\Request;
-use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
-use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
+use App\Http\Requests\Api\V1\App\RegisterRequest;
+use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use OpenApi\Attributes as OA;
 
 interface AuthSwagger
 {
-    #[OA\Post(
-        path: "/api/v1/app/login",
-        summary: "SR and Merchant Login Endpoint",
-        tags: ["Authentication"],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["mobile", "password"],
-                properties: [
-                    new OA\Property(property: "mobile", type: "string", example: "01700000001"),
-                    new OA\Property(property: "password", type: "string", example: "12345678")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: "Login Success"),
-            new OA\Response(response: 401, description: "Invalid Credentials"),
-            new OA\Response(response: 403, description: "Forbidden / Inactive Account")
-        ]
-    )]
-    public function login(LoginRequest $request);
-
     #[OA\Post(
         path: "/api/v1/app/send-otp",
         summary: "Send OTP for Login, Register or Password Reset",
@@ -55,8 +32,32 @@ interface AuthSwagger
     public function sendOtp(SendOtpRequest $request);
 
     #[OA\Post(
+        path: "/api/v1/app/login",
+        summary: "SR and Retailer Dual Login (Password & OTP)",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["mobile", "login_type"],
+                properties: [
+                    new OA\Property(property: "mobile", type: "string", example: "01700000001"),
+                    new OA\Property(property: "login_type", type: "string", example: "password", enum: ["password", "otp"]),
+                    new OA\Property(property: "password", type: "string", example: "12345678", nullable: true),
+                    new OA\Property(property: "otp", type: "string", example: "1234", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Login Success"),
+            new OA\Response(response: 401, description: "Invalid Credentials"),
+            new OA\Response(response: 422, description: "Validation Error")
+        ]
+    )]
+    public function login(LoginRequest $request);
+
+    #[OA\Post(
         path: "/api/v1/app/register",
-        summary: "SR and Merchant Registration Endpoint",
+        summary: "SR and Retailer Registration",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
@@ -64,17 +65,18 @@ interface AuthSwagger
                 required: ["name", "mobile", "otp", "user_type"],
                 properties: [
                     new OA\Property(property: "name", type: "string", example: "John Doe"),
-                    new OA\Property(property: "mobile", type: "string", example: "01700000000"),
-                    new OA\Property(property: "otp", type: "string", example: "1234"),
-                    new OA\Property(property: "password", type: "string", example: "12345678"),
-                    new OA\Property(property: "user_type", type: "string", example: "retailer", enum: ["sr", "retailer"]),
-                    new OA\Property(property: "shop_name", type: "string", example: "Fresh Super Store"),
-                    new OA\Property(property: "address", type: "string", example: "Mirpur-10, Dhaka")
+                    new OA\Property(property: "email", type: "string", example: "johndoe@example.com", nullable: true),
+                    new OA\Property(property: "mobile", type: "string", example: "01700000001"),
+                    //new OA\Property(property: "otp", type: "string", example: "1234"),
+                    new OA\Property(property: "password", type: "string", example: "12345678", nullable: true),
+                    new OA\Property(property: "access_type", type: "string", example: "2", enum: ["2"]),
+                    new OA\Property(property: "shop_name", type: "string", example: "Fresh Store", nullable: true),
+                    new OA\Property(property: "address", type: "string", example: "Mirpur-10, Dhaka", nullable: true)
                 ]
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: "Registration Success"),
+            new OA\Response(response: 201, description: "Registration Success"),
             new OA\Response(response: 422, description: "Validation Error / Invalid OTP")
         ]
     )]
@@ -82,17 +84,17 @@ interface AuthSwagger
 
     #[OA\Post(
         path: "/api/v1/app/reset-password",
-        summary: "Reset Password using Mobile & OTP",
+        summary: "Reset Password via OTP",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["mobile", "otp", "password", "password_confirmation"],
                 properties: [
-                    new OA\Property(property: "mobile", type: "string", example: "01700000000"),
+                    new OA\Property(property: "mobile", type: "string", example: "01700000001"),
                     new OA\Property(property: "otp", type: "string", example: "1234"),
-                    new OA\Property(property: "password", type: "string", example: "newpassword123"),
-                    new OA\Property(property: "password_confirmation", type: "string", example: "newpassword123")
+                    new OA\Property(property: "password", type: "string", example: "12345678"),
+                    new OA\Property(property: "password_confirmation", type: "string", example: "12345678")
                 ]
             )
         ),
@@ -105,11 +107,11 @@ interface AuthSwagger
 
     #[OA\Get(
         path: "/api/v1/app/profile",
-        summary: "Get Authenticated Profile Details",
+        summary: "Get Authenticated User Profile",
         tags: ["Authentication"],
         security: [["sanctum" => []]],
         responses: [
-            new OA\Response(response: 200, description: "Profile retrieved successfully"),
+            new OA\Response(response: 200, description: "Profile fetched successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
@@ -117,7 +119,7 @@ interface AuthSwagger
 
     #[OA\Post(
         path: "/api/v1/app/logout",
-        summary: "Logout User & Revoke Token",
+        summary: "Logout Current Session",
         tags: ["Authentication"],
         security: [["sanctum" => []]],
         responses: [
@@ -125,28 +127,16 @@ interface AuthSwagger
         ]
     )]
     public function logout(Request $request);
-    /*
-    #[OA\Get(
-        path: "/api/v1/app/profile",
-        summary: "Get Authenticated Profile Details",
+
+    #[OA\Delete(
+        path: "/api/v1/app/delete-account",
+        summary: "Delete Authenticated User Account",
         tags: ["Authentication"],
         security: [["sanctum" => []]],
         responses: [
-            new OA\Response(response: 200, description: "Profile retrieved successfully"),
+            new OA\Response(response: 200, description: "Account deleted successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
-    public function profile(Request $request);
-
-    #[OA\Post(
-        path: "/api/v1/app/logout",
-        summary: "Logout User & Revoke Token",
-        tags: ["Authentication"],
-        security: [["sanctum" => []]],
-        responses: [
-            new OA\Response(response: 200, description: "Logged out successfully")
-        ]
-    )]
-    public function logout(Request $request);
-    */
+    public function deleteAccount(Request $request);
 }
