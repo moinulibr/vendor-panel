@@ -16,7 +16,12 @@ use App\Utils\ProductUtil;
 use DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-
+use App\Exports\ProductsExport;
+use App\Imports\ProductsImport;
+use Maatwebsite\Excel\Facades\Excel;
+use ZipArchive;
+use Illuminate\Support\Facades\File;
+use Maatwebsite\Excel\Excel as ExcelFormat;
 
 class ProductController extends Controller
 {
@@ -398,6 +403,66 @@ class ProductController extends Controller
 
 
 
+    public function exportExcel()
+    {
+        return Excel::download(new ProductsExport, 'bulk_product_import.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        set_time_limit(600); // ১০ মিনিট
+        ini_set('memory_limit', '512M');
+        
+        $request->validate([
+            'excel_file' => 'required|mimes:xlsx,csv,xls',
+            'zip_file'   => 'nullable|mimes:zip',
+        ]);
+
+        $unzippedPath = null;
+
+        if ($request->hasFile('zip_file')) {
+            $zip = new \ZipArchive;
+            $zipFile = $request->file('zip_file');
+            $unzippedPath = storage_path('app/temp_product_images/' . time());
+
+            if ($zip->open($zipFile->getRealPath()) === TRUE) {
+                $zip->extractTo($unzippedPath);
+                $zip->close();
+            }
+        }
+
+        try {
+            $file = $request->file('excel_file');
+
+            // ফাইল এক্সটেনশন অনুযায়ী Format সেট করা
+            $extension = strtolower($file->getClientOriginalExtension());
+            $format = ExcelFormat::XLSX; // Default XLSX
+
+            if ($extension === 'csv') {
+                $format = ExcelFormat::CSV;
+            } elseif ($extension === 'xls') {
+                $format = ExcelFormat::XLS;
+            }
+
+            // ৩ নম্বর প্যারামিটারে $format পাস করে দেয়া হলো
+            Excel::import(new ProductsImport($unzippedPath), $file, null, $format);
+
+            if ($unzippedPath && File::exists($unzippedPath)) {
+                File::deleteDirectory($unzippedPath);
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Products Imported Successfully!',
+                'function' => 'getData'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'msg' => 'Import Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     // Product Created History
     public function createdHistory(Request $request)
