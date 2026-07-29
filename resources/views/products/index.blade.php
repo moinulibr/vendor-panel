@@ -2,22 +2,20 @@
 @section('content')
 @push('css')
     <style>
-        .gallery-card {
-            transition: all 0.3s ease-in-out;
+        .gallery-card { transition: all 0.3s ease-in-out; }
+        .gallery-card:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; }
+        .gallery-card:hover img { transform: scale(1.05); }
+        .delete-btn:hover { opacity: 1 !important; transform: scale(1.1); }
+    </style>
+    <style>
+        /* Collapsed অবস্থায় অ্যারো নিচে থাকবে, Expand হলে ১৮০ ডিগ্রি ঘুরে যাবে */
+        [aria-expanded="true"] .instruction-icon {
+            transform: rotate(180deg);
+            transition: transform 0.2s ease-in-out;
         }
-
-        .gallery-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .gallery-card:hover img {
-            transform: scale(1.05);
-        }
-
-        .delete-btn:hover {
-            opacity: 1 !important;
-            transform: scale(1.1);
+        [aria-expanded="false"] .instruction-icon {
+            transform: rotate(0deg);
+            transition: transform 0.2s ease-in-out;
         }
     </style>
 @endpush
@@ -31,22 +29,26 @@
 		</div>
 		<ul class="table-top-head">
 			<!--<li>-->
-			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Pdf"><img src="assets/img/icons/pdf.svg" alt="img"></a>-->
-			<!--</li>-->
-			<!--<li>-->
-			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Excel"><img src="assets/img/icons/excel.svg" alt="img"></a>-->
-			<!--</li>-->
-			<!--<li>-->
 			<!--	<a data-bs-toggle="tooltip" data-bs-placement="top" title="Refresh"><i class="ti ti-refresh"></i></a>-->
 			<!--</li>-->
 			<li>
 				<a data-bs-toggle="tooltip" data-bs-placement="top" title="Collapse" id="collapse-header"><i class="ti ti-chevron-up"></i></a>
 			</li>
+            <li>
+                <a href="{{ route('products.exportExcel') }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Download Sample Excel">
+                    <img src="{{ asset('assets/img/icons/excel.svg') }}" alt="Export Excel" style="width: 24px;">
+                </a>
+            </li>
 		</ul>
-		<div class="page-btn">
-			<a href="{{ route('products.create')}}" class="btn btn-primary btn_modal"><i class="ti ti-circle-plus me-1"></i>Add Product</a>
-		</div>
+		<div class="page-btn d-flex gap-2">
+            <!-- Import Excel Button -->
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                <i class="ti ti-file-upload me-1"></i>Import Bulk
+            </button>
+            <a href="{{ route('products.create')}}" class="btn btn-primary btn_modal"><i class="ti ti-circle-plus me-1"></i>Add Product</a>
+        </div>
 	</div>
+
 	<!-- /product list -->
 	<div class="card">
     
@@ -191,6 +193,82 @@
 
 	<!-- /product list -->
 </div>
+
+
+
+    <!-- Bulk Import Modal -->
+    <div class="modal fade" id="importExcelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title font-weight-bold">Import Products via Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- Toggle Button / Header -->
+                <div class="alert alert-warning border-0 bg-soft-warning p-3 mb-3">
+                    <div class="d-flex align-items-center justify-content-between" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#importInstructions" 
+                        aria-expanded="false" 
+                        aria-controls="importInstructions"
+                        style="cursor: pointer;">
+                        <h6 class="fw-bold text-dark mb-0">
+                            <i class="ti ti-alert-circle me-1"></i> ইম্পোর্ট করার আগে নির্দেশনাগুলো পড়ুন
+                        </h6>
+                        <!-- Icon target-class added -->
+                        <i class="ti ti-chevron-down text-dark instruction-icon"></i>
+                    </div>
+
+                    <!-- Collapsible Details -->
+                    <div class="collapse mt-3" id="importInstructions">
+                        <hr class="my-2 border-secondary opacity-25">
+                        <ul class="mb-0 fs-12 ps-3 text-secondary" style="line-height: 1.6;">
+                            <li><strong>ফাইল সাইজ লিমিট:</strong> এক্সেল ফাইল সর্বোচ্চ <b>10MB</b> এবং ZIP ফাইল সর্বোচ্চ <b>50MB</b> হতে পারবে।</li>
+                            <li><strong>প্রোডাক্ট লিমিট:</strong> এক ফাইলে সর্বোচ্চ <b>100-200টি</b> প্রোডাক্ট একসাথে আপলোড করার পরামর্শ দেওয়া হচ্ছে (Timeout এড়াতে)।</li>
+                            <li><strong>প্রোডাক্ট টাইপ:</strong> সিঙ্গেল টাইপ প্রোডাক্ট ফরম্যাট বজায় রাখুন।</li>
+                            <li><strong>ছবি প্রসেসিং:</strong> ইমেজের সাইজ যত ছোট হবে (WebP/JPG format, max 2MB), ইম্পোর্ট তত দ্রুত হবে।</li>
+                            <li><strong>ক্যাটাগরি ও ইউজার ID:</strong> এক্সেলে অবশ্যই সঠিক Database ID (যেমন: Category ID, User ID) ব্যবহার করতে হবে।</li>
+                        </ul>
+                    </div>
+                </div>
+                <form
+                    id="bulkImportForm"
+                    action="{{ route('products.importExcel') }}"
+                    method="POST"
+                    enctype="multipart/form-data"
+                >
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold"
+                                >Excel File (.xlsx, .csv) <span class="text-danger">*</span></label
+                            >
+                            <input type="file" name="excel_file" class="form-control" required accept=".xlsx, .xls, .csv" />
+                            <small class="text-muted d-block mt-1">
+                                <a href="{{ route('products.exportExcel') }}" class="text-primary"
+                                    ><i class="ti ti-download me-1"></i>Download Sample Format</a
+                                >
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-weight-semibold">Images ZIP File (Optional)</label>
+                            <input type="file" name="zip_file" class="form-control" accept=".zip" />
+                            <small class="text-muted"
+                                >এক্সেলে যদি লোকাল ফাইলের নাম ব্যবহার করেন, তবে ছবিগুলো ZIP করে আপলোড করুন। অনলাইন ইমেজ URL
+                                হলে ZIP প্রয়োজন নেই।</small
+                            >
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="margin-right:5px;">Close</button>
+                        <button type="submit" class="btn btn-primary" id="btnSubmitImport">Start Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('js')
@@ -494,6 +572,43 @@
         });
     });
 
+</script>
+
+<script>
+$(document).ready(function() {
+    // AJAX Submit for Excel Import
+    $('#bulkImportForm').on('submit', function(e) {
+        e.preventDefault();
+        let formData = new FormData(this);
+        let $btn = $('#btnSubmitImport');
+        $btn.prop('disabled', true).text('Importing...');
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                $btn.prop('disabled', false).text('Start Import');
+                if (response.status) {
+                    $('#importExcelModal').modal('hide');
+                    toastr.success(response.msg);
+                    if (typeof getData === 'function') {
+                        getData(); // Refresh product datatable/list
+                    } else {
+                        location.reload();
+                    }
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).text('Start Import');
+                let err = xhr.responseJSON ? xhr.responseJSON.msg : 'Something went wrong!';
+                toastr.error(err);
+            }
+        });
+    });
+});
 </script>
 @endpush
 

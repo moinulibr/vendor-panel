@@ -26,7 +26,7 @@ jobs:
           git pull origin main
 
           # Install packages and run migrations
-          composer install --no-interaction --prefer-dist --optimize-autoloader
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
 
           # Generate Swagger Docs automatically on deploy

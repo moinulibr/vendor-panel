@@ -182,7 +182,11 @@ Route::group(['middleware' => ['auth']], function() {
         
     });
 
+    //bulk product import and export a file as sample as well 
+    Route::get('/products/export-excel', [CN\ProductController::class, 'exportExcel'])->name('products.exportExcel');
+    Route::post('/products/import-excel', [CN\ProductController::class, 'importExcel'])->name('products.importExcel');
 });
+
 
 
 Route::get('/update-image-sizes', function (Request $request) {

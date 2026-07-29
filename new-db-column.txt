@@ -1,10 +1,20 @@
+    Users table
+    -----------> 
+    1. email nullable ->created a migration file
+    2. access_type - created a migration file
+    3. user_type - also in migration file as access_type
+    4. created_by - 
+    --- created anothers more table for sunctam auth, necessary table for retailers and other like - otps
+    --- vendor file update - so composer install need.
+    --- 
 
+----------------------------------------------------------------------------------
     products table 
         not now- parent_id -> bigInteger -> nullable   -unsigned
         not now- attributes -> json -> nullable
-        - image_size -> unsigned bigInteger
+        - image_size -> unsigned bigInteger [created on live server]
     product_images table
-        - image_size -> unsigned bigInteger
+        - image_size -> unsigned bigInteger [created on live server]
 
 
     model- not useing this yet now. 

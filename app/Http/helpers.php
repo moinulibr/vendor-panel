@@ -2,7 +2,7 @@
 use App\Models\Discount;
 
 function sendingOptToMobile(){
-	return true;
+	return false;
 }
 
 function activeMeny($segment){
