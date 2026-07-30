@@ -21,7 +21,8 @@ interface AuthSwagger
                 required: ["mobile", "purpose"],
                 properties: [
                     new OA\Property(property: "mobile", type: "string", example: "01700000001"),
-                    new OA\Property(property: "purpose", type: "string", example: "login", enum: ["login", "register", "reset_password"])
+                    new OA\Property(property: "purpose", type: "string", example: "login", enum: ["login", "register", "reset_password"]),
+                    new OA\Property(property: "check_user", type: "string", example: "exist/new", enum: ["exist", "new"])
                 ]
             )
         ),

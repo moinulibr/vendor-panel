@@ -52,6 +52,13 @@ class AuthService
     public function sendOtp(array $data): string
     {
         $code = config('app.env') === 'local' ? '1234' : (string) rand(1000, 9999);
+        
+        if($data['check_user'] === 'exist'){
+            $user = $this->userRepo->findByCredentials($data['mobile']);
+            if (!$user) {
+                throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+            }
+        }
 
         $this->otpRepo->invalidatePreviousOtps($data['mobile'], $data['purpose']);
 
