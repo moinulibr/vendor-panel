@@ -14,8 +14,9 @@ class SendOtpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'mobile'  => ['required', 'string', 'regex:/^(?:\+88|88)?(01[3-9]\d{8})$/'],
-            'purpose' => ['required', 'string', 'in:login,register,reset_password'],
+            'mobile'        => ['required', 'string', 'regex:/^(?:\+88|88)?(01[3-9]\d{8})$/'],
+            'purpose'       => ['required', 'string', 'in:login,register,reset_password'],
+            'check_user'    => ['required', 'in:exist,new']
         ];
     }
 
@@ -25,6 +26,7 @@ class SendOtpRequest extends FormRequest
             'mobile.required' => 'মোবাইল নম্বর দেওয়া বাধ্যতামূলক।',
             'mobile.regex'    => 'সঠিক ১১-ডিজিটের বাংলাদেশি নম্বর দিন।',
             'purpose.in'      => 'উদ্দেশ্যটি (purpose) সঠিক নয়।',
+            'check_user.in'   => 'check_user অবশ্যই exist অথবা new হতে হবে।',
         ];
     }
 }
