@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Requests\Api\V1\App\AddRetailerShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
 use App\Http\Swagger\AuthSwagger;
@@ -10,7 +11,9 @@ use Illuminate\Http\Request;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
+use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
+use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
 use Exception;
 
 class AuthController extends BaseApiController implements AuthSwagger
@@ -160,6 +163,64 @@ class AuthController extends BaseApiController implements AuthSwagger
         $this->authService->deleteAccount($request->user());
 
         return response()->json(['status' => true, 'message' => 'অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে।']);
+    }
+
+
+    public function profilePictureUpdate(UpdateProfilePictureRequest $request)
+    {
+        try {
+            $url = $this->authService->updateProfilePicture($request->user(), $request->file('profile_picture'));
+
+            return $this->jsonResponse(true, 'প্রোফাইল পিকচার আপডেট করা হয়েছে।', ['profile_picture_url' => $url], 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), null, 500);
+        }
+    }
+
+    public function getRetailerShippingAddresses($retailer_id){
+        try {
+            if (!$retailer_id) {
+                throw new Exception("রিটেইলারের আইডি পাওয়া যায়নি।", 422);
+            }
+
+            $address = $this->authService->getRetailerShippingAddress($retailer_id);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Retailer Shipping Addresses fetched successfully.',
+                data: [
+                    'shipping_addresses' => RetailerShippingAddressResource::collection($address),
+                ],
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), null, 500);
+        }
+    }
+
+    public function createRetailerShippingAddress(AddRetailerShippingAddressRequest $request)
+    {
+        try {
+            $user = $request->user();
+            // Check if Retailer or SR
+            $retailerId = $request->retailer_id ?? optional($user->retailer)->id;
+
+            if (!$retailerId) {
+                throw new Exception("রিটেইলারের আইডি পাওয়া যায়নি।", 422);
+            }
+
+            $address = $this->authService->addRetailerShippingAddress($retailerId, $request->validated());
+            return $this->jsonResponse(
+                success: true,
+                message: 'এড্রেস সফলভাবে যুক্ত করা হয়েছে।',
+                data: [
+                    'shipping_address' => new RetailerShippingAddressResource($address),
+                ],
+                statusCode: 201
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), null, 500);
+        }
     }
    
 }

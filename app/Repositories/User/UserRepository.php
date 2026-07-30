@@ -3,6 +3,7 @@
 namespace App\Repositories\User;
 
 use App\Models\Retailer;
+use App\Models\RetailerShippingAddress;
 use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 
@@ -74,5 +75,34 @@ class UserRepository implements UserRepositoryInterface
         $user->tokens()->delete();
         return true;
     }
-    
+
+
+    public function updateProfilePicture(User $user, string $avatarPath): bool
+    {
+        return $user->update(['image' => $avatarPath]);
+    }
+
+    public function createRetailerShippingAddress(array $data): RetailerShippingAddress
+    {
+        if (!empty($data['is_default']) && $data['is_default']) {
+            RetailerShippingAddress::where('retailer_id', $data['retailer_id'])->update(['is_default' => false]);
+        }
+
+        return RetailerShippingAddress::create($data);
+    }
+
+    public function findRetailerById(int $retailerId)
+    {
+        return Retailer::where('id', $retailerId)->where('status','!=','deleted')->first();
+    }
+
+    public function getRetailerShippingAddresses(int $retailerId)
+    {
+        return RetailerShippingAddress::where('retailer_id', $retailerId)->whereNull('deleted_at')->get();
+    }
+
+    public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool
+    {
+        return RetailerShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->delete();
+    }
 }
