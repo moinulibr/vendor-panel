@@ -225,10 +225,19 @@ interface AuthSwagger
     public function createRetailerShippingAddress(AddRetailerShippingAddressRequest $request);
 
     #[OA\Get(
-        path: "/api/v1/app/get-retailer-shipping-addresses/31",
+        path: "/api/v1/app/get-retailer-shipping-addresses/{retailerId}",
         summary: "Get Retailer Shipping Addresses By Retailer ID",
         tags: ["Address Management"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "retailerId",
+                in: "path",
+                required: true,
+                description: "Target Retailer ID",
+                schema: new OA\Schema(type: "integer", example: 3)
+            )
+        ],
         responses: [
             new OA\Response(response: 200, description: "Retailer Shipping Addresses fetched successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
