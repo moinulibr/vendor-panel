@@ -9,6 +9,7 @@ use App\Utils\SmsUtil;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AuthService
 {
@@ -161,5 +162,31 @@ class AuthService
         }
         $this->otpRepo->markAsUsed($otp);
     }
-    
+
+
+    public function updateProfilePicture($user, $imageFile): string
+    {
+        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $path = $imageFile->store('avatars', 'public');
+        $this->userRepo->updateProfilePicture($user, $path);
+
+        return Storage::disk('public')->url($path);
+    }
+
+    public function addRetailerShippingAddress(int $retailerId, array $data)
+    {
+        $data['retailer_id'] = $retailerId;
+        return $this->userRepo->createRetailerShippingAddress($data);
+    }
+
+    public function getRetailerShippingAddress(int $retailerId)
+    {
+        if(!$this->userRepo->findRetailerById($retailerId)) {
+            throw new Exception("রিটেইলার পাওয়া যায়নি।", 404);
+        }
+        return $this->userRepo->getRetailerShippingAddresses($retailerId);
+    }
 }

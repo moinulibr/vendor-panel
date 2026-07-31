@@ -1,11 +1,13 @@
 <?php
 namespace App\Http\Swagger;
 
+use App\Http\Requests\Api\V1\App\AddRetailerShippingAddressRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
+use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use OpenApi\Attributes as OA;
 
@@ -166,4 +168,81 @@ interface AuthSwagger
         ]
     )]
     public function verifyOtp(VerifyOtpRequest $request);
+
+
+    #[OA\Post(
+        path: "/api/v1/app/update-profile-picture",
+        summary: "Upload or Update Profile Picture",
+        tags: ["Authentication"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["profile_picture"],
+                    properties: [
+                        new OA\Property(property: "profile_picture", type: "string", format: "binary")
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Profile Picture Updated Successfully")
+        ]
+    )]
+    public function profilePictureUpdate(UpdateProfilePictureRequest $request);
+
+    #[OA\Post(
+        path: "/api/v1/app/create-retailer-shipping-address",
+        summary: "Add Shipping Address for Retailer",
+        tags: ["Address Management"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["title", "address"],
+                properties: [
+                    new OA\Property(property: "retailer_id", type: "integer", example: 1, nullable: true),
+                    new OA\Property(property: "title", type: "string", example: "Main Shop"),
+                    new OA\Property(property: "contact_person", type: "string", example: "Mr. Rahim"),
+                    new OA\Property(property: "contact_mobile", type: "string", example: "01700000000"),
+                    new OA\Property(property: "address", type: "string", example: "Shop #12, Market Rd, Mirpur"),
+                    new OA\Property(property: "division", type: "string", example: "Dhaka"),
+                    new OA\Property(property: "district", type: "string", example: "Dhaka"),
+                    new OA\Property(property: "upazila", type: "string", example: "Mirpur"),
+                    new OA\Property(property: "division_id", type: "integer", example: "1"),
+                    new OA\Property(property: "district_id", type: "integer", example: "2"),
+                    new OA\Property(property: "upazila_id", type: "integer", example: "3"),
+                    new OA\Property(property: "is_default", type: "boolean", example: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: "Shipping Address Created")
+        ]
+    )]
+    public function createRetailerShippingAddress(AddRetailerShippingAddressRequest $request);
+
+    #[OA\Get(
+        path: "/api/v1/app/get-retailer-shipping-addresses/{retailerId}",
+        summary: "Get Retailer Shipping Addresses By Retailer ID",
+        tags: ["Address Management"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "retailerId",
+                in: "path",
+                required: true,
+                description: "Target Retailer ID",
+                schema: new OA\Schema(type: "integer", example: 3)
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Retailer Shipping Addresses fetched successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function getRetailerShippingAddresses($retailerId);
+
 }

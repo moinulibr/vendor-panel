@@ -33,8 +33,9 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::delete('/delete-account', [AuthController::class, 'deleteAccount']);
-        
-        
+        Route::post('/update-profile-picture', [AuthController::class, 'profilePictureUpdate']);
+
+
         // Internal Staff Only Routes (access_type = 1) - SR only
         Route::middleware(['access.type:1'])->group(function () {
             // SR / Staff specific APIs
@@ -42,7 +43,10 @@ Route::prefix('v1/app')->group(function () {
 
         // External / Retailer Routes (access_type = 2) = Retailer only
         Route::middleware(['access.type:2'])->group(function () {
-            // Merchant specific APIs
+            // Retailer specific APIs
+            Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
+            Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
+            
         });
 
     });

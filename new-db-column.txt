@@ -30,3 +30,5 @@
             {
                 return $this->hasMany(Product::class, 'parent_id');
             }
+
+now admin and vendor panel is managed by auto deployment - CI/CD

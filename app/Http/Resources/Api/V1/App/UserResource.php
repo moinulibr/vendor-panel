@@ -16,8 +16,14 @@ class UserResource extends JsonResource
             'mobile'       => $this->mobile,
             //'user_type'   => $this->user_type,
             'status'      => (bool) $this->status == 1 ? "active" : 'inactive',
-
             'access_type' => $this->access_type,
+
+            'profile_picture' => $this->image
+                ? (filter_var($this->image, FILTER_VALIDATE_URL)
+                    ? $this->image
+                    : asset('storage/' . $this->image))
+                : asset('image/default-avatar.png'),
+
             'retailer'    => $this->whenLoaded('retailer', function () {
                 return [
                     'shop_name'     => $this->retailer->shop_name,
