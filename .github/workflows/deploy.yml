@@ -1,38 +1,71 @@
-name: Deploy vendor.businesssafeit.com
+name: Branch Based Deployment (Vendor & Admin)
 
 on:
   push:
     branches:
-      - main
+      - develop  # develop এ পুশ করলে Vendor এ যাবে
+      - main     # main এ পুশ/মার্জ করলে Admin এ যাবে
 
 jobs:
-  deploy:
+  # -------------------------------------------------------------
+  # Job 1: Vendor Deployment (Staging / Testing)
+  # -------------------------------------------------------------
+  deploy-vendor:
+    name: Deploy to Vendor Server
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     steps:
-    - name: SSH and Deploy to VPS
+    - name: SSH and Deploy to Vendor
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
+        username: ${{ secrets.SSH_USERNAME }}            # vendor-ssh
         key: ${{ secrets.SSH_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd /home/businesssafeit-vendor/htdocs/vendor.businesssafeit.com
           
-          # Clean local untracked/cache changes to avoid pull conflicts
+          git reset --hard HEAD
+          git clean -fd
+          git pull origin develop
+
+          composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+          php artisan migrate --force
+          php artisan l5-swagger:generate
+
+          php artisan config:clear
+          php artisan route:clear
+          php artisan view:clear
+          php artisan optimize
+
+  # -------------------------------------------------------------
+  # Job 2: Admin Deployment (Production)
+  # -------------------------------------------------------------
+  deploy-admin:
+    name: Deploy to Admin Server
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: SSH and Deploy to Admin
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SSH_HOST }}                    # IP একই (103.159.37.175)
+        username: ${{ secrets.ADMIN_SSH_USERNAME }}      # as-admin-ssh (আলাদা ইউজার)
+        key: ${{ secrets.SSH_KEY }}
+        port: ${{ secrets.SSH_PORT }}                    # Port একই (22)
+        script: |
+          cd /home/originalponnobd-admin/htdocs/admin.originalponnobd.com
+          
           git reset --hard HEAD
           git clean -fd
           git pull origin main
 
-          # Install packages and run migrations
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
-
-          # Generate Swagger Docs automatically on deploy
           php artisan l5-swagger:generate
 
-          # Clear & Cache Configurations
           php artisan config:clear
           php artisan route:clear
           php artisan view:clear
