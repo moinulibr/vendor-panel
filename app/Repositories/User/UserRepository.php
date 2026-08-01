@@ -6,6 +6,7 @@ use App\Models\Retailer;
 use App\Models\RetailerShippingAddress;
 use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
+use App\Utils\UserType;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -40,7 +41,8 @@ class UserRepository implements UserRepositoryInterface
             'email'       => $data['email'] ?? null,
             'password'    => $data['password'] ?? null,
             'status'      => 1,
-            'access_type' => $data['access_type'] ?? 2,
+            'access_type' => $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE, ///UserType::RETAILER  UserType::EXTERNAL_ACCESS_TYPE,
+            'user_type' => $data['user_type'] ?? UserType::RETAILER
         ]);
     }
 

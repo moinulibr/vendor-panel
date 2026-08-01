@@ -94,7 +94,7 @@ class AuthService
                 'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 
-            if ((int)$data['access_type'] === 2 && !empty($data['shop_name'])) {
+            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && !empty($data['shop_name'])) {
                 $this->userRepo->createRetailer([
                     'user_id'   => $user->id,
                     'shop_name' => $data['shop_name'],

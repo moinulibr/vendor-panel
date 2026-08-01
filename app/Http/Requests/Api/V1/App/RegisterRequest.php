@@ -19,6 +19,7 @@ class RegisterRequest extends FormRequest
             'mobile'    => ['required', 'string', 'unique:users,mobile', 'regex:/^(?:\+88|88)?(01[3-9]\d{8})$/'],
             //'otp'       => ['required', 'string', 'digits:4'],
             'password'  => ['nullable', 'string', 'min:6'],
+            'user_type' => ['required', 'in:4,5'],
             'access_type' => ['required', 'in:2,2'],
             'shop_name' => ['required_if:access_type,2', 'nullable', 'string', 'max:150'],
             'address'   => ['nullable', 'string'],
