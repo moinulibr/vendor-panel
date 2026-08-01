@@ -169,7 +169,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     public function profilePictureUpdate(UpdateProfilePictureRequest $request)
     {
         try {
-            $url = $this->authService->updateProfilePicture($request->user(), $request->file('profile_picture'));
+            $url = $this->authService->profilePictureUpdate($request->user(), $request->file('profile_picture'));
 
             return $this->jsonResponse(true, 'প্রোফাইল পিকচার আপডেট করা হয়েছে।', ['profile_picture_url' => $url], 200);
         } catch (Exception $e) {

@@ -1,5 +1,6 @@
 <?php
 use App\Models\Discount;
+use App\Utils\UserType;
 
 function sendingOptToMobile(){
 	return true;
@@ -258,3 +259,58 @@ function getDiscountPriorityNameById(int $id)
 
 	return ($index !== false) ? $list[$index]['label'] : "Unknown";
 }
+
+
+
+/**
+ * গ্লোবাল ফাংশন: ইউজার টাইপ আইডি দিলে নাম রিটার্ন করবে
+ * ব্যবহার: user_type_label(6) -> 'Ecommerce Customer'
+ */
+if (!function_exists('user_type_label')) {
+	function user_type_label(?int $userTypeId): string
+	{
+		return UserType::getLabel($userTypeId);
+	}
+}
+
+/**
+ * গ্লোবাল ফাংশন: ইউজারটি কাস্টমার টাইপ কিনা চেক করবে
+ * ব্যবহার: is_customer(auth()->user()->user_type) -> true/false
+ */
+if (!function_exists('is_customer')) {
+	function is_customer(?int $userTypeId): bool
+	{
+		return UserType::isCustomer($userTypeId);
+	}
+}
+
+/**
+ * গ্লোবাল ফাংশন: সম্পূর্ণ ইউজার টাইপের লিস্ট অ্যারে দিবে (ড্রপডাউনের জন্য)
+ */
+if (!function_exists('user_type_list')) {
+	function user_type_list(): array
+	{
+		return UserType::list();
+	}
+}
+
+
+
+// ক্লিয়ার এবং রিডেবল কোড
+/*
+use App\Utils\UserType;
+
+if ($user->user_type === UserType::ADMIN) {
+    // শুধুমাত্র অ্যাডমিন এক্সেস পাবে
+}
+
+<!-- ইউজার টাইপের নাম সরাসরি প্রিন্ট করা -->
+<p>User Type: {{ user_type_label($user->user_type) }}</p>
+
+<!-- ড্রপডাউন জেনারেট করা -->
+<select name="user_type">
+    @foreach(user_type_list() as $id => $name)
+        <option value="{{ $id }}">{{ $name }}</option>
+    @endforeach
+</select>
+*/

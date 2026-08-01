@@ -32,3 +32,23 @@
             }
 
 now admin and vendor panel is managed by auto deployment - CI/CD
+
+
+--------------------------------------------
+        - User type -
+    -------------------
+    1 = admin 
+    2 = all staff
+    3 = vendor
+    4 = SR
+    5 = Retailer
+    6 = plamber
+    7 = Reseller
+    8 = delivery mana
+    9 = flowuper
+    10= others
+--------------------------------------------
+        - access type -
+    -------------------
+    1 = internal user -> like - all official staff,admin, SR, etc
+    2 = external user -> like - Retailer, Vendor
