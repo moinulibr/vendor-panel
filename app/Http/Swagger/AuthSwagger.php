@@ -74,7 +74,7 @@ interface AuthSwagger
                     //new OA\Property(property: "otp", type: "string", example: "1234"),
                     new OA\Property(property: "password", type: "string", example: "12345678", nullable: true),
                     new OA\Property(property: "access_type", type: "integer", example: "2", enum: ["2"]),
-                    new OA\Property(property: "user_type", type: "integer", example: "4 or 5, 4 = SR; 5 = RETAILER", enum: ["5"]),
+                    new OA\Property(property: "user_type", type: "integer", example: "4 or 5, 4 = SR; 5 = RETAILER", enum: ["4,5"]),
                     new OA\Property(property: "shop_name", type: "string", example: "Fresh Store", nullable: true),
                     new OA\Property(property: "address", type: "string", example: "Mirpur-10, Dhaka", nullable: true)
                 ]

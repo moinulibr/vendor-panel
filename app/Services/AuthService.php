@@ -6,6 +6,7 @@ use App\Repositories\User\Interface\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Utils\SmsUtil;
+use App\Utils\UserType;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -89,7 +90,8 @@ class AuthService
                 'email'        => $data['email'] ?? null,
                 'mobile'      => $data['mobile'],
                 'password'    => isset($data['password']) ? Hash::make($data['password']) : null,
-                'access_type' => (int) $data['access_type'] ?? 2,
+                'user_type'   => $data['user_type'] ?? UserType::RETAILER,
+                'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 
             if ((int)$data['access_type'] === 2 && !empty($data['shop_name'])) {
