@@ -4,6 +4,10 @@ namespace App\Utils;
 
 class UserType
 {
+    //access_type
+    const INTERNAL_ACCESS_TYPE = 1;
+    const EXTERNAL_ACCESS_TYPE = 2;
+
     // ১. সেন্ট্রাল আইডি ডেফিনিশন (ভবিষ্যতে আইডি চেঞ্জ হলে শুধু এখানে চেঞ্জ করবেন)
     const ADMIN              = 1;
     const STAFF              = 2;
