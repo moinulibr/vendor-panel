@@ -13,9 +13,10 @@ class UserResource extends JsonResource
             'id'          => $this->id,
             'name'        => $this->name,
             'email'       => $this->email,
-            'mobile'       => $this->mobile,
-            //'user_type'   => $this->user_type,
+            'mobile'      => $this->mobile,
             'status'      => (bool) $this->status == 1 ? "active" : 'inactive',
+            'user_type'   => $this->user_type,
+            'note'        => 'user type -> ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; ECOMMERCE_CUSTOMER = 6; POS_CUSTOMER = 7; RESELLER = 8; DELIVERY_MAN = 9; PLUMBER = 10; GUEST = 11; OTHERS = 12;',
             'access_type' => $this->access_type,
 
             'profile_picture' => $this->image

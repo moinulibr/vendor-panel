@@ -164,10 +164,10 @@ class AuthService
     }
 
 
-    public function updateProfilePicture($user, $imageFile): string
+    public function profilePictureUpdate($user, $imageFile): string
     {
-        if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
+        if ($user->image && Storage::disk('public')->exists($user->image)) {
+            Storage::disk('public')->delete($user->image);
         }
 
         $path = $imageFile->store('avatars', 'public');
