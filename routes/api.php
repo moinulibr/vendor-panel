@@ -33,6 +33,8 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::delete('/delete-account', [AuthController::class, 'deleteAccount']);
+        Route::post('/profile-update', [AuthController::class, 'profileUpdate']);
+
         Route::post('/update-profile-picture', [AuthController::class, 'profilePictureUpdate']);
 
 

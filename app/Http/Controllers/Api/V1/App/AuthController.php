@@ -165,7 +165,10 @@ class AuthController extends BaseApiController implements AuthSwagger
         return response()->json(['status' => true, 'message' => 'অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে।']);
     }
 
+    public function profileUpdate(){
 
+    }
+    
     public function profilePictureUpdate(UpdateProfilePictureRequest $request)
     {
         try {
