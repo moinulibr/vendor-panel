@@ -126,6 +126,43 @@ interface AuthSwagger
     public function profile(Request $request);
 
     #[OA\Post(
+        path: "/api/v1/app/update-profile",
+        summary: "Update User Profile Information",
+        description: "Updates authenticated user's profile and retailer details",
+        tags: ["Authentication"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["name", "mobile"],
+                properties: [
+                    new OA\Property(property: "name", type: "string", example: "Md. Moinul Islam"),
+                    new OA\Property(property: "email", type: "string", format: "email", example: "moinul@example.com", nullable: true),
+                    new OA\Property(property: "mobile", type: "string", example: "01711112233"),
+                    new OA\Property(property: "shop_name", type: "string", example: "PureOlaa Enterprise", nullable: true),
+                    new OA\Property(property: "address", type: "string", example: "Mirpur-10, Dhaka", nullable: true),
+                    new OA\Property(property: "trade_license", type: "string", example: "TRD-123456", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Profile updated successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Profile updated successfully"),
+                        //new OA\Property(property: "data", ref: "#/components/schemas/UserResource")
+                    ]
+                )
+            ),
+            new OA\Response(response: 422, description: "Validation Error"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+
+    #[OA\Post(
         path: "/api/v1/app/logout",
         summary: "Logout Current Session",
         tags: ["Authentication"],

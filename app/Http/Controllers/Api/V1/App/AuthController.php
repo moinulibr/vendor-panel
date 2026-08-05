@@ -12,8 +12,8 @@ use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
+use App\Http\Requests\Api\V1\App\UpdateProfileRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
-use App\Http\Requests\UserProfileUpdateRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
 use Exception;
 
@@ -166,18 +166,16 @@ class AuthController extends BaseApiController implements AuthSwagger
         return response()->json(['status' => true, 'message' => 'অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে।']);
     }
 
-    public function profileUpdate(UserProfileUpdateRequest $request)
+    public function updateProfile(UpdateProfileRequest $request)
     {
-        /*$updatedUser = $this->authService->updateProfile(auth()->id(),
-            $request->validated()
-        );
+        $user = $request->user();
+        $updatedUser = $this->authService->updateProfile($user, $request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => 'Profile updated successfully.',
+            'message' => 'Profile updated successfully',
             'data'    => new UserResource($updatedUser)
         ], 200);
-        */
     }
 
     public function profilePictureUpdate(UpdateProfilePictureRequest $request)

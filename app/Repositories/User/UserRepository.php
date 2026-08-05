@@ -7,6 +7,7 @@ use App\Models\RetailerShippingAddress;
 use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
+use Illuminate\Support\Facades\DB;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -44,6 +45,30 @@ class UserRepository implements UserRepositoryInterface
             'access_type' => $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE, ///UserType::RETAILER  UserType::EXTERNAL_ACCESS_TYPE,
             'user_type' => $data['user_type'] ?? UserType::RETAILER
         ]);
+    }
+
+    public function updateProfile(User $user, array $data): User
+    {
+        return DB::transaction(function () use ($user, $data) {
+            $user->update([
+                'name'   => $data['name'],
+                'email'  => $data['email'] ?? $user->email,
+                'mobile' => $data['mobile'] ?? $user->mobile,
+            ]);
+
+            if (isset($data['shop_name']) || isset($data['address']) || isset($data['trade_license'])) {
+                $user->retailer()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'shop_name'     => $data['shop_name'] ?? optional($user->retailer)->shop_name,
+                        'address'       => $data['address'] ?? optional($user->retailer)->address,
+                        'trade_license' => $data['trade_license'] ?? optional($user->retailer)->trade_license,
+                    ]
+                );
+            }
+
+            return $user->load('retailer');
+        });
     }
 
     public function createRetailer(array $data)

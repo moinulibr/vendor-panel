@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
@@ -138,6 +139,11 @@ class AuthService
         ];
     }
 
+    public function updateProfile(User $user, array $data): User
+    {
+        return $this->userRepo->updateProfile($user, $data);
+    }
+    
     public function deleteAccount($user): void
     {
         $this->userRepo->deleteAccount($user);

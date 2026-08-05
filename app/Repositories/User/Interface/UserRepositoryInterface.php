@@ -15,6 +15,7 @@ interface UserRepositoryInterface
     public function updatePassword(User $user, string $newPassword): bool;
     public function deleteAccount(User $user): bool;
     public function updateProfilePicture(User $user, string $profilePicturePath): bool;
+    public function updateProfile(User $user, array $data): User;
 
     public function findRetailerById(int $retailerId);
     // Address management
