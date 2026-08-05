@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\App\AuthController;
-use App\Http\Controllers\Api\V1\App\NotificationController;
+use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -39,8 +39,8 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/update-profile-picture', [AuthController::class, 'profilePictureUpdate']);
 
         //fcm token api
-        Route::post('store-fcm-token', [NotificationController::class, 'storeFcmToken']);
-        Route::post('remove-fcm-token', [NotificationController::class, 'removeFcmToken']);
+        Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
+        Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
         
         // Internal Staff Only Routes (access_type = 1) - SR only
         Route::middleware(['access.type:1'])->group(function () {

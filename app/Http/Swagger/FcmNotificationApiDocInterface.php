@@ -6,7 +6,7 @@ use App\Http\Requests\Api\V1\App\FcmRemoveTokenRequest;
 use App\Http\Requests\Api\V1\App\FcmStoreTokenRequest;
 use OpenApi\Attributes as OA;
 
-interface NotificationApiDocInterface
+interface FcmNotificationApiDocInterface
 {
     #[OA\Post(
         path: "/api/v1/app/store-fcm-token",

@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\FcmRemoveTokenRequest;
 use App\Http\Requests\Api\V1\App\FcmStoreTokenRequest;
-use App\Http\Swagger\NotificationApiDocInterface;
+use App\Http\Swagger\FcmNotificationApiDocInterface;
 use App\Services\FcmNotificationService;
 
-class NotificationController extends BaseApiController implements NotificationApiDocInterface
+class FcmNotificationController extends BaseApiController implements FcmNotificationApiDocInterface
 {
     protected FcmNotificationService $fcmService;
 
