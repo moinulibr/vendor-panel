@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 
 use App\Models\Setting;
+use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
+use App\Repositories\DeviceToken\UserDeviceTokenRepository;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Repositories\Otp\OtpRepository;
 use App\Repositories\User\Interface\UserRepositoryInterface;
@@ -27,6 +29,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             OtpRepositoryInterface::class,
             OtpRepository::class);
+
+        $this->app->bind(
+            UserDeviceTokenRepositoryInterface::class,
+            UserDeviceTokenRepository::class
+        );
+            
     }
 
     /**

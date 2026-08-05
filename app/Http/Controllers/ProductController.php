@@ -124,11 +124,16 @@ class ProductController extends Controller
 
     public function create(){
 
-        $product=Product::updateOrCreate(['is_new'=>1,'name'=>null]);
+        $product = Product::create([
+            'user_id' => Auth::id(),
+            'is_new'  => 1,
+            'name'    => null
+        ]);
 
         return $this->edit($product);
 
-        
+        //$product=Product::updateOrCreate(['is_new'=>1,'name'=>null]);
+        //return $this->edit($product); 
     }
     
     public function show(Product $product){
