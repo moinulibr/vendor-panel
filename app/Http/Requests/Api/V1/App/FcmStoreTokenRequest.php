@@ -18,4 +18,11 @@ class FcmStoreTokenRequest extends FormRequest
             'device_id'   => ['nullable', 'string', 'max:255'],
         ];
     }
+    public function messages(): array
+    {
+        return [
+            'fcm_token.required' => 'FCM ডিভাইস টোকেন দেওয়া বাধ্যতামূলক।',
+            'device_type.in'     => 'ডিভাইসের ধরণ অবশ্যই android, ios অথবা web হতে হবে।',
+        ];
+    }
 }

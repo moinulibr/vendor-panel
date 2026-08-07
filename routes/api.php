@@ -42,6 +42,8 @@ Route::prefix('v1/app')->group(function () {
         Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
         Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
         
+        //real file notification route here
+
         // Internal Staff Only Routes (access_type = 1) - SR only
         Route::middleware(['access.type:1'])->group(function () {
             // SR / Staff specific APIs
