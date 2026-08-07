@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
+use Exception;
 
 class FcmNotificationService
 {
@@ -19,8 +20,11 @@ class FcmNotificationService
         return $this->tokenRepo->updateOrCreateToken($user, $data);
     }
 
-    public function removeToken(User $user, string $fcmToken): bool
+    public function removeToken(User $user, array $data): bool
     {
-        return $this->tokenRepo->removeToken($user, $fcmToken);
+        if (!$this->tokenRepo->findDeviceToken($user, $data['fcmToken'])) {
+            throw new Exception("Token not found.", 422);
+        }
+        return $this->tokenRepo->removeToken($user, $data);
     }
 }

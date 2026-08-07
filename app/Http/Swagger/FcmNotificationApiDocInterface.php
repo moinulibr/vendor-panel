@@ -42,9 +42,10 @@ interface FcmNotificationApiDocInterface
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["fcm_token"],
+                required: ["remove_scope"],
                 properties: [
-                    new OA\Property(property: "fcm_token", type: "string", example: "f7a8b9c0d1e2f3...")
+                    new OA\Property(property: "remove_scope", type: "string", enum: ["current_device", "all_devices"], example: "current_device"),
+                    new OA\Property(property: "fcm_token", type: "string", example: "f7a8b9c0d1e2f3...", nullable: true, description: "Required if remove_scope is current_device")
                 ]
             )
         ),
