@@ -19,7 +19,7 @@ if (Schema::hasTable('users')) {
 
     if (!Schema::hasColumn('users', 'deleted_at')) {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('deleted_at')->nullable();  
+            $table->softDeletes();
         });
     }
 
@@ -42,7 +42,7 @@ if (Schema::hasTable('users')) {
         DB::statement("
             ALTER TABLE users
             MODIFY COLUMN status TINYINT(1)
-            COMMENT '1 = active; 1 = inactive; 3 = suspend, 4 = deleted; 5 = blocked'
+            COMMENT '1 = active, 2 = inactive, 3 = suspend, 4 = deleted; 5 = blocked'
         ");
     }
 }

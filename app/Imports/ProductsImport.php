@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use App\Utils\ProductUtil;
+use Illuminate\Support\Facades\Auth;
 
 class ProductsImport implements ToModel, WithHeadingRow
 {
@@ -39,7 +40,7 @@ class ProductsImport implements ToModel, WithHeadingRow
         }
 
         // 2. Slug logic (Same as your update method)
-        $slug = Str::slug($row['name']);
+        $slug = Str::slug($row['name']) . '-' . Str::random(5);
         $count = Product::where('slug', 'LIKE', "{$slug}%")->count();
         $finalSlug = $count ? "{$slug}-{$count}" : $slug;
 
@@ -73,6 +74,7 @@ class ProductsImport implements ToModel, WithHeadingRow
             'warranty_available'    => isset($row['warranty_available']) && $row['warranty_available'] == 1 ? 1 : null,
             'return_available'      => isset($row['return_available']) && $row['return_available'] == 1 ? 1 : null,
             'is_new'                => 0,
+            'created_by'            => Auth::user()->id ?? null,
             'image'                 => $mainImageName,
             'image_size'            => $mainImageSize,
             'slug'                  => $finalSlug,

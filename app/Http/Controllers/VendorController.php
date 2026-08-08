@@ -13,6 +13,7 @@ use Illuminate\Support\Arr;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Utils\ProductUtil;
+use App\Utils\UserType;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -34,7 +35,6 @@ class VendorController extends Controller
      */
     public function index(Request $request)
     {
-
         if ($request->ajax()) {
             
             $search=$request->q;
@@ -121,13 +121,15 @@ class VendorController extends Controller
             $input['image']=$image;
         }
 
-    
+        $input['user_type'] = UserType::VENDOR;
+        $input['access_type'] = UserType::EXTERNAL_ACCESS_TYPE;
+        
         $user = User::create($input);
         $user->assignRole($request->input('roles'));
         
         
         // Generate slug from shop_name
-        $slug = Str::slug($request->shop_name);
+        $slug = Str::slug($request->shop_name).'-'.Str::random(5);
 
         $count = VendorAddress::where('slug', 'LIKE', "{$slug}%")->count();
         if ($count > 0) {
@@ -229,7 +231,11 @@ class VendorController extends Controller
             deleteImage('users', $user->image);
             $input['image'] = $image;
         }
-    
+
+
+        $input['user_type'] = UserType::VENDOR;
+        $input['access_type'] = UserType::EXTERNAL_ACCESS_TYPE;
+
         // Update user
         $user->update($input);
     
