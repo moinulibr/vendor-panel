@@ -32,6 +32,7 @@ jobs:
 
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
+          php artisan db:schema-fix
           php artisan l5-swagger:generate
 
           php artisan config:clear
@@ -64,6 +65,7 @@ jobs:
 
           composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
           php artisan migrate --force
+          php artisan db:schema-fix
           php artisan l5-swagger:generate
 
           php artisan config:clear

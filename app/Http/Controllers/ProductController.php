@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Exports\ProductsExport;
 use App\Imports\ProductsImport;
+use App\Utils\UserType;
 use Maatwebsite\Excel\Facades\Excel;
 use ZipArchive;
 use Illuminate\Support\Facades\File;
@@ -175,9 +176,9 @@ class ProductController extends Controller
 
             }
         }
-
-
-        $query_user = User::role(['Vendor','Admin']);
+        //UserType::VENDOR;
+        //$query_user = User::role(['Vendor','Admin']);
+        $query_user = User::where('user_type',UserType::VENDOR)->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
                     if(getRole()=='Vendor'){
                         $query_user->whereId(Auth::id());
                     }
@@ -194,7 +195,8 @@ class ProductController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Product $product){
-        
+        //slug have to super unique
+        //created_by
         $isNew = $product->is_new == 1;
         
         $data=request()->validate([
@@ -251,6 +253,7 @@ class ProductController extends Controller
                     'sell_price'=> $data['sell_price'],
             ];
         }
+        $data['created_by'] = Auth::user()->id ?? null;
 
         //$image=$this->productUtil->FileUpload($request,'image','products'); 
         $imageData = $this->productUtil->FileUploadWithSize($request, 'image', 'products');
@@ -265,7 +268,7 @@ class ProductController extends Controller
             //$data['image']=$image;
         //}
 
-        $slug = Str::slug($request->name);
+        $slug = Str::slug($request->name) . '-' . Str::random(5);
         $count = Product::where('slug', 'LIKE', "{$slug}%")
                         ->where('id', '!=', $product->id)
                         ->count();
