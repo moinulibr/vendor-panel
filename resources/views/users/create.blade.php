@@ -1,4 +1,4 @@
-<div class="modal-dialog modal-lg">
+<div class="modal-dialog modal-lg common_modal">
   <div class="modal-content">
     <form action="{{ route('users.store')}}" method="post" id="ajax_form">
       @csrf

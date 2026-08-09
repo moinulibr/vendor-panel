@@ -35,7 +35,7 @@
                 
                         <ul class="dropdown-menu dropdown-menu-end action-dropdown">
                             <li>
-                                <a class="dropdown-item btn_modal" href="{{ route('suppliers.show',[$item->id])}}">
+                                <a class="dropdown-item" href="{{ route('suppliers.show',[$item->id])}}">
                                     <i class="fa fa-eye"></i>
                                     <span>View</span>
                                 </a>

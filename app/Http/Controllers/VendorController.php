@@ -41,7 +41,8 @@ class VendorController extends Controller
             $status=$request->status;
             $sort  = $request->sort;
             
-            $query = User::role('Vendor');
+            //$query = User::role('Vendor');
+            $query = User::where('user_type', UserType::VENDOR)->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
             
             if($search){
                 $query->where(function($row) use($search){
@@ -67,7 +68,6 @@ class VendorController extends Controller
             return view('vendors.data',compact('data'))->render();
         }
 
-  
         return view('vendors.index');
     }
     

@@ -9,6 +9,7 @@ use App\Models\UserAddress;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\District;
+use App\Utils\UserType;
 
 class CustomerController extends Controller
 {
@@ -34,16 +35,11 @@ class CustomerController extends Controller
                                          FROM transaction_payments tp 
                                          WHERE tp.transaction_id = t.id),
                                     0)) as total_sell_paid"),
-                                
-                                
-                                    
-                                
                                 'contacts.*'
                             )
                             ->groupBy('contacts.id')
                             ->where('contacts.is_new',0);
 
-                    
                         $query->where('contacts.type',$type);
                         if($id){
                             $query->where('contacts.id',$id);
@@ -52,10 +48,6 @@ class CustomerController extends Controller
                         if($add_from){
                             $query->where('contacts.add_from',$add_from);
                         }
-                        
-                        
-                        
-                        
                         
                         if ($search) {
                             $query->where(function ($row) use ($search) {
@@ -101,13 +93,12 @@ class CustomerController extends Controller
     
     public function store(Request $request)
     {
-        
         $data=$request->validate([
             'name' => 'required',
             'last_name' => '',
             'mobile' => 'required',
             'email' => '',
-            'status'    => 'nullable',
+            'status'  => 'nullable',
             'p_upazila' => '',
             'p_district' => '',
             'p_landmark' => '',
@@ -120,9 +111,9 @@ class CustomerController extends Controller
             'full_name' => '',
         ]);
         $data['is_new']=0;
-        $data['add_from']=3;
+        $data['add_from']= UserType::CUSTOMER_ADDED_FROM_ADMIN;
         $data['type']='customer';
-        $data['user_id']=auth()->id();
+        $data['user_id']= auth()->id();
         $address_contact=[];
         if(isset($request->same_shipping)){
             $address_contact=[
@@ -130,8 +121,7 @@ class CustomerController extends Controller
                 'upazila_id'=>$data['p_upazila'],
                 'district_id'=>$data['p_district'],
                 'address'=>$data['address'],
-                'phone'=>$data['mobile'],
-                 
+                'phone'=>$data['mobile'],  
             ];
             
         }else if($data['s_district'] && $data['full_name']){
@@ -140,29 +130,19 @@ class CustomerController extends Controller
                 'upazila_id'=>$data['s_upazila'],
                 'district_id'=>$data['s_district'],
                 'address'=>$data['s_address'],
-                'phone'=>$data['phone'],
-                 
-            ];
-            
+                'phone'=>$data['phone'], 
+            ]; 
         }
         
-    
-        
-
         unset($data['phone']);
         unset($data['full_name']);
-        $contact=Contact::Create($data);
+        $contact = Contact::create($data);
         
         if(!empty($address_contact)){
-            
             $address_contact['contact_id']=$contact->id;
             UserAddress::create($address_contact);
         }
-        
-        
         return response()->json(['status'=>true ,'msg'=>'Customer Created !!','contact'=>$contact,'function'=>'getData']);
-        
-        
     }
     
     
@@ -198,8 +178,6 @@ class CustomerController extends Controller
         $contact_address=$item->contact_address;
         $contact_address_html=view('pos.partials.customer_address',compact('contact_address'))->render();
         return response()->json(['contact_address_html'=>$contact_address_html]);
-        
-        
     }
     public function getCustomerdetails(){
         $id=request('customer_id');
@@ -221,8 +199,6 @@ class CustomerController extends Controller
                     ->first();
         $html=view('pos.partials.customer_details',compact('item'))->render();
         return response()->json(['html'=>$html,'contact'=>$item,'customer_name'=>$item->name.' '.$item->last_name.' ('.$item->mobile.' )']);
-        
-        
     }
     
     
@@ -274,8 +250,6 @@ class CustomerController extends Controller
             if ($contact->transactions->count()) {
                 throw new \Exception("Can't Delete This Customer");
             }
-            
-            
             $contact->contact_address()->delete();
             $contact->delete();
             DB::commit();
@@ -291,7 +265,6 @@ class CustomerController extends Controller
     public function getCustomer(Request $request){
         
         if ($request->ajax()) {
-
             $search=trim($request->search);
             $type='customer';
             $add_from  = $request->add_from;
@@ -303,17 +276,12 @@ class CustomerController extends Controller
                                          FROM transaction_payments tp 
                                          WHERE tp.transaction_id = t.id),
                                     0)) as total_sell_paid"),
-                                
-                                
-                                    
-                                
                                 'contacts.*'
                             )
                             ->latest()
                             ->groupBy('contacts.id')
                             ->where('contacts.is_new',0);
     
-
                     if ($type) {
                         $query->where('contacts.type',$type);
                     }
@@ -340,7 +308,5 @@ class CustomerController extends Controller
         
         $subcategories = Upazila::where('district_id', request('district_id'))->get();
         return response()->json($subcategories);
-    
-        
     }
 }

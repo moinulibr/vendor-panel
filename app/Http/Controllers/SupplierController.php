@@ -112,10 +112,6 @@ class SupplierController extends Controller
                                          FROM transaction_payments tp 
                                          WHERE tp.transaction_id = t.id),
                                     0)) as total_purchase_paid"),
-                        
-                        
-                            
-                        
                         'contacts.*',
                         'users.name as user_name',
                         'users.email as user_email',
