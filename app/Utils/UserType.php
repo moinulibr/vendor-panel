@@ -451,8 +451,9 @@ class UserType
     <option value="3"> Admin Panel </option>
     <option value="4"> SR Panel </option>*/
     //customer added from
-    public const CUSTOMER_ADDED_FROM_ECOMMERCE_SOCIALITE = 1;
-    public const CUSTOMER_ADDED_FROM_ECOMMERCE = 2;
+    
+    public const CUSTOMER_ADDED_FROM_ECOMMERCE = 1;
+    public const CUSTOMER_ADDED_FROM_ECOMMERCE_SOCIALITE = 2;
     public const CUSTOMER_ADDED_FROM_ADMIN = 3;
     public const CUSTOMER_ADDED_FROM_SR = 4;
     public const CUSTOMER_ADDED_FROM_RESELLER = 5;
