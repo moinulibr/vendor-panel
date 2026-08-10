@@ -11,9 +11,12 @@ use App\Models\Upazila;
 use App\Utils\ProductUtil;
 use App\Models\District;
 use App\Models\User;
+use App\Utils\UserType;
 
 class ContactController extends Controller
 {
+    //this Controller is used for Supplier
+
     function __construct(ProductUtil $productUtil)
     {
         // $this->middleware('permission:locations.view|locations.create|locations.edit|locations.delete', ['only' => ['index','show']]);
@@ -43,9 +46,6 @@ class ContactController extends Controller
                                  WHERE tp.transaction_id = t.id),
                             0)) as total_sell_paid"),
                         
-                        
-                            
-                        
                         'contacts.*'
                     )
                     ->latest()
@@ -62,8 +62,8 @@ class ContactController extends Controller
      */
     public function create(Request $request)
     {
-        
-        $query_user = User::role(['Vendor']);
+        //$query_user = User::role(['Vendor']);
+        $query_user = User::where('user_type', UserType::VENDOR)->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
                     if(getRole()=='Vendor'){
                         $query_user->whereId(Auth::id());
                     }
@@ -83,9 +83,7 @@ class ContactController extends Controller
     
     
     public function storeCustomerAddress(Request $request){
-        
-   
-        
+
         $data=$request->validate([
             'contact_id' => 'required',
             'name' => 'required',
@@ -115,17 +113,14 @@ class ContactController extends Controller
                                  WHERE tp.transaction_id = t.id),
                             0)) as total_sell_paid"),
                         
-                        
-                            
-                        
                         'contacts.*'
                     )
                     ->latest()
                     ->groupBy('contacts.id')
                     ->where('contacts.id', $id)
                     ->first();
-        return view('contacts.show', compact('contact'));    
-                            
+
+        return view('contacts.show', compact('contact'));        
     }
 
     /**
@@ -137,7 +132,8 @@ class ContactController extends Controller
         $districts=District::get();
         $upazilas=Upazila::where('district_id', $contact->p_district)->get();
         
-        $query_user = User::role(['Vendor']);
+        //$query_user = User::role(['Vendor']);
+        $query_user = User::where('user_type', UserType::VENDOR)->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
                     if(getRole()=='Vendor'){
                         $query_user->whereId(Auth::id());
                     }

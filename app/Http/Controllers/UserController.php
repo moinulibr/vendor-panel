@@ -13,8 +13,9 @@ use Illuminate\Support\Arr;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Utils\ProductUtil;
+use App\Utils\UserType;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB as FacadesDB;
 
 class UserController extends Controller
 {
@@ -89,9 +90,8 @@ class UserController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $this->validate($request, [
             'name' => 'required',
@@ -99,21 +99,91 @@ class UserController extends Controller
             'password' => 'required|same:confirm-password',
             'roles' => 'required'
         ]);
-    
-        $input = $request->all();
-        $input['password'] = Hash::make($input['password']);
 
-        $image=$this->productUtil->FileUpload($request,'image','users'); 
+        try {
 
-        if($image){
-            $input['image']=$image;
+            /*
+            |--------------------------------------------------------------------------
+            | Resolve User Type
+            |--------------------------------------------------------------------------
+            */
+                $userType = UserType::resolve(
+                    $request->input('roles')
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Determine Access Type
+            |--------------------------------------------------------------------------
+            */
+                $accessType = in_array($userType, [
+                    UserType::SR,
+                    UserType::VENDOR,
+                ])
+                    ? UserType::EXTERNAL_ACCESS_TYPE
+                    : UserType::INTERNAL_ACCESS_TYPE;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Prepare Input
+            |--------------------------------------------------------------------------
+            */
+                $input = $request->all();
+
+                $input['password'] = Hash::make($input['password']);
+
+                $input['user_type'] = $userType;
+
+                $input['access_type'] = $accessType;
+
+                $input['created_by'] = Auth::user()->id;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Image
+            |--------------------------------------------------------------------------
+            */
+                $image = $this->productUtil->FileUpload(
+                    $request,
+                    'image',
+                    'users'
+                );
+
+                if ($image) {
+                    $input['image'] = $image;
+                }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create User
+            |--------------------------------------------------------------------------
+            */
+                $user = User::create($input);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Assign Roles
+            |--------------------------------------------------------------------------
+            */
+            $user->assignRole(
+                $request->input('roles')
+            );
+
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'User created successfully !!',
+                'function' => 'getData'
+            ]);
+        } catch (\InvalidArgumentException $e) {
+
+            return response()->json([
+                'status' => false,
+                'msg' => $e->getMessage(),
+            ], 422);
         }
-
-    
-        $user = User::create($input);
-        $user->assignRole($request->input('roles'));
-        
-        return response()->json(['status'=>true ,'msg'=>'User created successfully !!','function'=>'getData']);
     }
     
     /**
@@ -154,39 +224,166 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
-        $input=$this->validate($request, [
-            'name' => 'required',
-            'email' => 'required|email|unique:users,email,'.$id,
-            // 'mobile' => 'required|unique:users,mobile,'.$id,
-            'password' => '',
-            'gender' => '',
-            'status' => '',
-            'dob' => '',
-        ]);
-    
-     
-        if(!empty($input['password'])){ 
-            $input['password'] = Hash::make($input['password']);
-        }else{
-            $input = Arr::except($input,array('password'));    
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | Find User
+        |--------------------------------------------------------------------------
+        */
+            $user = User::find($id);
 
-        $image=$this->productUtil->FileUpload($request,'image','users'); 
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'msg' => 'User not found.',
+                ], 404);
+            }
 
-        if($image){
-            deleteImage('users', $user->image);
-            $input['image']=$image;
-        }
 
-        
-        $user->update($input);
-        if (isset($request->roles)) {
-            DB::table('model_has_roles')->where('model_id',$id)->delete();
-            $user->assignRole($request->input('roles'));
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Request
+        |--------------------------------------------------------------------------
+        */
+
+            $input = $this->validate($request, [
+                'name' => 'required',
+                'email' => 'required|email|unique:users,email,' . $id,
+                'password' => '',
+                'gender' => '',
+                'status' => '',
+                'dob' => '',
+            ]);
+
+        try {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Resolve User Type
+            |--------------------------------------------------------------------------
+            */
+                if ($request->has('roles')) {
+                    $userType = UserType::resolve(
+                        $request->input('roles')
+                    );
+                } else {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Roles Not Sent
+                    |--------------------------------------------------------------------------
+                    |
+                    | If roles are not included in update request,
+                    | keep existing user type.
+                    |
+                    */
+                    $userType = $user->user_type;
+                }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Determine Access Type
+            |--------------------------------------------------------------------------
+            */
+                if ($request->has('roles')) {
+
+                    $accessType = in_array($userType, [
+                        UserType::SR,
+                        UserType::VENDOR,
+                    ])
+                        ? UserType::EXTERNAL_ACCESS_TYPE
+                        : UserType::INTERNAL_ACCESS_TYPE;
+                } else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Keep Existing Access Type
+                |--------------------------------------------------------------------------
+                */
+                    $accessType = $user->access_type;
+                }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Password
+            |--------------------------------------------------------------------------
+            */
+                if (!empty($input['password'])) {
+
+                    $input['password'] = Hash::make(
+                        $input['password']
+                    );
+                } else {
+
+                    $input = Arr::except(
+                        $input,
+                        ['password']
+                    );
+                }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Upload Image
+            |--------------------------------------------------------------------------
+            */
+                $image = $this->productUtil->FileUpload(
+                    $request,
+                    'image',
+                    'users'
+                );
+
+                if ($image) {
+                    deleteImage(
+                        'users',
+                        $user->image
+                    );
+
+                    $input['image'] = $image;
+                }
+
+            /*
+            |--------------------------------------------------------------------------
+            | User Type & Access Type
+            |--------------------------------------------------------------------------
+            */
+                $input['user_type'] = $userType;
+
+                $input['access_type'] = $accessType;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update User
+            |--------------------------------------------------------------------------
+            */
+                $user->update($input);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Roles
+            |--------------------------------------------------------------------------
+            */
+            if ($request->has('roles')) {
+
+                DB::table('model_has_roles')
+                    ->where('model_id', $id)
+                    ->delete();
+
+                $user->assignRole(
+                    $request->input('roles')
+                );
+            }
+
+            return response()->json([
+                'status' => true,
+                'msg' => 'Profile Updated !!',
+                'function' => 'getData'
+            ]);
+        } catch (\InvalidArgumentException $e) {
+
+            return response()->json([
+                'status' => false,
+                'msg' => $e->getMessage(),
+            ], 422);
         }
-        
-        return response()->json(['status'=>true ,'msg'=>'Profile Updated !!','function'=>'getData']);
     }
 
     public function vandorUpdate(Request $request){

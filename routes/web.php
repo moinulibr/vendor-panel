@@ -189,6 +189,8 @@ Route::group(['middleware' => ['auth']], function() {
 
 
 
+
+
 Route::get('/update-image-sizes', function (Request $request) {
     // Parameter থেকে Product ID-র Range নেওয়া
     // Example: /update-image-sizes?from_id=1&to_id=100

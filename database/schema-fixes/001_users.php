@@ -33,7 +33,7 @@ if (Schema::hasTable('users')) {
         DB::statement("
             ALTER TABLE users
             MODIFY COLUMN user_type TINYINT(1)
-            COMMENT 'ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; ECOMMERCE_CUSTOMER = 6; POS_CUSTOMER = 7; RESELLER = 8; DELIVERY_MAN = 9; PLUMBER = 10; GUEST = 11; OTHERS = 12'
+            COMMENT 'ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; SUPPLIER = 6; ECOMMERCE_CUSTOMER = 7; POS_CUSTOMER = 8; RESELLER = 9; DELIVERY_MAN = 10; PLUMBER = 11; GUEST = 12; OTHERS = 13'
         ");
     }
 
