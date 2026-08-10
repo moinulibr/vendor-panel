@@ -120,17 +120,32 @@ class AuthService
             throw new Exception("ইউজার পাওয়া যায়নি।", 404);
         }
 
-        if ($data['reset_by'] === 'otp') {
+        /*if ($data['reset_by'] === 'otp') {
             $this->verifyOtpCode($data['mobile'], $data['otp'], 'reset_password');
         } else {
             // Old Password ম্যাচিং চেক
             if (!$user->password || !Hash::check($data['old_password'], $user->password)) {
                 throw new Exception("আপনার প্রদানকৃত বর্তমান পাসওয়ার্ডটি ভুল।", 422);
             }
+        }*/
+
+        $this->userRepo->updatePassword($user, Hash::make($data['password']));
+    }
+
+    public function changePassword(User $user,array $data): void
+    {
+        if (!$user) {
+            throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+        }
+
+        // Old Password ম্যাচিং চেক
+        if (!$user->password || !Hash::check($data['current_password'], $user->password)) {
+            throw new Exception("আপনার প্রদানকৃত বর্তমান পাসওয়ার্ডটি ভুল।", 422);
         }
 
         $this->userRepo->updatePassword($user, Hash::make($data['password']));
     }
+
 
     public function getProfile($user): array
     {

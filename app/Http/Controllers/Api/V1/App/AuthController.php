@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\AddRetailerShippingAddressRequest;
+use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
 use App\Http\Swagger\AuthSwagger;
@@ -118,6 +119,29 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        try {
+            $user = $request->user();
+
+            $this->authService->changePassword($user, $request->validated());
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Password changed successfully.',
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: $statusCode
+            );
+        }
+    }
+    
     public function profile(Request $request)
     {
         return $this->jsonResponse(
