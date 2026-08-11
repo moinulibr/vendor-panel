@@ -191,161 +191,161 @@ class PosController extends Controller
      */
     
     public function update(Request $request, string $id){
-    $transaction = Transaction::with('lines')->findOrFail($id);
-    $wasNew = (int) $transaction->is_new === 1;
-    $oldQuotation = (int) $transaction->quotation;
+        $transaction = Transaction::with('lines')->findOrFail($id);
+        $wasNew = (int) $transaction->is_new === 1;
+        $oldQuotation = (int) $transaction->quotation;
 
-    $data = $request->validate([
-        'contact_id' => 'required',
-        'location_id' => 'required',
-        'product_id' => 'required|array',
-        'final_amount' => 'required|numeric',
-        // ... include other fields as needed
-    ], [
-        'contact_id.required' => 'Please Select A Customer',
-    ]);
-
-    // Prepare metadata
-    $data = array_merge($data, [
-        'is_new' => 0,
-        'is_pos' => 1,
-        'type' => 'sell',
-        'sms_notification' => $request->filled('sms_notification') ? 1 : null,
-        'mail_notification' => $request->filled('mail_notification') ? 1 : null,
-        'user_id' => auth()->id(),
-        'transaction_date' => now(),
-        'invoice_no' => $transaction->invoice_no ?: $this->productUtil->generateInvoiceNumber()
-    ]);
-
-    DB::beginTransaction();
-    try {
-        $transaction->update(collect($data)->except('product_id')->toArray());
-        $newQuotation = (int) $transaction->quotation;
-        $locationId = $transaction->location_id;
-
-        // 1. Handle Deleted Lines (Syncing Stock)
-        $submittedLineIds = $request->input('line_id', []);
-        $linesToDelete = $transaction->lines()->whereNotIn('id', $submittedLineIds)->get();
-
-        foreach ($linesToDelete as $line) {
-            if ($newQuotation == 0 && $oldQuotation == 0) {
-                $this->productUtil->increaseProductStock($line->product_id, $line->variation_id, $locationId, $line->quantity);
-            }
-            $line->delete();
-        }
-
-        // 2. Update or Create Lines
-        foreach ($request->product_id as $key => $productId) {
-            $qty = $request->quantity[$key];
-            $variationId = $request->variation_id[$key];
-            $lineId = $request->line_id[$key] ?? null;
-
-            if ($lineId) {
-                $line = TransactionLine::find($lineId);
-                // Stock Logic Consolidation
-                if ($newQuotation == 0 && $oldQuotation == 0) {
-                    $this->productUtil->updateProductStock($line->product_id, $variationId, $locationId, $line->quantity, $qty);
-                }else if($new_quotation ==0 && $old_quotation==1){
-                    $this->productUtil->decreaseProductStock($line->product_id, $variationId, $locationId, $qty);
-                }
-                 
-                        
-                
-                $line->update([
-                    'quantity' => $qty,
-                    'price' => $request->unit_price[$key]
-                ]);
-            } else {
-                $transaction->lines()->create([
-                    'product_id' => $productId,
-                    'variation_id' => $variationId,
-                    'quantity' => $qty,
-                    'price' => $request->unit_price[$key],
-                    'old_price' => $request->old_price[$key] ?? 0,
-                    'discount' => $request->discount[$key] ?? 0,
-                    'discount_id' => $request->discount_id[$key] ?? null,
-                ]);
-
-                if ($newQuotation == 0) {
-                    $this->productUtil->decreaseProductStock($productId, $variationId, $locationId, $qty);
-                }
-            }
-        }
-
-        // 3. Handle Payments
-        $totalPaid = 0;
-        
-        $next_payment_date=$request->next_payment_date;
-        
-        if($newQuotation==0 && isset($request->payment)){
-            foreach ($request->payment as $payment) {
-                
-                
-                
-                if($payment['id']){
-                    $pay=TransactionPayment::find($payment['id']);
-                }else{
-                    $pay=new TransactionPayment();
-                    $pay->transaction_id=$transaction->id;
-                    $pay->paid_on=date('Y-m-d');
-                    $pay->user_id=auth()->user()->id;
-                }
-                
-                
-                $pay->method=$payment['method'];
-                if(isset($request->payment_option) && $request->payment_option === 'due') {
-                    $pay->amount = 0;
-                }elseif(isset($request->payment_option) && $request->payment_option === 'partial'){
-                    $pay->amount = $request->received_amount;
-                }else {
-                    $pay->amount = $payment['pay_amount'];
-                }
-
-                $pay->note=$payment['note'];
-                $pay->transaction_no=$payment['transaction_no'];
-                $pay->provider=$payment['provider'];
-                $pay->account_no=$payment['account_no'];
-                $pay->bank_name=$payment['bank_name'];
-                $pay->card_title=$payment['card_title'];
-                $pay->card_number=$payment['card_number'];
-                $pay->mobile_no=$payment['mobile_no'];
-                
-                $pay->save();
-                
-                $totalPaid +=$pay->amount;
-            }
-            
-        }
-            
-
-        // 4. Next Payment Record
-        if ($request->filled('next_payment_date')) {
-            ContactNextPayment::create([
-                'next_payment_date' => $request->next_payment_date,
-                'contact_id' => $transaction->contact_id,
-                'current_date' => now()->toDateString(),
-                'current_reveived_amount' => $totalPaid,
-            ]);
-        }
-
-        $this->productUtil->transactionStatus($transaction);
-        $this->productUtil->sendNotification($transaction);
-
-        DB::commit();
-
-        $view = $newQuotation == 1 ? 'sells.quotation_print' : 'sells.print';
-        return response()->json([
-            'status' => true,
-            'msg' => $newQuotation == 1 ? 'Quotation Added' : ($wasNew ? 'Sell Added' : 'Sell Updated'),
-            'print_html' => view($view, compact('transaction'))->render(),
-            'url' => !$wasNew ? route('pos.create') : ''
+        $data = $request->validate([
+            'contact_id' => 'required',
+            'location_id' => 'required',
+            'product_id' => 'required|array',
+            'final_amount' => 'required|numeric',
+            // ... include other fields as needed
+        ], [
+            'contact_id.required' => 'Please Select A Customer',
         ]);
 
-    } catch (\Exception $e) {
-        DB::rollback();
-        return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        // Prepare metadata
+        $data = array_merge($data, [
+            'is_new' => 0,
+            'is_pos' => 1,
+            'type' => 'sell',
+            'sms_notification' => $request->filled('sms_notification') ? 1 : null,
+            'mail_notification' => $request->filled('mail_notification') ? 1 : null,
+            'user_id' => auth()->id(),
+            'transaction_date' => now(),
+            'invoice_no' => $transaction->invoice_no ?: $this->productUtil->generateInvoiceNumber()
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $transaction->update(collect($data)->except('product_id')->toArray());
+            $newQuotation = (int) $transaction->quotation;
+            $locationId = $transaction->location_id;
+
+            // 1. Handle Deleted Lines (Syncing Stock)
+            $submittedLineIds = $request->input('line_id', []);
+            $linesToDelete = $transaction->lines()->whereNotIn('id', $submittedLineIds)->get();
+
+            foreach ($linesToDelete as $line) {
+                if ($newQuotation == 0 && $oldQuotation == 0) {
+                    $this->productUtil->increaseProductStock($line->product_id, $line->variation_id, $locationId, $line->quantity);
+                }
+                $line->delete();
+            }
+
+            // 2. Update or Create Lines
+            foreach ($request->product_id as $key => $productId) {
+                $qty = $request->quantity[$key];
+                $variationId = $request->variation_id[$key];
+                $lineId = $request->line_id[$key] ?? null;
+
+                if ($lineId) {
+                    $line = TransactionLine::find($lineId);
+                    // Stock Logic Consolidation
+                    if ($newQuotation == 0 && $oldQuotation == 0) {
+                        $this->productUtil->updateProductStock($line->product_id, $variationId, $locationId, $line->quantity, $qty);
+                    }else if($new_quotation ==0 && $old_quotation==1){
+                        $this->productUtil->decreaseProductStock($line->product_id, $variationId, $locationId, $qty);
+                    }
+                    
+                            
+                    
+                    $line->update([
+                        'quantity' => $qty,
+                        'price' => $request->unit_price[$key]
+                    ]);
+                } else {
+                    $transaction->lines()->create([
+                        'product_id' => $productId,
+                        'variation_id' => $variationId,
+                        'quantity' => $qty,
+                        'price' => $request->unit_price[$key],
+                        'old_price' => $request->old_price[$key] ?? 0,
+                        'discount' => $request->discount[$key] ?? 0,
+                        'discount_id' => $request->discount_id[$key] ?? null,
+                    ]);
+
+                    if ($newQuotation == 0) {
+                        $this->productUtil->decreaseProductStock($productId, $variationId, $locationId, $qty);
+                    }
+                }
+            }
+
+            // 3. Handle Payments
+            $totalPaid = 0;
+            
+            $next_payment_date=$request->next_payment_date;
+            
+            if($newQuotation==0 && isset($request->payment)){
+                foreach ($request->payment as $payment) {
+                    
+                    
+                    
+                    if($payment['id']){
+                        $pay=TransactionPayment::find($payment['id']);
+                    }else{
+                        $pay=new TransactionPayment();
+                        $pay->transaction_id=$transaction->id;
+                        $pay->paid_on=date('Y-m-d');
+                        $pay->user_id=auth()->user()->id;
+                    }
+                    
+                    
+                    $pay->method=$payment['method'];
+                    if(isset($request->payment_option) && $request->payment_option === 'due') {
+                        $pay->amount = 0;
+                    }elseif(isset($request->payment_option) && $request->payment_option === 'partial'){
+                        $pay->amount = $request->received_amount;
+                    }else {
+                        $pay->amount = $payment['pay_amount'];
+                    }
+
+                    $pay->note=$payment['note'];
+                    $pay->transaction_no=$payment['transaction_no'];
+                    $pay->provider=$payment['provider'];
+                    $pay->account_no=$payment['account_no'];
+                    $pay->bank_name=$payment['bank_name'];
+                    $pay->card_title=$payment['card_title'];
+                    $pay->card_number=$payment['card_number'];
+                    $pay->mobile_no=$payment['mobile_no'];
+                    
+                    $pay->save();
+                    
+                    $totalPaid +=$pay->amount;
+                }
+                
+            }
+                
+
+            // 4. Next Payment Record
+            if ($request->filled('next_payment_date')) {
+                ContactNextPayment::create([
+                    'next_payment_date' => $request->next_payment_date,
+                    'contact_id' => $transaction->contact_id,
+                    'current_date' => now()->toDateString(),
+                    'current_reveived_amount' => $totalPaid,
+                ]);
+            }
+
+            $this->productUtil->transactionStatus($transaction);
+            $this->productUtil->sendNotification($transaction);
+
+            DB::commit();
+
+            $view = $newQuotation == 1 ? 'sells.quotation_print' : 'sells.print';
+            return response()->json([
+                'status' => true,
+                'msg' => $newQuotation == 1 ? 'Quotation Added' : ($wasNew ? 'Sell Added' : 'Sell Updated'),
+                'print_html' => view($view, compact('transaction'))->render(),
+                'url' => !$wasNew ? route('pos.create') : ''
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json(['status' => false, 'msg' => $e->getMessage()], 500);
+        }
     }
-}
 
     
     
@@ -587,7 +587,6 @@ class PosController extends Controller
 
     public function getPosProduct(Request $request){
 
-            
         $category_id=$request->category_id;
         $brand_id=$request->brand_id;
         $location_id=$request->location_id;

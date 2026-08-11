@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\App\AuthController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
+use App\Http\Controllers\Api\V1\App\CategoryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,9 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
             
         });
+
+        //Category
+        Route::get('/get-categories', [CategoryController::class, 'getCategories']);
 
     });
 });
