@@ -24,4 +24,20 @@ if (Schema::hasTable('products')) {
         ");
     }
 
+
+    if (!Schema::hasColumn('products', 'min_price')) {
+
+        Schema::table('products', function (Blueprint $table) {
+
+            $table->decimal('min_price', 12, 2)->default(0)->after('sell_price');
+            $table->decimal('max_price', 12, 2)->default(0)->after('min_price');
+
+            // Performance Compound Indexes
+            $table->index(['status', 'is_ecom', 'category_id']);
+            $table->index(['status', 'is_ecom', 'brand_id']);
+            $table->index(['min_price', 'max_price']);
+        });
+    }
+    
+
 }
