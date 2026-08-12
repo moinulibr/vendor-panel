@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repositories\Eloquent;
+namespace App\Repositories\Product;
 
 use App\Models\Brand;
 use App\Models\Category;

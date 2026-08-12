@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\App\AuthController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\CategoryController;
+use App\Http\Controllers\Api\V1\App\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,11 @@ Route::prefix('v1/app')->group(function () {
 
         //Category
         Route::get('/get-categories', [CategoryController::class, 'getCategories']);
+
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::get('/products/{id_or_slug}', [ProductController::class, 'getProductDetails']);
+        Route::get('/categories', [ProductController::class, 'categories']);
+        Route::get('/brands', [ProductController::class, 'brands']);
 
     });
 });

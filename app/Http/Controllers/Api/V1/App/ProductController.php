@@ -1,14 +1,13 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1\App;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use App\Http\Requests\Api\V1\App\StoreProductRequest;
 use App\Http\Resources\Api\V1\App\ProductResource;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 
-class ProductController extends Controller
+class ProductController extends BaseApiController
 {
     public function __construct(
         protected ProductService $productService

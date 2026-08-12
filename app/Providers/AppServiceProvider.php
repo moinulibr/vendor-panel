@@ -10,6 +10,8 @@ use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Repositories\Otp\OtpRepository;
+use App\Repositories\Product\Interface\ProductRepositoryInterface;
+use App\Repositories\Product\ProductRepository;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\Facades\Cache;
@@ -34,7 +36,13 @@ class AppServiceProvider extends ServiceProvider
             UserDeviceTokenRepositoryInterface::class,
             UserDeviceTokenRepository::class
         );
-            
+
+        $this->app->bind(
+            ProductRepositoryInterface::class,
+            ProductRepository::class
+        );
+
+
     }
 
     /**

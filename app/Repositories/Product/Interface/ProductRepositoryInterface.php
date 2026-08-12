@@ -2,6 +2,8 @@
 
 namespace App\Repositories\Product\Interface;
 
+//use Illuminate\Pagination\Paginator;
+
 use Illuminate\Contracts\Pagination\Paginator;
 
 interface ProductRepositoryInterface
