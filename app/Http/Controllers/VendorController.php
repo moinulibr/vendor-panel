@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
     
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\VendorAddress;
 use Spatie\Permission\Models\Role;
@@ -300,9 +301,16 @@ class VendorController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id): RedirectResponse
+    public function destroy($id)
     {
+        if(auth()->user()->id == $id){
+            return response()->json(['status' => false, 'msg' => 'You cannot delete yourself!']);
+        }
+        if(Product::where('user_id', $id)->count() > 0){
+            return response()->json(['status' => false, 'msg' => 'Vendor cant be deleted because it has products!']);
+        }
         User::find($id)->delete();
+        return response()->json(['status' => true, 'msg' => 'Vendor Deleted Successfully!']);
         return redirect()->route('vendors.index')
                         ->with('success','User deleted successfully');
     }
