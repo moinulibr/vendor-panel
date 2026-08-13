@@ -89,7 +89,7 @@ class VendorController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $this->validate($request, [
             'name' => 'required',
@@ -149,7 +149,7 @@ class VendorController extends Controller
             'our_mission'   => $request->our_mission,
             'our_vision'    => $request->our_vision,
         ]);
-    
+        return response()->json(['status' => true, 'msg' => 'Vendor created successfully!', 'function' => 'getData']);
         return redirect()->route('vendors.index')
                         ->with('success','User created successfully');
     }

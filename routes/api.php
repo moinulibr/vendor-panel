@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\App\AuthController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
+use App\Http\Controllers\Api\V1\App\CategoryController;
+use App\Http\Controllers\Api\V1\App\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +57,24 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
             Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
             
+        });
+
+        //Category
+        Route::get('/get-categories', [CategoryController::class, 'getCategories']);
+
+        // Product Routes
+        Route::controller(ProductController::class)->group(function () {
+            // Products Listing, Details & Creation
+            Route::get('products', 'index');
+            Route::get('products/{identifier}', 'show');
+
+            // Categories & Brands
+            Route::get('categories', 'categories');
+            Route::get('brands', 'brands');
+
+            // Vendors & Retailers (For SR Shop selection & Filters)
+            Route::get('vendors', 'vendors');
+            Route::get('retailers', 'retailers');
         });
 
     });
