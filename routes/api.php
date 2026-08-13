@@ -40,6 +40,10 @@ Route::prefix('v1/app')->group(function () {
 
         Route::post('/update-profile-picture', [AuthController::class, 'profilePictureUpdate']);
 
+        // Vendors & Retailers (For SR Shop selection & Filters)
+        Route::get('/vendors', [AuthController::class, 'vendors']);
+        Route::get('/retailers', [AuthController::class, 'retailers']);
+
         //fcm token api
         Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
         Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
@@ -72,9 +76,6 @@ Route::prefix('v1/app')->group(function () {
             Route::get('categories', 'categories');
             Route::get('brands', 'brands');
 
-            // Vendors & Retailers (For SR Shop selection & Filters)
-            Route::get('vendors', 'vendors');
-            Route::get('retailers', 'retailers');
         });
 
     });

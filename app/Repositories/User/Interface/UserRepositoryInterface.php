@@ -2,6 +2,7 @@
 
 namespace App\Repositories\User\Interface;
 
+use Illuminate\Contracts\Pagination\Paginator;
 use App\Models\RetailerShippingAddress;
 use App\Models\User;
 
@@ -22,4 +23,7 @@ interface UserRepositoryInterface
     public function createRetailerShippingAddress(array $data): RetailerShippingAddress;
     public function getRetailerShippingAddresses(int $retailerId);
     public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool;
+
+    public function getVendors(array $filters, int $perPage = 20): Paginator;
+    public function getRetailers(array $filters, int $perPage = 20): Paginator;
 }

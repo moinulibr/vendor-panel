@@ -212,4 +212,17 @@ class AuthService
         }
         return $this->userRepo->getRetailerShippingAddresses($retailerId);
     }
+
+
+    public function getVendorList(array $filters)
+    {
+        $perPage = $filters['per_page'] ?? 20;
+        return $this->userRepo->getVendors($filters, $perPage);
+    }
+
+    public function getRetailerList(array $filters)
+    {
+        $perPage = $filters['per_page'] ?? 20;
+        return $this->userRepo->getRetailers($filters, $perPage);
+    }
 }

@@ -26,18 +26,6 @@ class ProductService
         return $this->productRepository->getBrands();
     }
 
-    public function getVendorList(array $filters)
-    {
-        $perPage = $filters['per_page'] ?? 20;
-        return $this->productRepository->getVendors($filters, $perPage);
-    }
-
-    public function getRetailerList(array $filters)
-    {
-        $perPage = $filters['per_page'] ?? 20;
-        return $this->productRepository->getRetailers($filters, $perPage);
-    }
-
     public function getProductDetails(string $identifier)
     {
         return $this->productRepository->findBySlugOrId($identifier);

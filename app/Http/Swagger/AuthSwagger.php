@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
+use App\Http\Requests\Api\V1\App\UserFilterRequest;
 use OpenApi\Attributes as OA;
 
 interface AuthSwagger
@@ -309,4 +310,43 @@ interface AuthSwagger
     )]
     public function getRetailerShippingAddresses($retailerId);
 
+
+
+    #[OA\Get(
+        path: "/api/v1/app/vendors",
+        summary: "Get Vendor List",
+        description: "Fetch list of active vendors for filters and dropdowns.",
+        tags: ["User & Vendor"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by vendor name, email or mobile"),
+            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
+            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
+            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Vendor list retrieved successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function vendors(UserFilterRequest $request);
+
+    #[OA\Get(
+        path: "/api/v1/app/retailers",
+        summary: "Get Retailer (Shop Owner) List",
+        description: "Fetch list of active retailers along with shop details (SR selection mode).",
+        tags: ["User & Vendor"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by name, email or mobile"),
+            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
+            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
+            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Retailer list retrieved successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function retailers(UserFilterRequest $request);
 }
