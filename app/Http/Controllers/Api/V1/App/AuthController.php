@@ -6,6 +6,8 @@ use App\Http\Requests\Api\V1\App\AddRetailerShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
+use App\Http\Requests\Api\V1\App\UserFilterRequest;
+use Illuminate\Http\JsonResponse;
 use App\Http\Swagger\AuthSwagger;
 use App\Services\AuthService;
 use Illuminate\Http\Request;
@@ -17,6 +19,7 @@ use App\Http\Requests\Api\V1\App\UpdateProfileRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends BaseApiController implements AuthSwagger
 {
@@ -258,5 +261,41 @@ class AuthController extends BaseApiController implements AuthSwagger
             return $this->jsonResponse(false, $e->getMessage(), null, 500);
         }
     }
-   
+
+
+    public function vendors(UserFilterRequest $request): JsonResponse
+    {
+        try {
+            $vendors = $this->authService->getVendorList($request->validated());
+            return response()->json([
+                'success' => true,
+                'data' => UserResource::collection($vendors),
+                'pagination' => [
+                    'has_more' => $vendors->hasMorePages(),
+                    'per_page' => $vendors->perPage(),
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Vendor List Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch vendors.'], 500);
+        }
+    }
+
+    public function retailers(UserFilterRequest $request): JsonResponse
+    {
+        try {
+            $retailers = $this->authService->getRetailerList($request->validated());
+            return response()->json([
+                'success' => true,
+                'data' => UserResource::collection($retailers),
+                'pagination' => [
+                    'has_more' => $retailers->hasMorePages(),
+                    'per_page' => $retailers->perPage(),
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Retailer List Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch retailers.'], 500);
+        }
+    }
 }

@@ -3,9 +3,7 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
-use App\Http\Requests\Api\V1\App\UserFilterRequest;
 use App\Http\Resources\Api\V1\App\ProductResource;
-use App\Http\Resources\Api\V1\App\UserResource;
 use App\Http\Swagger\ProductApiDocInterface;
 use App\Services\ProductService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -61,42 +59,6 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         } catch (Exception $e) {
             Log::error('Brand Fetch Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Failed to fetch brands.'], 500);
-        }
-    }
-
-    public function vendors(UserFilterRequest $request): JsonResponse
-    {
-        try {
-            $vendors = $this->productService->getVendorList($request->validated());
-            return response()->json([
-                'success' => true,
-                'data' => UserResource::collection($vendors),
-                'pagination' => [
-                    'has_more' => $vendors->hasMorePages(),
-                    'per_page' => $vendors->perPage(),
-                ]
-            ], 200);
-        } catch (Exception $e) {
-            Log::error('Vendor List Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to fetch vendors.'], 500);
-        }
-    }
-
-    public function retailers(UserFilterRequest $request): JsonResponse
-    {
-        try {
-            $retailers = $this->productService->getRetailerList($request->validated());
-            return response()->json([
-                'success' => true,
-                'data' => UserResource::collection($retailers),
-                'pagination' => [
-                    'has_more' => $retailers->hasMorePages(),
-                    'per_page' => $retailers->perPage(),
-                ]
-            ], 200);
-        } catch (Exception $e) {
-            Log::error('Retailer List Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to fetch retailers.'], 500);
         }
     }
 

@@ -5,9 +5,7 @@ namespace App\Repositories\Product;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\User;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
-use App\Utils\UserType;
 use Illuminate\Contracts\Pagination\Paginator;
 
 class ProductRepository implements ProductRepositoryInterface
@@ -78,59 +76,16 @@ class ProductRepository implements ProductRepositoryInterface
         return Category::select('id', 'name', 'slug', 'image', 'parent_id')
             ->where('is_new', 0)
             ->whereNull('parent_id')
-            ->with('children:id,name,slug,parent_id')
+            //->with('children:id,name,slug,parent_id')
             ->get();
     }
 
     public function getBrands()
     {
-        return Brand::select('id', 'name', 'slug', 'image')
+        return Brand::select('id', 'name', 'image')
             ->where('is_new', 0)
             ->orderBy('name', 'asc')
             ->get();
-    }
-
-    public function getVendors(array $filters, int $perPage = 20): Paginator
-    {
-        $query = User::where('user_type', UserType::VENDOR)
-            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
-
-        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
-    }
-
-    public function getRetailers(array $filters, int $perPage = 20): Paginator
-    {
-        $query = User::where('user_type', UserType::RETAILER)
-            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
-            ->with('retailer');
-
-        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
-    }
-
-    private function applyUserFiltersAndPaginate($query, array $filters, int $perPage): Paginator
-    {
-        if (!empty($filters['q'])) {
-            $search = $filters['q'];
-            $query->where(function ($row) use ($search) {
-                $row->where('name', 'LIKE', '%' . $search . '%')
-                    ->orWhere('email', 'LIKE', '%' . $search . '%')
-                    ->orWhere('mobile', 'LIKE', '%' . $search . '%');
-            });
-        }
-
-        if (isset($filters['status']) && $filters['status'] !== '') {
-            $status = ($filters['status'] === 'active' || $filters['status'] == 1) ? 1 : 0;
-            $query->where('status', $status);
-        }
-
-        $sort = $filters['sort'] ?? 'desc';
-        if ($sort === 'asc') {
-            $query->orderBy('id', 'asc');
-        } else {
-            $query->orderBy('id', 'desc');
-        }
-
-        return $query->simplePaginate($perPage);
     }
 
     public function findBySlugOrId(string $identifier)

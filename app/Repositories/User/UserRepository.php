@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Contracts\Pagination\Paginator;
 
 class UserRepository implements UserRepositoryInterface
 {
@@ -131,5 +132,49 @@ class UserRepository implements UserRepositoryInterface
     public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool
     {
         return RetailerShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->delete();
+    }
+
+
+    public function getVendors(array $filters, int $perPage = 20): Paginator
+    {
+        $query = User::where('user_type', UserType::VENDOR)
+            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
+
+        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
+    }
+
+    public function getRetailers(array $filters, int $perPage = 20): Paginator
+    {
+        $query = User::where('user_type', UserType::RETAILER)
+            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
+            ->with('retailer');
+
+        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
+    }
+
+    private function applyUserFiltersAndPaginate($query, array $filters, int $perPage): Paginator
+    {
+        if (!empty($filters['q'])) {
+            $search = $filters['q'];
+            $query->where(function ($row) use ($search) {
+                $row->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('email', 'LIKE', '%' . $search . '%')
+                    ->orWhere('mobile', 'LIKE', '%' . $search . '%');
+            });
+        }
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $status = ($filters['status'] === 'active' || $filters['status'] == 1) ? 1 : 0;
+            $query->where('status', $status);
+        }
+
+        $sort = $filters['sort'] ?? 'desc';
+        if ($sort === 'asc') {
+            $query->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        return $query->simplePaginate($perPage);
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
-use App\Http\Requests\Api\V1\App\UserFilterRequest;
 use OpenApi\Attributes as OA;
 
 interface ProductApiDocInterface
@@ -34,6 +33,22 @@ interface ProductApiDocInterface
     public function index(ProductFilterRequest $request);
 
     #[OA\Get(
+        path: "/api/v1/app/products/{identifier}",
+        summary: "Get Single Product Details",
+        description: "Fetch product details by Product ID or Slug.",
+        tags: ["Product"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID or Slug")
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Product details retrieved"),
+            new OA\Response(response: 404, description: "Product not found")
+        ]
+    )]
+    public function show(string $identifier);
+
+    #[OA\Get(
         path: "/api/v1/app/categories",
         summary: "Get Category Tree List",
         description: "Fetch parent categories along with their child subcategories.",
@@ -58,59 +73,5 @@ interface ProductApiDocInterface
         ]
     )]
     public function brands();
-
-    #[OA\Get(
-        path: "/api/v1/app/vendors",
-        summary: "Get Vendor List",
-        description: "Fetch list of active vendors for filters and dropdowns.",
-        tags: ["User & Vendor"],
-        security: [["sanctum" => []]],
-        parameters: [
-            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by vendor name, email or mobile"),
-            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
-            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
-            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
-        ],
-        responses: [
-            new OA\Response(response: 200, description: "Vendor list retrieved successfully"),
-            new OA\Response(response: 401, description: "Unauthenticated")
-        ]
-    )]
-    public function vendors(UserFilterRequest $request);
-
-    #[OA\Get(
-        path: "/api/v1/app/retailers",
-        summary: "Get Retailer (Shop Owner) List",
-        description: "Fetch list of active retailers along with shop details (SR selection mode).",
-        tags: ["User & Vendor"],
-        security: [["sanctum" => []]],
-        parameters: [
-            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by name, email or mobile"),
-            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
-            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
-            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
-        ],
-        responses: [
-            new OA\Response(response: 200, description: "Retailer list retrieved successfully"),
-            new OA\Response(response: 401, description: "Unauthenticated")
-        ]
-    )]
-    public function retailers(UserFilterRequest $request);
-
-    #[OA\Get(
-        path: "/api/v1/app/products/{identifier}",
-        summary: "Get Single Product Details",
-        description: "Fetch product details by Product ID or Slug.",
-        tags: ["Product"],
-        security: [["sanctum" => []]],
-        parameters: [
-            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID or Slug")
-        ],
-        responses: [
-            new OA\Response(response: 200, description: "Product details retrieved"),
-            new OA\Response(response: 404, description: "Product not found")
-        ]
-    )]
-    public function show(string $identifier);
 
 }
