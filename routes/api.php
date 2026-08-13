@@ -62,10 +62,20 @@ Route::prefix('v1/app')->group(function () {
         //Category
         Route::get('/get-categories', [CategoryController::class, 'getCategories']);
 
-        Route::get('/products', [ProductController::class, 'index']);
-        Route::get('/products/{id_or_slug}', [ProductController::class, 'getProductDetails']);
-        Route::get('/categories', [ProductController::class, 'categories']);
-        Route::get('/brands', [ProductController::class, 'brands']);
+        // Product Routes
+        Route::controller(ProductController::class)->group(function () {
+            // Products Listing, Details & Creation
+            Route::get('products', 'index');
+            Route::get('products/{identifier}', 'show');
+
+            // Categories & Brands
+            Route::get('categories', 'categories');
+            Route::get('brands', 'brands');
+
+            // Vendors & Retailers (For SR Shop selection & Filters)
+            Route::get('vendors', 'vendors');
+            Route::get('retailers', 'retailers');
+        });
 
     });
 });

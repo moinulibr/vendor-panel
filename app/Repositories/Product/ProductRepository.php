@@ -5,7 +5,9 @@ namespace App\Repositories\Product;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
+use App\Utils\UserType;
 use Illuminate\Contracts\Pagination\Paginator;
 
 class ProductRepository implements ProductRepositoryInterface
@@ -17,50 +19,43 @@ class ProductRepository implements ProductRepositoryInterface
             ->where('status', 1)
             ->where('is_ecom', 1);
 
-        // Filter by Category (Supports Multiple)
         if (!empty($filters['category_ids'])) {
             $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
             $query->whereIn('category_id', $categoryIds);
         }
 
-        // Filter by Sub-Category
         if (!empty($filters['sub_category_ids'])) {
             $subCategoryIds = is_array($filters['sub_category_ids']) ? $filters['sub_category_ids'] : explode(',', $filters['sub_category_ids']);
             $query->whereIn('sub_category_id', $subCategoryIds);
         }
 
-        // Filter by Brand
         if (!empty($filters['brand_id'])) {
             $query->where('brand_id', $filters['brand_id']);
         }
 
-        // Filter by Vendor / User
         if (!empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
 
-        // Fast Price Filter (Assuming min_price is denormalized on products table)
         if (isset($filters['min_price']) && isset($filters['max_price'])) {
             $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
         }
 
-        // Optimized Search
         if (!empty($filters['q'])) {
             $search = $filters['q'];
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "{$search}%") // Prefix match uses B-Tree index
+                $q->where('name', 'LIKE', "{$search}%")
                     ->orWhere('sku', $search);
             });
         }
 
-        // Sorting Logic
         $sortBy = $filters['sort_by'] ?? 'latest';
         match ($sortBy) {
-            'price_low' => $query->orderBy('min_price', 'asc'),
+            'price_low'  => $query->orderBy('min_price', 'asc'),
             'price_high' => $query->orderBy('min_price', 'desc'),
-            'name_asc' => $query->orderBy('name', 'asc'),
-            'name_desc' => $query->orderBy('name', 'desc'),
-            default => $query->orderBy('id', 'desc'),
+            'name_asc'   => $query->orderBy('name', 'asc'),
+            'name_desc'  => $query->orderBy('name', 'desc'),
+            default      => $query->orderBy('id', 'desc'),
         };
 
         return $query->select([
@@ -95,16 +90,54 @@ class ProductRepository implements ProductRepositoryInterface
             ->get();
     }
 
+    public function getVendors(array $filters, int $perPage = 20): Paginator
+    {
+        $query = User::where('user_type', UserType::VENDOR)
+            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
+
+        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
+    }
+
+    public function getRetailers(array $filters, int $perPage = 20): Paginator
+    {
+        $query = User::where('user_type', UserType::RETAILER)
+            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
+            ->with('retailer');
+
+        return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
+    }
+
+    private function applyUserFiltersAndPaginate($query, array $filters, int $perPage): Paginator
+    {
+        if (!empty($filters['q'])) {
+            $search = $filters['q'];
+            $query->where(function ($row) use ($search) {
+                $row->where('name', 'LIKE', '%' . $search . '%')
+                    ->orWhere('email', 'LIKE', '%' . $search . '%')
+                    ->orWhere('mobile', 'LIKE', '%' . $search . '%');
+            });
+        }
+
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $status = ($filters['status'] === 'active' || $filters['status'] == 1) ? 1 : 0;
+            $query->where('status', $status);
+        }
+
+        $sort = $filters['sort'] ?? 'desc';
+        if ($sort === 'asc') {
+            $query->orderBy('id', 'asc');
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        return $query->simplePaginate($perPage);
+    }
+
     public function findBySlugOrId(string $identifier)
     {
         return Product::with(['variations', 'category:id,name', 'brand:id,name'])
             ->where('id', $identifier)
             ->orWhere('slug', $identifier)
             ->firstOrFail();
-    }
-
-    public function createOrUpdate(array $data, $id = null)
-    {
-        return Product::updateOrCreate(['id' => $id], $data);
     }
 }
