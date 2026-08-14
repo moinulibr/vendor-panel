@@ -19,8 +19,8 @@ class ProductFilterRequest extends FormRequest
             'sub_category_ids' => 'nullable|string',
             'brand_id'        => 'nullable|integer|exists:brands,id',
             'user_id'         => 'nullable|integer|exists:users,id',
-            'min_price'       => 'nullable|numeric|min:0',
-            'max_price'       => 'nullable|numeric|gte:min_price',
+            //'min_price'       => 'nullable|numeric|min:0',
+            //'max_price'       => 'nullable|numeric|gte:min_price',
             'sort_by'         => 'nullable|string|in:latest,price_low,price_high,name_asc,name_desc',
             'per_page'        => 'nullable|integer|min:1|max:100',
         ];
