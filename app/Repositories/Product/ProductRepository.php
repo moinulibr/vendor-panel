@@ -64,6 +64,8 @@ class ProductRepository implements ProductRepositoryInterface
             'image',
             'category_id',
             'brand_id',
+            'sell_price',
+            'purchase_price',
             'min_price',
             'max_price',
             'type',
