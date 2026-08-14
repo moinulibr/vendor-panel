@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1\App;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Api\V1\App\ProductVariationResource;
 
 class ProductResource extends JsonResource
 {
@@ -23,7 +24,7 @@ class ProductResource extends JsonResource
             'type' => $this->type,
             'category_id' => $this->category_id,
             'brand_id' => $this->brand_id,
-            'variations' => $this->whenLoaded('variations'),
+            'variations' => ProductVariationResource::collection($this->whenLoaded('variations')),
         ];
     }
 }

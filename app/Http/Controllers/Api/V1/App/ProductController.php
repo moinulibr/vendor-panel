@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
+use App\Http\Resources\Api\V1\App\BrandResource;
+use App\Http\Resources\Api\V1\App\CategoryResource;
 use App\Http\Resources\Api\V1\App\ProductResource;
 use App\Http\Swagger\ProductApiDocInterface;
 use App\Services\ProductService;
@@ -44,7 +46,8 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
     {
         try {
             $categories = $this->productService->getCategories();
-            return response()->json(['success' => true, 'data' => $categories], 200);
+            
+            return response()->json(['success' => true, 'data' => CategoryResource::collection($categories)], 200);
         } catch (Exception $e) {
             Log::error('Category Fetch Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Failed to fetch categories.'], 500);
@@ -55,7 +58,7 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
     {
         try {
             $brands = $this->productService->getBrands();
-            return response()->json(['success' => true, 'data' => $brands], 200);
+            return response()->json(['success' => true, 'data' => BrandResource::collection($brands)], 200);
         } catch (Exception $e) {
             Log::error('Brand Fetch Error: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Failed to fetch brands.'], 500);

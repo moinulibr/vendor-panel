@@ -75,7 +75,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function getCategories()
     {
-        return Category::select('id', 'name', 'slug', 'image', 'parent_id')
+        return Category::select('id', 'name', 'bd_name','slug', 'image', 'parent_id')
             ->where('is_new', 0)
             ->whereNull('parent_id')
             //->with('children:id,name,slug,parent_id')
@@ -84,7 +84,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     public function getBrands()
     {
-        return Brand::select('id', 'name', 'image')
+        return Brand::select('id', 'name', 'bd_name', 'image')
             ->where('is_new', 0)
             ->orderBy('name', 'asc')
             ->get();
