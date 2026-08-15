@@ -22,7 +22,7 @@ class ProductResource extends JsonResource
             'purchase_price'        => (float) $this->purchase_price,
             'type'                  => $this->type,
             'stock_manage'          => (bool) $this->stock_manage,
-            'stock_alert'           => $this->stock_alert,
+            //'stock_alert'           => $this->stock_alert,
 
             // Details & Specifications
             'description'           => $this->description,

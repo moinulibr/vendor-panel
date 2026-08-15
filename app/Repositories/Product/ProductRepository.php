@@ -59,6 +59,9 @@ class ProductRepository implements ProductRepositoryInterface
         return $query->select([
             'id',
             'name',
+            'name_bangla',
+            'description',
+            'specification',
             'slug',
             'sku',
             'image',
@@ -69,7 +72,19 @@ class ProductRepository implements ProductRepositoryInterface
             'min_price',
             'max_price',
             'type',
-            'status'
+            'status',
+            'is_ecom',
+            'is_reco',
+            'is_feature',
+            'warranty_available',
+            'warranty_days',
+            'warranty_note',
+            'return_available',
+            'return_days',
+            'return_note',
+            'estimate_delivery_day',
+            'stock_manage'
+            //'stock_alert',
         ])->simplePaginate($perPage);
     }
 
