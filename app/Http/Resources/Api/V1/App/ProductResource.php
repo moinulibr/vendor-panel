@@ -5,26 +5,47 @@ namespace App\Http\Resources\Api\V1\App;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Api\V1\App\ProductVariationResource;
-
+use App\Http\Resources\Api\V1\App\ProductImageResource;
 class ProductResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'sku' => $this->sku,
-            'image_url' => $this->image ? getImage('products', $this->image) : null,
-            'sell_price' => (float) $this->sell_price,
-            'mrp_price' => (float) $this->sell_price + 20,
-            'purchase_price' => (float) $this->purchase_price,
-            //'min_price' => (float) $this->min_price,
-            //'max_price' => (float) $this->max_price,
-            'type' => $this->type,
-            'category_id' => $this->category_id,
-            'brand_id' => $this->brand_id,
-            'variations' => ProductVariationResource::collection($this->whenLoaded('variations')),
+            'id'                    => $this->id,
+            'name'                  => $this->name,
+            'name_bangla'           => $this->name_bangla,
+            'slug'                  => $this->slug,
+            'sku'                   => $this->sku,
+            'image_url'             => $this->image ? getImage('products', $this->image) : null,
+            'sell_price'            => (float) $this->sell_price,
+            'mrp_price'             => (float) $this->sell_price + 20,
+            'purchase_price'        => (float) $this->purchase_price,
+            'type'                  => $this->type,
+            'stock_manage'          => (bool) $this->stock_manage,
+            'stock_alert'           => $this->stock_alert,
+
+            // Details & Specifications
+            'description'           => $this->description,
+            'specification'         => $this->specification,
+
+            // Delivery & Policy Details
+            'warranty_available'    => (bool) $this->warranty_available,
+            'warranty_days'         => $this->warranty_days,
+            'warranty_note'         => $this->warranty_note,
+            'return_available'      => (bool) $this->return_available,
+            'return_days'           => $this->return_days,
+            'return_note'           => $this->return_note,
+            'estimate_delivery_day' => $this->estimate_delivery_day,
+
+            // Flags
+            'is_feature'            => (bool) $this->is_feature,
+            'is_reco'               => (bool) $this->is_reco,
+
+            // Relations
+            'category_id'           => $this->category_id,
+            'brand_id'              => $this->brand_id,
+            'images'                => ProductImageResource::collection($this->whenLoaded('images')),
+            'variations'            => ProductVariationResource::collection($this->whenLoaded('variations')),
         ];
     }
 }
