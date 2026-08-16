@@ -278,62 +278,8 @@
 
   $(document).ready(function () {
     
-    $(document).on('click', 'a.show_update', function(e){
-        e.preventDefault();
-        var url = $(this).attr('href');
-    
-        var product = $('input.checkbox:checked').map(function(){
-          return $(this).val();
-        });
-        var product_ids=product.get();
-        
-        if(product_ids.length ==0){
-            toastr.error('Please Select A Product First !');
-            return ;
-        }
-        
-        $.ajax({
-           type:'GET',
-           url:url,
-           data:{product_ids},
-           success:function(res){
-               if(res.status==true){
-                toastr.success(res.msg);
-                getData();
-                
-            }else if(res.status==false){
-                toastr.error(res.msg);
-            }
-           }
-        });
-    
-    });
-
-    getData();
-    $('#search').keyup(function(){
-        getData();
-    });
-
-    $('#search_btn').click(function(){
-        getData();
-    });
-
-    $('#category_id, #user_id, #stock_manage, #type, #brand_id, #status, #ecom_status, #discount_id').change(function(){
-        getData();
-    });
-    
-    
-    $(document).on('click', ".pagination a", function(e) {
-        e.preventDefault();
-
-        $('li').removeClass('active');
-        $(this).parent('li').addClass('active');
-
-        var page = $(this).attr('href').split('page=')[1];
-        getData(page);
-    });
-  
-    function getData(page=null){
+    window.myAppFunctions.getData = function(page=null){
+        console.log('get data form product index - ', 4);
         let q=$('#search').val();
         let stock_manage=$('#stock_manage').val();
         let brand_id=$('#brand_id').val();
@@ -356,6 +302,63 @@
             }
         });
     }
+
+    $(document).on('click', 'a.show_update', function(e){
+        e.preventDefault();
+        var url = $(this).attr('href');
+    
+        var product = $('input.checkbox:checked').map(function(){
+          return $(this).val();
+        });
+        var product_ids=product.get();
+        
+        if(product_ids.length ==0){
+            toastr.error('Please Select A Product First !');
+            return ;
+        }
+        
+        $.ajax({
+           type:'GET',
+           url:url,
+           data:{product_ids},
+           success:function(res){
+               if(res.status==true){
+                toastr.success(res.msg);
+                window.myAppFunctions.getData(); 
+                
+            }else if(res.status==false){
+                toastr.error(res.msg);
+            }
+           }
+        });
+    
+    });
+
+    window.myAppFunctions.getData(); 
+    $('#search').keyup(function(){
+        window.myAppFunctions.getData(); 
+    });
+
+    $('#search_btn').click(function(){
+        window.myAppFunctions.getData(); 
+    });
+
+    $('#category_id, #user_id, #stock_manage, #type, #brand_id, #status, #ecom_status, #discount_id').change(function(){
+        window.myAppFunctions.getData(); 
+    });
+    
+    
+    $(document).on('click', ".pagination a", function(e) {
+        e.preventDefault();
+
+        $('li').removeClass('active');
+        $(this).parent('li').addClass('active');
+
+        var page = $(this).attr('href').split('page=')[1];
+        window.myAppFunctions.getData(page);
+    });
+  
+    
   });
 
   $('#common_modal').on('shown.bs.modal', function () {
@@ -595,7 +598,7 @@ $(document).ready(function() {
                     $('#importExcelModal').modal('hide');
                     toastr.success(response.msg);
                     if (typeof getData === 'function') {
-                        getData(); // Refresh product datatable/list
+                        window.myAppFunctions.getData();  // Refresh product datatable/list
                     } else {
                         location.reload();
                     }

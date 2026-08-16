@@ -13,10 +13,11 @@ class ProductRepository implements ProductRepositoryInterface
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
         $query = Product::query()
+            ->with(['images', 'variations'])
             ->where('is_new', 0)
             ->where('status', 1)
             ->where('is_ecom', 1);
-
+    
         if (!empty($filters['category_ids'])) {
             $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
             $query->whereIn('category_id', $categoryIds);

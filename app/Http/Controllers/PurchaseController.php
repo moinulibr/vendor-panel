@@ -253,7 +253,8 @@ class PurchaseController extends Controller
             $this->productUtil->transactionStatus($purchase);
             $msg = $isNew ? 'Purchase Created !!' : 'Purchase Updated !!';
             DB::commit();
-            return response()->json(['status'=>true ,'msg'=>$msg,'function'=> 'ss']);
+            return response()->json(['status'=>true ,'msg'=>$msg,'function'=> 'getData',
+                'page' => 2]);
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['status'=>false ,'msg'=>$e->getMessage()]);

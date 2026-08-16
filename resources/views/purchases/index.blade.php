@@ -98,37 +98,10 @@
 <script type="text/javascript">
   $(document).ready(function () {
     
-    $(document).on('bookingRangeChanged', function (e, data) {
-        
-        
-        getData(1);
-    
-    });
-    
-    $('#search').keyup(function(){
-        getData();
-    });
 
-    $('#search_btn').click(function(){
-        getData();
-    });
-
-    $('#contact_id').change(function(){
-        getData();
-    });
-    
-    
-    $(document).on('click', ".pagination a", function(e) {
-        e.preventDefault();
-
-        $('li').removeClass('active');
-        $(this).parent('li').addClass('active');
-
-        var page = $(this).attr('href').split('page=')[1];
-        getData(page);
-    });
-  
+    //window.myAppFunctions.getData = function(page=null){
     function getData(page=null){
+        console.log('get data form purchase index - ', page);
         let q=$('#search').val();
         let date=$('.bookingrange').val();
 
@@ -145,17 +118,46 @@
             }
         });
     }
+
+    $(document).on('bookingRangeChanged', function (e, data) {
+        //window.myAppFunctions.getData(1);
+        getData(1);
+    });
+    
+    $('#search').keyup(function(){
+        //window.myAppFunctions.getData();
+        getData();
+    });
+
+    $('#search_btn').click(function(){
+        //window.myAppFunctions.getData();
+        getData();
+    });
+
+    $('#contact_id').change(function(){
+        //window.myAppFunctions.getData();
+        getData();
+    });
+    
+    
+    $(document).on('click', ".pagination a", function(e) {
+        e.preventDefault();
+
+        $('li').removeClass('active');
+        $(this).parent('li').addClass('active');
+
+        var page = $(this).attr('href').split('page=')[1];
+        //window.myAppFunctions.getData(page);
+        getData(page);
+    });
+  
+    
   });
 </script>
 
 
 <script type="text/javascript">
 
-
-    //
-
-    
-    
     var product_url = "{{ route('getPurchaseProduct') }}";
 
     $('#common_modal').on('shown.bs.modal', function () {

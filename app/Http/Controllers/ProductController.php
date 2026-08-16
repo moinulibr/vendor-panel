@@ -195,10 +195,8 @@ class ProductController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Product $product){
-        //slug have to super unique
-        //created_by
-        $isNew = $product->is_new == 1;
-        
+
+        $isProductNew = $product->is_new == 1 ? true : false;
         $data=request()->validate([
             'name' => 'required',
             'name_bangla' => '',
@@ -238,6 +236,7 @@ class ProductController extends Controller
         $data['stock_manage']=isset($request->stock_manage)?1:null;
         $data['warranty_available']=isset($request->warranty_available)?1:null;
         $data['return_available']=isset($request->return_available)?1:null;
+        
         if($product->is_new==1){
             $data['is_new']=0;
         }
@@ -247,10 +246,10 @@ class ProductController extends Controller
             $data['is_new']=0;
         }else{
             $variations[]=[
-                    'name'=>'dummy',
-                    'sub_sku'=> $data['sku'].'-1',
-                    'purchase_price'=> $data['purchase_price'],
-                    'sell_price'=> $data['sell_price'],
+                'name'=>'dummy',
+                'sub_sku'=> $data['sku'].'-1',
+                'purchase_price'=> $data['purchase_price'],
+                'sell_price'=> $data['sell_price'],
             ];
         }
         $data['created_by'] = Auth::user()->id ?? null;
@@ -263,10 +262,6 @@ class ProductController extends Controller
             $data['image'] = $imageData['name'];
             $data['image_size'] = $imageData['size']; //image size processing
         }
-        //if($image){
-            //deleteImage('products',$product->image);
-            //$data['image']=$image;
-        //}
 
         $slug = Str::slug($request->name) . '-' . Str::random(5);
         $count = Product::where('slug', 'LIKE', "{$slug}%")
@@ -279,21 +274,10 @@ class ProductController extends Controller
 
         if ($request->hasFile('images')) {
             $this->saveGalleryImages($request, $product);
-            /*foreach ($request->file('images') as $image) {
-                $imageName = time().'_'.uniqid().'.'.$image->getClientOriginalExtension();
-                $image->move(public_path('/products'), $imageName);
-
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image' =>  $imageName,
-                    'image_size' =>  $image->getSize(), //image size processing
-                ]);
-            }*/
         }
 
         $ids=[];
         foreach ($variations as $key => $variation) {
-
             $vname=$variation['name'];
             unset($variation['name']);
             $item=Variation::updateOrCreate(['product_id'=>$product->id,'name'=>$vname],$variation);
@@ -301,13 +285,28 @@ class ProductController extends Controller
         }
         $product->variations()->whereNotIn('id', $ids)->delete();
         
-        $msg = $isNew ? 'Product Created !!' : 'Product Updated !!';
+        $msg = $isProductNew == true ? 'Product Created!' : 'Product Updated!';
         return response()->json([
             'status' => true,
             'msg' => $msg,
-            'function' => 'getData'
+            'function' => 'getData',
+            'isNew' => $isProductNew == true ? 'yes':'no'
         ]);
         // return response()->json(['status'=>true ,'msg'=>'product Created !!','function'=>'getData']);
+        //if($image){
+        //deleteImage('products',$product->image);
+        //$data['image']=$image;
+        //}
+        /*foreach ($request->file('images') as $image) {
+            $imageName = time().'_'.uniqid().'.'.$image->getClientOriginalExtension();
+            $image->move(public_path('/products'), $imageName);
+
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image' =>  $imageName,
+                'image_size' =>  $image->getSize(), //image size processing
+            ]);
+        }*/
     }
     
     /**
