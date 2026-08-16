@@ -99,9 +99,9 @@
   $(document).ready(function () {
     
 
-    //window.myAppFunctions.getData = function(page=null){
-    function getData(page=null){
-        console.log('get data form purchase index - ', page);
+    window.myAppFunctions.getData = function(page=null){
+    //function getData(page=null){
+        //console.log('get data form purchase index - ', page);
         let q=$('#search').val();
         let date=$('.bookingrange').val();
 
@@ -120,23 +120,23 @@
     }
 
     $(document).on('bookingRangeChanged', function (e, data) {
-        //window.myAppFunctions.getData(1);
-        getData(1);
+        window.myAppFunctions.getData(1);
+       // getData(1);
     });
     
     $('#search').keyup(function(){
-        //window.myAppFunctions.getData();
-        getData();
+        window.myAppFunctions.getData();
+        //getData();
     });
 
     $('#search_btn').click(function(){
-        //window.myAppFunctions.getData();
-        getData();
+        window.myAppFunctions.getData();
+        //getData();
     });
 
     $('#contact_id').change(function(){
-        //window.myAppFunctions.getData();
-        getData();
+        window.myAppFunctions.getData();
+        //getData();
     });
     
     
@@ -147,8 +147,8 @@
         $(this).parent('li').addClass('active');
 
         var page = $(this).attr('href').split('page=')[1];
-        //window.myAppFunctions.getData(page);
-        getData(page);
+        window.myAppFunctions.getData(page);
+        //getData(page);
     });
   
     
