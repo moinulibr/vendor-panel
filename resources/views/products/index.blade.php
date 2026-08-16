@@ -279,7 +279,6 @@
   $(document).ready(function () {
     
     window.myAppFunctions.getData = function(page=null){
-        console.log('get data form product index - ', 4);
         let q=$('#search').val();
         let stock_manage=$('#stock_manage').val();
         let brand_id=$('#brand_id').val();
