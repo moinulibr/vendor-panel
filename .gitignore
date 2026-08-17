@@ -1,7 +1,11 @@
 /.phpunit.cache
 /node_modules
+/public/*
+!/public/assets/
+!/public/assets/js/
+/public/assets/js/*
+!/public/assets/js/ajax.js
 /public/build
-/public/
 /public/brands
 /public/categories
 /public/contacts
