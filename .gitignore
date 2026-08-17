@@ -2,6 +2,7 @@
 /node_modules
 /public/*
 !/public/assets/
+/public/assets/*
 !/public/assets/js/
 /public/assets/js/*
 !/public/assets/js/ajax.js
