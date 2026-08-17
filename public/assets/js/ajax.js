@@ -40,7 +40,6 @@ $(document).ready(function(){
     $(document).on('click','.btn_modal', function(e){
         e.preventDefault();
         var url = $(this).attr('href');
-        console.log(url);
         $.ajax({
            type:'GET',
            url:url,
