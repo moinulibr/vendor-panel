@@ -38,6 +38,17 @@ if (Schema::hasTable('products')) {
             $table->index(['min_price', 'max_price']);
         });
     }
-    
+
+    /*Schema::table('products', function (Blueprint $table) {
+        $table->index(['status', 'is_ecom', 'is_new']); // Composite Index for base filters
+        $table->index('sku');                           // Index for Main SKU
+        $table->index('name');                          // Index for Name search
+    });
+
+    // Product Variations 
+    Schema::table('product_variations', function (Blueprint $table) {
+        $table->index('sub_sku');                       // Index for Variation SKU
+        $table->index(['sub_sku', 'product_id']);       // Composite Index for fast lookup
+    });*/
 
 }

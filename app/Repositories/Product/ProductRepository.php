@@ -10,6 +10,8 @@ use Illuminate\Contracts\Pagination\Paginator;
 
 class ProductRepository implements ProductRepositoryInterface
 {
+
+    /*
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
         $query = Product::query()
@@ -86,6 +88,98 @@ class ProductRepository implements ProductRepositoryInterface
             'estimate_delivery_day',
             'stock_manage'
             //'stock_alert',
+        ])->simplePaginate($perPage);
+    }
+    */
+    public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
+    {
+        $query = Product::query()
+            ->with(['images', 'variations'])
+            ->where('is_new', 0)
+            ->where('status', 1)
+            ->where('is_ecom', 1);
+
+        if (!empty($filters['category_ids'])) {
+            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
+            $query->whereIn('category_id', $categoryIds);
+        }
+
+        if (!empty($filters['sub_category_ids'])) {
+            $subCategoryIds = is_array($filters['sub_category_ids']) ? $filters['sub_category_ids'] : explode(',', $filters['sub_category_ids']);
+            $query->whereIn('sub_category_id', $subCategoryIds);
+        }
+
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        if (isset($filters['min_price']) && isset($filters['max_price'])) {
+            $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
+        }
+
+        // High Performance Search (Supports both Main SKU & Variation SKU)
+        if (!empty($filters['q'])) {
+            $search = trim($filters['q']);
+
+            // Step 1: Variation sub_sku ইনডেক্স হিট করে মেমোরিতে Product ID গুলো খুব দ্রুত (1-2ms) নিয়ে আসা
+            $matchedProductIdsFromVariation = \DB::table('variations')
+                ->where('sub_sku', 'LIKE', "{$search}%")
+                ->limit(100) // পারফরম্যান্স সেফটির জন্য লিমিট
+                ->pluck('product_id')
+                ->toArray();
+
+            // Step 2: Main Query Execution
+            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation) {
+                $q->where('name', 'LIKE', "{$search}%")
+                    ->orWhere('sku', 'LIKE', "{$search}%");
+
+                if (!empty($matchedProductIdsFromVariation)) {
+                    $q->orWhereIn('id', $matchedProductIdsFromVariation);
+                }
+            });
+        }
+
+        $sortBy = $filters['sort_by'] ?? 'latest';
+        match ($sortBy) {
+            'price_low'  => $query->orderBy('min_price', 'asc'),
+            'price_high' => $query->orderBy('min_price', 'desc'),
+            'name_asc'   => $query->orderBy('name', 'asc'),
+            'name_desc'  => $query->orderBy('name', 'desc'),
+            default      => $query->orderBy('id', 'desc'),
+        };
+
+        return $query->select([
+            'id',
+            'name',
+            'name_bangla',
+            'description',
+            'specification',
+            'slug',
+            'sku',
+            'image',
+            'category_id',
+            'brand_id',
+            'sell_price',
+            'purchase_price',
+            'min_price',
+            'max_price',
+            'type',
+            'status',
+            'is_ecom',
+            'is_reco',
+            'is_feature',
+            'warranty_available',
+            'warranty_days',
+            'warranty_note',
+            'return_available',
+            'return_days',
+            'return_note',
+            'estimate_delivery_day',
+            'stock_manage'
         ])->simplePaginate($perPage);
     }
 
