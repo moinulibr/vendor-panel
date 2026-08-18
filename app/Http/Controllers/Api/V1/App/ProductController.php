@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use App\Http\Resources\Api\V1\App\BrandResource;
 use App\Http\Resources\Api\V1\App\CategoryResource;
+use App\Http\Resources\Api\V1\App\ProductDetailsResource;
 use App\Http\Resources\Api\V1\App\ProductResource;
 use App\Http\Swagger\ProductApiDocInterface;
 use App\Services\ProductService;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Http\Request;
 
 class ProductController extends BaseApiController implements ProductApiDocInterface
 {
@@ -41,6 +43,21 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
             ], 500);
         }
     }
+    public function show(Request $request, string|int $identifier): JsonResponse
+    {
+        $locationId =  $request->input('location_id');
+        $type       = $request->input('type'); // 'product' or 'variant'
+        
+        try {
+            $product = $this->productService->getProductDetails($identifier, $locationId,  $type);
+            return response()->json(['success' => true, 'data' => new ProductDetailsResource($product)], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
+        } catch (Exception $e) {
+            Log::error('Product Details Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to fetch product details.'], 500);
+        }
+    }
 
     public function categories(): JsonResponse
     {
@@ -65,16 +82,5 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         }
     }
 
-    public function show(string $identifier): JsonResponse
-    {
-        try {
-            $product = $this->productService->getProductDetails($identifier);
-            return response()->json(['success' => true, 'data' => new ProductResource($product)], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
-        } catch (Exception $e) {
-            Log::error('Product Details Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to fetch product details.'], 500);
-        }
-    }
+
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
+use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
 interface ProductApiDocInterface
@@ -33,20 +34,21 @@ interface ProductApiDocInterface
     public function index(ProductFilterRequest $request);
 
     #[OA\Get(
-        path: "/api/v1/app/products/{identifier}",
+        path: "/api/v1/app/products/{identifier}?id={type}",
         summary: "Get Single Product Details",
         description: "Fetch product details by Product ID or Slug.",
         tags: ["Product"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID or Slug")
+            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID or Slug"),
+            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "product or variant")
         ],
         responses: [
             new OA\Response(response: 200, description: "Product details retrieved"),
             new OA\Response(response: 404, description: "Product not found")
         ]
     )]
-    public function show(string $identifier);
+    public function show(Request $request, string|int $identifier);
 
     #[OA\Get(
         path: "/api/v1/app/categories",

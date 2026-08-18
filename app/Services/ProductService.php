@@ -26,9 +26,9 @@ class ProductService
         return $this->productRepository->getBrands();
     }
 
-    public function getProductDetails(string $identifier)
+    public function getProductDetails(string $identifier, $locationId = null, $type = null)
     {
-        return $this->productRepository->findBySlugOrId($identifier);
+        return $this->productRepository->findBySlugOrId( $identifier, $locationId, $type);
     }
 
 }
