@@ -12,5 +12,9 @@ class Variation extends Model
 
         return $this->belongsTo(Product::class);
     }
-    
+
+    public function stocks()
+    {
+        return $this->hasMany(ProductStock::class, 'variation_id');
+    }
 }
