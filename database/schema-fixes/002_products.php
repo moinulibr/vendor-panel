@@ -4,6 +4,25 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+// ==============================================================================
+// [ADDED] Custom helper function to check if an index exists in MySQL
+// ==============================================================================
+if (!function_exists('hasIndex')) {
+    function hasIndex(string $table, string $indexName): bool
+    {
+        $database = DB::getDatabaseName();
+        $result = DB::select("
+            SELECT COUNT(1) as total 
+            FROM INFORMATION_SCHEMA.STATISTICS 
+            WHERE TABLE_SCHEMA = ? 
+              AND TABLE_NAME = ? 
+              AND INDEX_NAME = ?
+        ", [$database, $table, $indexName]);
+
+        return ($result[0]->total ?? 0) > 0;
+    }
+}
+
 if (Schema::hasTable('products')) {
 
     if (!Schema::hasColumn('products', 'created_by')) {
@@ -33,29 +52,52 @@ if (Schema::hasTable('products')) {
     // High Performance Composite & Single Indexes for Products Table
     Schema::table('products', function (Blueprint $table) {
         // Base Status & Catalog Compound Indexes
-        $table->index(['status', 'is_ecom', 'is_new'], 'idx_products_status_ecom_new');
-        $table->index(['status', 'is_ecom', 'category_id'], 'idx_products_status_ecom_cat');
-        $table->index(['status', 'is_ecom', 'brand_id'], 'idx_products_status_ecom_brand');
-        $table->index(['min_price', 'max_price'], 'idx_products_price_range');
+        // <-- MODIFIED: Index থাকলে এড়িয়ে যাবে, না থাকলে তৈরি করবে
+        if (!hasIndex('products', 'idx_products_status_ecom_new')) {
+            $table->index(['status', 'is_ecom', 'is_new'], 'idx_products_status_ecom_new');
+        }
+        if (!hasIndex('products', 'idx_products_status_ecom_cat')) {
+            $table->index(['status', 'is_ecom', 'category_id'], 'idx_products_status_ecom_cat');
+        }
+        if (!hasIndex('products', 'idx_products_status_ecom_brand')) {
+            $table->index(['status', 'is_ecom', 'brand_id'], 'idx_products_status_ecom_brand');
+        }
+        if (!hasIndex('products', 'idx_products_price_range')) {
+            $table->index(['min_price', 'max_price'], 'idx_products_price_range');
+        }
 
         // Search Indexes
-        $table->index('sku', 'idx_products_sku');
-        $table->index('name', 'idx_products_name');
+        if (!hasIndex('products', 'idx_products_sku')) {
+            $table->index('sku', 'idx_products_sku');
+        }
+        if (!hasIndex('products', 'idx_products_name')) {
+            $table->index('name', 'idx_products_name');
+        }
     });
 
     // Product Variations Table Indexes
     if (Schema::hasTable('variations')) {
         Schema::table('variations', function (Blueprint $table) {
-            $table->index('sub_sku', 'idx_variations_sub_sku');
-            $table->index(['sub_sku', 'product_id'], 'idx_variations_subsku_product');
-            $table->index(['product_id', 'sub_sku'], 'idx_variations_pid_subsku');
+            // <-- MODIFIED: Check before adding variations index
+            if (!hasIndex('variations', 'idx_variations_sub_sku')) {
+                $table->index('sub_sku', 'idx_variations_sub_sku');
+            }
+            if (!hasIndex('variations', 'idx_variations_subsku_product')) {
+                $table->index(['sub_sku', 'product_id'], 'idx_variations_subsku_product');
+            }
+            if (!hasIndex('variations', 'idx_variations_pid_subsku')) {
+                $table->index(['product_id', 'sub_sku'], 'idx_variations_pid_subsku');
+            }
         });
     }
 
     // Stock Table Indexing for Faster Join/Query
     if (Schema::hasTable('product_stocks')) {
         Schema::table('product_stocks', function (Blueprint $table) {
-            $table->index(['product_id', 'variant_id'], 'idx_stocks_product_variant');
+            // <-- MODIFIED: Check before adding stocks index
+            if (!hasIndex('product_stocks', 'idx_stocks_product_variation')) {
+                $table->index(['product_id', 'variation_id'], 'idx_stocks_product_variation');
+            }
         });
     }
 }
