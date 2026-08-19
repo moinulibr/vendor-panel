@@ -16,8 +16,10 @@ use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfileRequest;
+use App\Http\Requests\Api\V1\App\UpdateRetailerShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
+use App\Utils\UserType;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -242,7 +244,11 @@ class AuthController extends BaseApiController implements AuthSwagger
         try {
             $user = $request->user();
             // Check if Retailer or SR
-            $retailerId = $request->retailer_id ?? optional($user->retailer)->id;
+            if($user->user_type == UserType::RETAILER){
+                $retailerId = $user->id;
+            }else{
+                $retailerId = $request->retailer_id;
+            }
 
             if (!$retailerId) {
                 throw new Exception("রিটেইলারের আইডি পাওয়া যায়নি।", 422);
@@ -260,6 +266,37 @@ class AuthController extends BaseApiController implements AuthSwagger
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), null, 500);
         }
+    }
+
+    public function updateRetailerShippingAddress(string|int $shippingAddressId, UpdateRetailerShippingAddressRequest $request)
+    {
+        try {
+            $user = $request->user();
+            // Check if Retailer or SR
+            if ($user->user_type == UserType::RETAILER) {
+                $retailerId = $user->id;
+            } else {
+                $retailerId = $request->retailer_id;
+            }
+    
+            $address = $this->authService->updateRetailerShippingAddress($retailerId, $shippingAddressId, $request->validated());
+            return $this->jsonResponse(
+                success: true,
+                message: 'Shipping Address updated successfully.',
+                data: [
+                    'shipping_address' => new RetailerShippingAddressResource($address),
+                ],
+                statusCode: 201
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), null, 500);
+        }
+    }
+    public function deleteRetailerShippingAddress(int $shippingAddressId,Request $request)
+    {
+        $this->authService->deleteRetailerShippingAddress($shippingAddressId, $request->user()->id);
+
+        return response()->json(['status' => true, 'message' => 'Shipping Address Deleted Successfully!']);
     }
 
 
@@ -281,6 +318,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
+    // retailers filter
     public function retailers(UserFilterRequest $request): JsonResponse
     {
         try {

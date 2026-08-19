@@ -43,6 +43,9 @@ Route::prefix('v1/app')->group(function () {
         // Vendors & Retailers (For SR Shop selection & Filters)
         Route::get('/vendors', [AuthController::class, 'vendors']);
         Route::get('/retailers', [AuthController::class, 'retailers']);
+        //shipping address
+        Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
+        Route::post('/update-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'updateRetailerShippingAddress']);
 
         //fcm token api
         Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
@@ -58,9 +61,8 @@ Route::prefix('v1/app')->group(function () {
         // External / Retailer Routes (access_type = 2) = Retailer only
         Route::middleware(['access.type:2'])->group(function () {
             // Retailer specific APIs
-            Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
             Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
-            
+            Route::delete('/delete-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteRetailerShippingAddress']);
         });
 
         //Category

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\RetailerShippingAddress;
 use App\Models\User;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use Illuminate\Support\Facades\Hash;
@@ -202,6 +203,7 @@ class AuthService
     public function addRetailerShippingAddress(int $retailerId, array $data)
     {
         $data['retailer_id'] = $retailerId;
+        $data['created_by'] = auth()->user()->id;
         return $this->userRepo->createRetailerShippingAddress($data);
     }
 
@@ -213,6 +215,20 @@ class AuthService
         return $this->userRepo->getRetailerShippingAddresses($retailerId);
     }
 
+    public function updateRetailerShippingAddress(int $retailerId, int $shippingAddressId, array $data): RetailerShippingAddress
+    {
+        $retailerShippingAddress = $this->userRepo->getRetailerSingleShippingAddress($shippingAddressId);
+        if (!$retailerShippingAddress) {
+            throw new Exception("Retailer Shipping Address not found।", 404);
+        }
+        $data['retailer_id'] = $retailerId;
+        return $this->userRepo->updateRetailerShippingAddress($retailerShippingAddress, $data);
+    }
+
+    public function deleteRetailerShippingAddress(int $shippingAddressId, int $retailerId)
+    {
+        return $this->userRepo->deleteRetailerShippingAddress($shippingAddressId, $retailerId);
+    }
 
     public function getVendorList(array $filters)
     {

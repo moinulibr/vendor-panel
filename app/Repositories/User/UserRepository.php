@@ -97,7 +97,7 @@ class UserRepository implements UserRepositoryInterface
 
         $mobile = "d_" . $user->mobile;
         $email = "d_" . $user->email;
-        $user->update(['mobile' => $mobile, 'email' => $email, 'status' => 0]);
+        $user->update(['mobile' => $mobile, 'email' => $email, 'status' => 0, 'deleted_at' => now()]);
 
         // Revoke all tokens and delete user
         $user->tokens()->delete();
@@ -123,22 +123,38 @@ class UserRepository implements UserRepositoryInterface
     {
         return Retailer::where('id', $retailerId)->where('status','!=','deleted')->first();
     }
-
+    public function getRetailerSingleShippingAddress(int $shippingAddressId)
+    {
+        return RetailerShippingAddress::where('id', $shippingAddressId)->whereNull('deleted_at')->first();
+    }
     public function getRetailerShippingAddresses(int $retailerId)
     {
         return RetailerShippingAddress::where('retailer_id', $retailerId)->whereNull('deleted_at')->get();
     }
 
+    public function updateRetailerShippingAddress(RetailerShippingAddress $retailerShippingAddress, array $data): RetailerShippingAddress
+    {
+        $isDefault = $retailerShippingAddress->is_default;
+        if (!empty($data['is_default']) && $data['is_default'] && $isDefault == false) {
+            RetailerShippingAddress::where('retailer_id', $data['retailer_id'])->update(['is_default' => false]);
+        }
+        $data['is_default'] = empty($data['is_default']) ? false : true;
+
+        $retailerShippingAddress->update($data);
+        return $retailerShippingAddress;
+    }
+    
     public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool
     {
-        return RetailerShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->delete();
+        return RetailerShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->update(['deleted_at' => now()]);
     }
 
 
     public function getVendors(array $filters, int $perPage = 20): Paginator
     {
         $query = User::where('user_type', UserType::VENDOR)
-            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE);
+            ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
+            ->whereNull('deleted_at');
 
         return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
     }
@@ -147,6 +163,8 @@ class UserRepository implements UserRepositoryInterface
     {
         $query = User::where('user_type', UserType::RETAILER)
             ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
+            ->where('status', 1)
+            ->whereNull('deleted_at')
             ->with('retailer');
 
         return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);

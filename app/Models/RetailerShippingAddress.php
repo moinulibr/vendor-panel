@@ -20,6 +20,7 @@ class RetailerShippingAddress extends Model
         'upazila_id',
         "deleted_at",
         'is_default',
+        'created_by',
     ];
 
     protected $casts = [

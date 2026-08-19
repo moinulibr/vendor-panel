@@ -21,8 +21,10 @@ interface UserRepositoryInterface
     public function findRetailerById(int $retailerId);
     // Address management
     public function createRetailerShippingAddress(array $data): RetailerShippingAddress;
+    public function updateRetailerShippingAddress(RetailerShippingAddress $shippingAddressId, array $data): RetailerShippingAddress;
     public function getRetailerShippingAddresses(int $retailerId);
-    public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool;
+    public function getRetailerSingleShippingAddress(int $shippingAddressId);
+    public function deleteRetailerShippingAddress(int $shippingAddressId, int $retailerId): bool;
 
     public function getVendors(array $filters, int $perPage = 20): Paginator;
     public function getRetailers(array $filters, int $perPage = 20): Paginator;
