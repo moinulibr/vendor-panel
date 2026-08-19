@@ -44,6 +44,18 @@ class AuthService
             throw new Exception("Unauthorized access. Only SR and Retailer can access this app.", 403);
         }
 
+        if ($user->deleted_at != null || $user->status == 0 || $user->status == 4) {
+            throw new Exception("User not found!.", 403);
+        }
+        if ($user->status == 2) {
+            throw new Exception("User is Inactive!.", 403);
+        }
+        if ($user->status == 3) {
+            throw new Exception("User is Suspended!.", 403);
+        }
+        if ($user->status == 5) {
+            throw new Exception("User is Blocked!.", 403);
+        }
         // Generate Token
         $token = $user->createToken('app-mobile-access-token')->plainTextToken;
 
@@ -60,7 +72,7 @@ class AuthService
         if($data['check_user'] === 'exist'){
             $user = $this->userRepo->findByCredentials($data['mobile']);
             if (!$user) {
-                throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+                throw new Exception("User not found।", 404);
             }
         }
 
@@ -118,7 +130,7 @@ class AuthService
     {
         $user = $this->userRepo->findByCredentials($data['mobile']);
         if (!$user) {
-            throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+            throw new Exception("User not found।", 404);
         }
 
         /*if ($data['reset_by'] === 'otp') {
@@ -136,12 +148,11 @@ class AuthService
     public function changePassword(User $user,array $data): void
     {
         if (!$user) {
-            throw new Exception("ইউজার পাওয়া যায়নি।", 404);
+            throw new Exception("User not found।", 404);
         }
 
-        // Old Password ম্যাচিং চেক
         if (!$user->password || !Hash::check($data['current_password'], $user->password)) {
-            throw new Exception("আপনার প্রদানকৃত বর্তমান পাসওয়ার্ডটি ভুল।", 422);
+            throw new Exception("Your current password does not match।", 422);
         }
 
         $this->userRepo->updatePassword($user, Hash::make($data['password']));
@@ -182,7 +193,7 @@ class AuthService
         $otp = $this->otpRepo->findValidOtp($data['mobile'], $data['purpose']);
 
         if (!$otp || $otp->code !== $data['otp']) {
-            throw new Exception("অবৈধ বা মেয়াদোত্তীর্ণ ওটিপি প্রদান করা হয়েছে।", 422);
+            throw new Exception("Your OTP does not match", 422);
         }
         $this->otpRepo->markAsUsed($otp);
     }
@@ -210,7 +221,7 @@ class AuthService
     public function getRetailerShippingAddress(int $retailerId)
     {
         if(!$this->userRepo->findRetailerById($retailerId)) {
-            throw new Exception("রিটেইলার পাওয়া যায়নি।", 404);
+            throw new Exception("Retailer not found", 404);
         }
         return $this->userRepo->getRetailerShippingAddresses($retailerId);
     }

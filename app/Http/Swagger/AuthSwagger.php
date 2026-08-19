@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
+use App\Http\Requests\Api\V1\App\UpdateRetailerShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Requests\Api\V1\App\UserFilterRequest;
 use OpenApi\Attributes as OA;
@@ -261,7 +262,7 @@ interface AuthSwagger
     #[OA\Post(
         path: "/api/v1/app/create-retailer-shipping-address",
         summary: "Add Shipping Address for Retailer",
-        tags: ["Address Management"],
+        tags: ["Shipping Address Management"],
         security: [["sanctum" => []]],
         requestBody: new OA\RequestBody(
             required: true,
@@ -275,6 +276,7 @@ interface AuthSwagger
                     new OA\Property(property: "address", type: "string", example: "Shop #12, Market Rd, Mirpur"),
                     new OA\Property(property: "division", type: "string", example: "Dhaka"),
                     new OA\Property(property: "district", type: "string", example: "Dhaka"),
+                    new OA\Property(property: "area", type: "string", example: "Market Rd, Mirpur"),
                     new OA\Property(property: "upazila", type: "string", example: "Mirpur"),
                     new OA\Property(property: "division_id", type: "integer", example: "1"),
                     new OA\Property(property: "district_id", type: "integer", example: "2"),
@@ -292,7 +294,7 @@ interface AuthSwagger
     #[OA\Get(
         path: "/api/v1/app/get-retailer-shipping-addresses/{retailerId}",
         summary: "Get Retailer Shipping Addresses By Retailer ID",
-        tags: ["Address Management"],
+        tags: ["Shipping Address Management"],
         security: [["sanctum" => []]],
         parameters: [
             new OA\Parameter(
@@ -310,6 +312,62 @@ interface AuthSwagger
     )]
     public function getRetailerShippingAddresses($retailerId);
 
+
+    #[OA\Post(
+        path: "/api/v1/app/update-retailer-shipping-address/{shippingAddressId}",
+        summary: "Update Shipping Address for Retailer",
+        tags: ["Shipping Address Management"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["title", "address"],
+                properties: [
+                    new OA\Property(property: "retailer_id", type: "integer", example: 1, nullable: true),
+                    new OA\Property(property: "title", type: "string", example: "Main Shop"),
+                    new OA\Property(property: "contact_person", type: "string", example: "Mr. Rahim"),
+                    new OA\Property(property: "contact_mobile", type: "string", example: "01700000000"),
+                    new OA\Property(property: "address", type: "string", example: "Shop #12, Market Rd, Mirpur"),
+                    new OA\Property(property: "division", type: "string", example: "Dhaka"),
+                    new OA\Property(property: "district", type: "string", example: "Dhaka"),
+                    new OA\Property(property: "area", type: "string", example: "Market Rd, Mirpur"),
+                    new OA\Property(property: "upazila", type: "string", example: "Mirpur"),
+                    new OA\Property(property: "division_id", type: "integer", example: "1"),
+                    new OA\Property(property: "district_id", type: "integer", example: "2"),
+                    new OA\Property(property: "upazila_id", type: "integer", example: "3"),
+                    new OA\Property(property: "is_default", type: "boolean", example: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: "Shipping Address Updated Successfully")
+        ]
+    )]
+    public function updateRetailerShippingAddress(string|int $shippingAddressId, UpdateRetailerShippingAddressRequest $request);
+
+
+    #[OA\Delete(
+        path: "/api/v1/app/delete-retailer-shipping-address/{shippingAddressId}",
+        summary: "Delete Retailer Shipping Address",
+        description: "Delete a specific shipping address by ID",
+        tags: ["Shipping Address Management"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "shippingAddressId",
+                in: "path",
+                required: true,
+                description: "ID of the shipping address to delete",
+                schema: new OA\Schema(type: "integer", example: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Shipping Address Deleted Successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 404, description: "Shipping Address Not Found")
+        ]
+    )]
+    public function deleteRetailerShippingAddress(int $shippingAddressId, Request $request);
 
 
     #[OA\Get(
@@ -330,23 +388,4 @@ interface AuthSwagger
         ]
     )]
     public function vendors(UserFilterRequest $request);
-
-    #[OA\Get(
-        path: "/api/v1/app/retailers",
-        summary: "Get Retailer (Shop Owner) List",
-        description: "Fetch list of active retailers along with shop details (SR selection mode).",
-        tags: ["User & Vendor"],
-        security: [["sanctum" => []]],
-        parameters: [
-            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by name, email or mobile"),
-            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
-            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
-            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
-        ],
-        responses: [
-            new OA\Response(response: 200, description: "Retailer list retrieved successfully"),
-            new OA\Response(response: 401, description: "Unauthenticated")
-        ]
-    )]
-    public function retailers(UserFilterRequest $request);
 }

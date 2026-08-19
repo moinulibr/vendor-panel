@@ -12,6 +12,7 @@ class RetailerShippingAddress extends Model
         'contact_person',
         'contact_mobile',
         'address',
+        'area',
         'division',
         'district',
         'upazila',

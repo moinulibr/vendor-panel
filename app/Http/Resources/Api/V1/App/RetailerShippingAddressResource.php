@@ -17,6 +17,7 @@ class RetailerShippingAddressResource extends JsonResource
             'address'           => $this->address,
             'division'          => $this->division,
             'district'          => $this->district,
+            'area'              => $this->area,
             'upazila'           => $this->upazila,
             'division_id'       => $this->division_id,
             'district_id'       => $this->district_id,

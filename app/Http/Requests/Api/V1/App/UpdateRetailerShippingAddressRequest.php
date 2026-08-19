@@ -20,6 +20,7 @@ class UpdateRetailerShippingAddressRequest extends FormRequest
             'address'        => ['required', 'string'],
             'division'       => ['nullable', 'string'],
             'district'       => ['nullable', 'string'],
+            'area'           => ['nullable', 'string', 'max:200'],
             'upazila'        => ['nullable', 'string'],
             'division_id'    => ['nullable', 'integer'],
             'district_id'    => ['nullable', 'integer'],

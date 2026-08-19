@@ -178,7 +178,7 @@ class AuthController extends BaseApiController implements AuthSwagger
 
             return $this->jsonResponse(
                 success: true,
-                message: 'ওটিপি সফলভাবে ভেরিফাই হয়েছে।',
+                message: 'OTP verified successfully।',
                 data: null,
                 statusCode: 200
             );
@@ -192,7 +192,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     {
         $this->authService->deleteAccount($request->user());
 
-        return response()->json(['status' => true, 'message' => 'অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে।']);
+        return response()->json(['status' => true, 'message' => 'Your account has been deleted।']);
     }
 
     public function updateProfile(UpdateProfileRequest $request)
@@ -212,7 +212,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         try {
             $url = $this->authService->profilePictureUpdate($request->user(), $request->file('profile_picture'));
 
-            return $this->jsonResponse(true, 'প্রোফাইল পিকচার আপডেট করা হয়েছে।', ['profile_picture_url' => $url], 200);
+            return $this->jsonResponse(true, 'Profile picture updated।', ['profile_picture_url' => $url], 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), null, 500);
         }
@@ -221,7 +221,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     public function getRetailerShippingAddresses($retailer_id){
         try {
             if (!$retailer_id) {
-                throw new Exception("রিটেইলারের আইডি পাওয়া যায়নি।", 422);
+                throw new Exception("Retailer id is required।", 422);
             }
 
             $address = $this->authService->getRetailerShippingAddress($retailer_id);
@@ -251,13 +251,13 @@ class AuthController extends BaseApiController implements AuthSwagger
             }
 
             if (!$retailerId) {
-                throw new Exception("রিটেইলারের আইডি পাওয়া যায়নি।", 422);
+                throw new Exception("Retailer id is required।", 422);
             }
 
             $address = $this->authService->addRetailerShippingAddress($retailerId, $request->validated());
             return $this->jsonResponse(
                 success: true,
-                message: 'এড্রেস সফলভাবে যুক্ত করা হয়েছে।',
+                message: 'Shipping Address added successfully।',
                 data: [
                     'shipping_address' => new RetailerShippingAddressResource($address),
                 ],
