@@ -7,12 +7,259 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Support\Facades\Log;
 
 class ProductRepository implements ProductRepositoryInterface
 {
+    /**
+     * Optimized Product Listing & Search Query for High Scale (20L-50L rows)
+     */
+    public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
+    {
+        $search = !empty($filters['q']) ? trim($filters['q']) : null;
+        $locationId = $filters['location_id'] ?? null;
+        $matchedProductIdsFromVariation = [];
 
-    /*
+        // 1. Fast Sub-SKU/Name Lookup from Variations Table
+        if ($search) {
+            $matchedProductIdsFromVariation = \DB::table('variations')
+                ->where(function ($q) use ($search) {
+                    $q->where('sub_sku', 'LIKE', "{$search}%")
+                        ->orWhere('name', 'LIKE', "{$search}%");
+                })
+                ->limit(100)
+                ->pluck('product_id')
+                ->toArray();
+        }
+
+        // 2. Main Query Construction
+        $query = Product::query()
+            ->with([
+                'images:id,product_id,image', // Selecting specific payload columns
+                'variations' => function ($q) use ($search, $locationId) {
+                    //$q->select(['id', 'product_id', 'name', 'sub_sku', 'sell_price', 'mrp_price', 'purchase_price']);
+                    if ($search) {
+                        $q->where(function ($sub) use ($search) {
+                            $sub->where('sub_sku', 'LIKE', "{$search}%")
+                                ->orWhere('name', 'LIKE', "{$search}%");
+                        });
+                    }
+
+                    // Optional Stock Relation
+                    if ($locationId) {
+                        $q->with(['stocks' => function ($sq) use ($locationId) {
+                            $sq->where('location_id', $locationId)->select(['id', 'variant_id', 'qty_available']);
+                        }]);
+                    }
+                }
+            ])
+            ->where('is_new', 0)
+            ->where('status', 1)
+            ->where('is_ecom', 1);
+
+        // Filters
+        if (!empty($filters['category_ids'])) {
+            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
+            $query->whereIn('category_id', $categoryIds);
+        }
+
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (isset($filters['min_price']) && isset($filters['max_price'])) {
+            $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
+        }
+
+        // Search Scope
+        if ($search) {
+            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation) {
+                $q->where('sku', 'LIKE', "{$search}%")
+                ->orWhere('name', 'LIKE', "{$search}%")
+                ->orWhere('name_bangla', 'LIKE', "{$search}%");
+
+                if (!empty($matchedProductIdsFromVariation)) {
+                    $q->orWhereIn('id', $matchedProductIdsFromVariation);
+                }
+            });
+        }
+
+        // Sorting
+        $sortBy = $filters['sort_by'] ?? 'latest';
+        match ($sortBy) {
+            //'price_low'  => $query->orderBy('min_price', 'asc'),
+            //'price_high' => $query->orderBy('min_price', 'desc'),
+            'name_asc'   => $query->orderBy('name', 'asc'),
+            'name_desc'  => $query->orderBy('name', 'desc'),
+            default      => $query->orderBy('id', 'desc'),
+        };
+
+        // Select light weight attributes only for listing
+        return $query->select([
+            'id',
+            'name',
+            'name_bangla',
+            'slug',
+            'sku',
+            'image',
+            'category_id',
+            'brand_id',
+            'sell_price',
+            'is_feature',
+            //'purchase_price',
+            //'mrp_price',
+            //'min_price',
+            //'max_price',
+            'type',
+            'status',
+            'is_ecom'
+        ])->simplePaginate($perPage);
+    }
+    public function getCategories()
+    {
+        return Category::select('id', 'name', 'bd_name','slug', 'image', 'parent_id')
+            ->where('is_new', 0)
+            ->whereNull('parent_id')
+            //->with('children:id,name,slug,parent_id')
+            ->get();
+    }
+
+    public function getBrands()
+    {
+        return Brand::select('id', 'name', 'bd_name', 'image')
+            ->where('is_new', 0)
+            ->orderBy('name', 'asc')
+            ->get();
+    }
+
+    /**
+     * Fetch product details by ID, Slug, Variation ID, or Variation Sub-SKU
+     * 
+     * @param string|int $identifier
+     * @param int|null $locationId
+     * @param string|null $type 'product' | 'variant' | null
+     */
+    public function findBySlugOrId(string|int $identifier, ?int $locationId = null, ?string $type = null): ?Product
+    {
+        $selectedVariationId = null;
+        $product = null;
+
+        // CASE 1: Explicitly requested as 'variant' OR Non-numeric Sub-SKU match
+        if ($type === 'variant') {
+            $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
+        }
+  
+        // CASE 2: Explicitly requested as 'product'
+        elseif ($type === 'product') {
+            $product = $this->fetchByProductIdentifier($identifier);
+        }
+
+        // CASE 3: Smart Detection (Default - Type Not Passed)
+        else {
+            if (!is_numeric($identifier)) {
+                $product = $this->fetchByProductIdentifier($identifier);
+
+                if (!$product) {
+                    $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
+                }
+            }
+            else {
+                $product = $this->fetchByProductIdentifier($identifier);
+
+                if (!$product) {
+                    $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
+                }
+            }
+        }
+
+        if ($product) {
+            $product->load([
+                'category:id,name,slug,image',
+                'brand:id,name,image',
+                'unit:id,name',
+                'images:id,product_id,image',
+                'variations' => function ($q) use ($locationId) {
+                    $q->select([
+                        'id',
+                        'product_id',
+                        'name',
+                        'sub_sku',
+                        'purchase_price',
+                        'sell_price',
+                        'created_at'
+                    ]);
+
+                    if ($locationId) {
+                        $q->with(['stocks' => function ($sq) use ($locationId) {
+                            $sq->where('location_id', $locationId)
+                                ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                        }]);
+                    } else {
+                        $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
+                    }
+                }
+            ]);
+
+            $product->selected_variation_id = $selectedVariationId;
+        }
+
+        return $product;
+    }
+
+    /**
+     * Helper: Find Main Product directly
+     */
+    private function fetchByProductIdentifier(string|int $identifier): ?Product
+    {
+        return Product::query()
+            ->where('status', 1)
+            ->where('is_ecom', 1)
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('slug', $identifier);
+                }
+            })
+            ->first();
+    }
+
+    /**
+     * Helper: Find Main Product via Variation ID or Sub-SKU
+     */
+    private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
+    {
+        $variation = \App\Models\Variation::select('id', 'product_id', 'sub_sku')
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('sub_sku', $identifier);
+                }
+            })
+            ->first();
+
+        if ($variation) {
+            $selectedVariationId = $variation->id;
+
+            return Product::query()
+                ->where('status', 1)
+                ->where('is_ecom', 1)
+                ->where('id', $variation->product_id)
+                ->first();
+        }
+
+        return null;
+    }
+}
+
+
+
+
+
+
+
+
+/*
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
         $query = Product::query()
@@ -198,128 +445,9 @@ class ProductRepository implements ProductRepositoryInterface
         ])->simplePaginate($perPage);
     }*/
 
-    /**
-     * Optimized Product Listing & Search Query for High Scale (20L-50L rows)
-     */
-    public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
-    {
-        $search = !empty($filters['q']) ? trim($filters['q']) : null;
-        $locationId = $filters['location_id'] ?? null;
-        $matchedProductIdsFromVariation = [];
 
-        // 1. Fast Sub-SKU/Name Lookup from Variations Table
-        if ($search) {
-            $matchedProductIdsFromVariation = \DB::table('variations')
-                ->where(function ($q) use ($search) {
-                    $q->where('sub_sku', 'LIKE', "{$search}%")
-                        ->orWhere('name', 'LIKE', "{$search}%");
-                })
-                ->limit(100)
-                ->pluck('product_id')
-                ->toArray();
-        }
 
-        // 2. Main Query Construction
-        $query = Product::query()
-            ->with([
-                'images:id,product_id,image', // Selecting specific payload columns
-                'variations' => function ($q) use ($search, $locationId) {
-                    //$q->select(['id', 'product_id', 'name', 'sub_sku', 'sell_price', 'mrp_price', 'purchase_price']);
-
-                    if ($search) {
-                        $q->where(function ($sub) use ($search) {
-                            $sub->where('sub_sku', 'LIKE', "{$search}%")
-                                ->orWhere('name', 'LIKE', "{$search}%");
-                        });
-                    }
-
-                    // Optional Stock Relation
-                    if ($locationId) {
-                        $q->with(['stocks' => function ($sq) use ($locationId) {
-                            $sq->where('location_id', $locationId)->select(['id', 'variant_id', 'qty_available']);
-                        }]);
-                    }
-                }
-            ])
-            ->where('is_new', 0)
-            ->where('status', 1)
-            ->where('is_ecom', 1);
-
-        // Filters
-        if (!empty($filters['category_ids'])) {
-            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
-            $query->whereIn('category_id', $categoryIds);
-        }
-
-        if (!empty($filters['brand_id'])) {
-            $query->where('brand_id', $filters['brand_id']);
-        }
-
-        if (isset($filters['min_price']) && isset($filters['max_price'])) {
-            $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
-        }
-
-        // Search Scope
-        if ($search) {
-            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation) {
-                $q->where('sku', 'LIKE', "{$search}%")
-                    ->orWhere('name', 'LIKE', "{$search}%");
-
-                if (!empty($matchedProductIdsFromVariation)) {
-                    $q->orWhereIn('id', $matchedProductIdsFromVariation);
-                }
-            });
-        }
-
-        // Sorting
-        $sortBy = $filters['sort_by'] ?? 'latest';
-        match ($sortBy) {
-            'price_low'  => $query->orderBy('min_price', 'asc'),
-            'price_high' => $query->orderBy('min_price', 'desc'),
-            'name_asc'   => $query->orderBy('name', 'asc'),
-            'name_desc'  => $query->orderBy('name', 'desc'),
-            default      => $query->orderBy('id', 'desc'),
-        };
-
-        // Select light weight attributes only for listing
-        return $query->select([
-            'id',
-            'name',
-            'name_bangla',
-            'slug',
-            'sku',
-            'image',
-            'category_id',
-            'brand_id',
-            'sell_price',
-            'is_feature',
-            //'purchase_price',
-            //'mrp_price',
-            //'min_price',
-            //'max_price',
-            'type',
-            'status',
-            'is_ecom'
-        ])->simplePaginate($perPage);
-    }
-    public function getCategories()
-    {
-        return Category::select('id', 'name', 'bd_name','slug', 'image', 'parent_id')
-            ->where('is_new', 0)
-            ->whereNull('parent_id')
-            //->with('children:id,name,slug,parent_id')
-            ->get();
-    }
-
-    public function getBrands()
-    {
-        return Brand::select('id', 'name', 'bd_name', 'image')
-            ->where('is_new', 0)
-            ->orderBy('name', 'asc')
-            ->get();
-    }
-
-    /*public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
+   /*public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
     {
         return Product::query()
             ->with([
@@ -439,132 +567,3 @@ class ProductRepository implements ProductRepositoryInterface
 
         return $product;
     }*/
-    /**
-     * Fetch product details by ID, Slug, Variation ID, or Variation Sub-SKU
-     * 
-     * @param string|int $identifier
-     * @param int|null $locationId
-     * @param string|null $type 'product' | 'variant' | null
-     */
-    public function findBySlugOrId(string|int $identifier, ?int $locationId = null, ?string $type = null): ?Product
-    {
-        $selectedVariationId = null;
-        $product = null;
-
-        // -------------------------------------------------------------
-        // CASE 1: Explicitly requested as 'variant' OR Non-numeric Sub-SKU match
-        // -------------------------------------------------------------
-        if ($type === 'variant') {
-            $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-        }
-        // -------------------------------------------------------------
-        // CASE 2: Explicitly requested as 'product'
-        // -------------------------------------------------------------
-        elseif ($type === 'product') {
-            $product = $this->fetchByProductIdentifier($identifier);
-        }
-        // -------------------------------------------------------------
-        // CASE 3: Smart Detection (Default - Type Not Passed)
-        // -------------------------------------------------------------
-        else {
-            // ১. যদি identifier সংখ্যা না হয় (String), তবে আগে Product Slug চেক করবো
-            if (!is_numeric($identifier)) {
-                $product = $this->fetchByProductIdentifier($identifier);
-
-                // Product Slug-এ না পাওয়া গেলে, Variation Sub-SKU চেক করবো
-                if (!$product) {
-                    $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-                }
-            }
-            // ২. যদি identifier সংখ্যা হয় (Numeric ID), প্রফেশনাল সিকোয়েন্স: Product ID -> Variation ID
-            else {
-                $product = $this->fetchByProductIdentifier($identifier);
-
-                // Product ID-তে না পাওয়া গেলে, Variation ID চেক করবো
-                if (!$product) {
-                    $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-                }
-            }
-        }
-
-        // Product পাওয়া গেলে সম্পর্কগুলো (Relations) লোড করা
-        if ($product) {
-            $product->load([
-                'category:id,name,slug,image',
-                'brand:id,name,image',
-                'unit:id,name',
-                'images:id,product_id,image',
-                'variations' => function ($q) use ($locationId) {
-                    $q->select([
-                        'id',
-                        'product_id',
-                        'name',
-                        'sub_sku',
-                        'purchase_price',
-                        'sell_price',
-                        'created_at'
-                    ]);
-
-                    if ($locationId) {
-                        $q->with(['stocks' => function ($sq) use ($locationId) {
-                            $sq->where('location_id', $locationId)
-                                ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
-                        }]);
-                    } else {
-                        $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
-                    }
-                }
-            ]);
-
-            $product->selected_variation_id = $selectedVariationId;
-        }
-
-        return $product;
-    }
-
-    /**
-     * Helper: Find Main Product directly
-     */
-    private function fetchByProductIdentifier(string|int $identifier): ?Product
-    {
-        return Product::query()
-            ->where('status', 1)
-            ->where('is_ecom', 1)
-            ->where(function ($q) use ($identifier) {
-                if (is_numeric($identifier)) {
-                    $q->where('id', $identifier);
-                } else {
-                    $q->where('slug', $identifier);
-                }
-            })
-            ->first();
-    }
-
-    /**
-     * Helper: Find Main Product via Variation ID or Sub-SKU
-     */
-    private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
-    {
-        $variation = \App\Models\Variation::select('id', 'product_id', 'sub_sku')
-            ->where(function ($q) use ($identifier) {
-                if (is_numeric($identifier)) {
-                    $q->where('id', $identifier);
-                } else {
-                    $q->where('sub_sku', $identifier);
-                }
-            })
-            ->first();
-
-        if ($variation) {
-            $selectedVariationId = $variation->id;
-
-            return Product::query()
-                ->where('status', 1)
-                ->where('is_ecom', 1)
-                ->where('id', $variation->product_id)
-                ->first();
-        }
-
-        return null;
-    }
-}
