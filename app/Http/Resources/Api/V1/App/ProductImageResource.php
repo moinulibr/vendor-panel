@@ -12,6 +12,7 @@ class ProductImageResource extends JsonResource
         return [
             'id'         => $this->id,
             'product_id' => $this->product_id,
+            //'product_variation_id' => $this->product_variation_id,
             'image_url'  => $this->image ? getImage('products', $this->image) : null,
         ];
     }
