@@ -12,6 +12,7 @@ class ProductVariationResource extends JsonResource
             'id'             => $this->id,
             'product_id'     => $this->product_id,
             'name'           => $this->name,
+            //'image_url'      => $this->image ? getImage('products', $this->image) : null,
             'sub_sku'        => $this->sub_sku,
             'purchase_price' => (float) $this->purchase_price,
             'sell_price'     => (float) $this->sell_price,

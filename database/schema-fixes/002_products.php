@@ -101,3 +101,6 @@ if (Schema::hasTable('products')) {
         });
     }
 }
+
+
+//product_images -> every single variants should have image 
