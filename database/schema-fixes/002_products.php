@@ -102,5 +102,15 @@ if (Schema::hasTable('products')) {
     }
 }
 
+/*if (Schema::hasTable('product_images')) {
 
+    if (!Schema::hasColumn('products', 'created_by')) {
+        Schema::table('products', function (Blueprint $table) {
+            $table->unsignedBigInteger('created_by')
+                ->nullable()
+                ->after('updated_at')
+                ->comment('Creator User ID');
+        });
+    }
+}*/
 //product_images -> every single variants should have image 
