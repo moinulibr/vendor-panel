@@ -14,20 +14,12 @@ class UserRepository implements UserRepositoryInterface
 {
     public function findByCredentials(string $loginCredential)
     {
-        return User::where('mobile', $loginCredential)
-            //->orWhere('phone', $loginCredential)
-            //->orWhere('employee_id', $loginCredential)
-            ->first();
-        return User::where('email', $loginCredential)
-            ->orWhere('phone', $loginCredential)
-            //->orWhere('employee_id', $loginCredential)
-            ->first();
+        return User::where('mobile', $loginCredential)->with('retailer')->first();
     }
     
     public function findByMobileNumber(string $mobile)
     {
-        return User::where('mobile', $mobile)
-            ->first();
+        return User::where('mobile', $mobile)->first();
     }
 
     public function findById(int $id)
