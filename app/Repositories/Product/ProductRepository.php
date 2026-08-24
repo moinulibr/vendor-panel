@@ -14,7 +14,7 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * Get Filtered Products for Listing
      */
-    public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
+    public function getFilteredProductsOLD(array $filters, int $perPage = 20): Paginator
     {
         $search = !empty($filters['q']) ? trim($filters['q']) : null;
         $locationId = $filters['location_id'] ?? null;
@@ -31,7 +31,6 @@ class ProductRepository implements ProductRepositoryInterface
                 ->pluck('product_id')
                 ->toArray();
         }
-        \Log::info($matchedProductIdsFromVariation);
         // 2. Main Query Construction
         $query = Product::query()
             ->with([
@@ -77,7 +76,7 @@ class ProductRepository implements ProductRepositoryInterface
 
         // Search Scope
         if ($search) {
-            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation) {
+            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation, $locationId) {
                 $q->where('sku', 'LIKE', "{$search}%")
                     ->orWhere('name', 'LIKE', "%{$search}%")
                     ->orWhere('name_bangla', 'LIKE', "%{$search}%");
@@ -86,7 +85,7 @@ class ProductRepository implements ProductRepositoryInterface
                     $q->orWhereIn('id', $matchedProductIdsFromVariation);
                     $q->with(
                         [
-                            'variations' => function ($q) use ($search) {
+                            'variations' => function ($q) use ($search, $locationId) {
                                 if ($search) {
                                     $q->where(function ($sub) use ($search) {
                                         $sub->where('sub_sku', 'LIKE', "{$search}%")
@@ -95,14 +94,14 @@ class ProductRepository implements ProductRepositoryInterface
                                 }
 
                                 // Stock Relation Multi-location query
-                                /*if ($locationId) {
+                                if ($locationId) {
                                     $q->with(['stocks' => function ($sq) use ($locationId) {
                                         $sq->where('location_id', $locationId)
                                             ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
                                     }]);
-                                } else {*/
+                                } else {
                                     $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
-                                //}
+                                }
                             }
                         ]
                     );
@@ -137,7 +136,121 @@ class ProductRepository implements ProductRepositoryInterface
             'is_ecom'
         ])->simplePaginate($perPage);
     }
+    /**
+     * Highly Scalable Product Filtering Query (Handles 2M+ Records)
+     */
+    public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
+    {
+        $search = !empty($filters['q']) ? trim($filters['q']) : null;
+        $locationId = $filters['location_id'] ?? null;
 
+        $query = Product::query()
+            ->where('is_new', 0)
+            ->where('status', 1)
+            ->where('is_ecom', 1);
+
+        // 1. Base Category & Brand Filters
+        if (!empty($filters['category_ids'])) {
+            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
+            $query->whereIn('category_id', $categoryIds);
+        }
+
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        if (isset($filters['min_price']) && isset($filters['max_price'])) {
+            $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
+        }
+
+        // 2. High-Performance Search Logic
+        if ($search) {
+            // Check if product name or SKU matches directly
+            $isProductMatched = Product::query()
+                ->where('sku', 'LIKE', "{$search}%")
+                ->orWhere('name', 'LIKE', "{$search}%")
+                ->orWhere('name_bangla', 'LIKE', "{$search}%")
+                ->exists();
+
+            if ($isProductMatched) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('sku', 'LIKE', "{$search}%")
+                        ->orWhere('name', 'LIKE', "{$search}%")
+                        ->orWhere('name_bangla', 'LIKE', "{$search}%");
+                })
+                    ->with(['variations' => function ($v) use ($locationId) {
+                        $this->applyStockRelation($v, $locationId);
+                    }]);
+            } else {
+                $query->whereHas('variations', function ($v) use ($search) {
+                    $v->where('sub_sku', 'LIKE', "{$search}%")
+                        ->orWhere('name', 'LIKE', "{$search}%");
+                })
+                ->with(['variations' => function ($v) use ($search, $locationId) {
+                    $v->where(function ($sub) use ($search) {
+                        $sub->where('sub_sku', 'LIKE', "{$search}%")
+                            ->orWhere('name', 'LIKE', "{$search}%");
+                    });
+                    $this->applyStockRelation($v, $locationId);
+                }]);
+            }
+        } else {
+            $query->with(['variations' => function ($v) use ($locationId) {
+                $this->applyStockRelation($v, $locationId);
+            }]);
+        }
+
+        // 3. Eager Load Common Relations
+        $query->with([
+            'category:id,name,slug,image',
+            'brand:id,name,image',
+            'images:id,product_id,image',
+        ]);
+
+        // 4. Sorting
+        $sortBy = $filters['sort_by'] ?? 'latest';
+        match ($sortBy) {
+            'name_asc'  => $query->orderBy('name', 'asc'),
+            'name_desc' => $query->orderBy('name', 'desc'),
+            default     => $query->orderBy('id', 'desc'),
+        };
+
+        return $query->select([
+            'id',
+            'name',
+            'name_bangla',
+            'slug',
+            'sku',
+            'image',
+            'category_id',
+            'brand_id',
+            'sell_price',
+            'type',
+            'status',
+            'is_ecom',
+            'is_feature'
+        ])->simplePaginate($perPage);
+    }
+
+    /**
+     * Helper to apply stock relation based on location
+     */
+    private function applyStockRelation($query, ?int $locationId)
+    {
+        if ($locationId) {
+            $query->with(['stocks' => function ($sq) use ($locationId) {
+                $sq->where('location_id', $locationId)
+                    ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+            }]);
+        } else {
+            $query->with('stocks:id,product_id,variation_id,location_id,qty_available');
+        }
+    }
+    
     /**
      * Fetch Product Details by Identifier
      */

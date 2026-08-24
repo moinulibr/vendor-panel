@@ -101,7 +101,16 @@ if (Schema::hasTable('products')) {
         });
     }
 }
+Schema::table('products', function (Blueprint $table) {
 
+    if (!hasIndex('products', 'ft_products_name')) {
+
+        $table->fullText(
+            ['name', 'name_bangla'],
+            'ft_products_name'
+        );
+    }
+});
 /*if (Schema::hasTable('product_images')) {
 
     if (!Schema::hasColumn('products', 'created_by')) {
