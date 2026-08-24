@@ -77,7 +77,7 @@ Route::prefix('v1/app')->group(function () {
             // Categories & Brands
             Route::get('categories', 'categories');
             Route::get('brands', 'brands');
-
+            Route::get('check-stock-quantity/{identifier}', 'checkStockQuantity');
         });
 
     });

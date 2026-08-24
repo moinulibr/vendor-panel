@@ -51,6 +51,23 @@ interface ProductApiDocInterface
     public function show(Request $request, string|int $identifier);
 
     #[OA\Get(
+        path: "/api/v1/app/check-stock-quantity/{identifier}?type={p_details_type}",
+        summary: "Check Stock Quantity",
+        description: "Fetch product qty by Product ID.",
+        tags: ["Product"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID"),
+            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "single or variable")
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Product stock quantity retrieved"),
+            new OA\Response(response: 404, description: "Product not found")
+        ]
+    )]
+    public function checkStockQuantity(Request $request, string|int $identifier);
+
+    #[OA\Get(
         path: "/api/v1/app/categories",
         summary: "Get Category Tree List",
         description: "Fetch parent categories along with their child subcategories.",

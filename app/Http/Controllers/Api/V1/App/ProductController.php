@@ -43,6 +43,7 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
             ], 500);
         }
     }
+
     public function show(Request $request, string|int $identifier): JsonResponse
     {
         $locationId = $request->input('location_id');
@@ -74,6 +75,19 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
                 'message' => 'Failed to fetch product details.'
             ], 500);
         }
+    }
+
+    public function checkStockQuantity(Request $request, string|int $identifier): JsonResponse
+    {
+        $locationId = $request->input('location_id');
+        $type       = $request->input('type'); // 'single' or 'variable'
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'available_qty' => 50000,
+                'in_stock'      => true
+            ]
+        ], 200);
     }
 
     public function categories(): JsonResponse
