@@ -45,17 +45,34 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
     }
     public function show(Request $request, string|int $identifier): JsonResponse
     {
-        $locationId =  $request->input('location_id');
-        $type       = $request->input('type'); // 'product' or 'variant'
-        
+        $locationId = $request->input('location_id');
+        $type       = $request->input('type'); // 'single' or 'variable'
+
         try {
-            $product = $this->productService->getProductDetails($identifier, $locationId,  $type);
-            return response()->json(['success' => true, 'data' => new ProductDetailsResource($product)], 200);
+            $product = $this->productService->getProductDetails($identifier, $locationId, $type);
+
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found.'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data'    => new ProductDetailsResource($product)
+            ], 200);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['success' => false, 'message' => 'Product not found.'], 404);
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found.'
+            ], 404);
         } catch (Exception $e) {
             Log::error('Product Details Error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to fetch product details.'], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch product details.'
+            ], 500);
         }
     }
 

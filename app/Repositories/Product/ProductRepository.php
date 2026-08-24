@@ -126,7 +126,7 @@ class ProductRepository implements ProductRepositoryInterface
             $query->with('stocks:id,product_id,variation_id,location_id,qty_available');
         }
     }
-    
+
     /**
      * Fetch Product Details by Identifier
      */
@@ -220,7 +220,6 @@ class ProductRepository implements ProductRepositoryInterface
 
         return null;
     }
-
 
     public function getCategories()
     {
@@ -556,11 +555,11 @@ class ProductRepository implements ProductRepositoryInterface
             'estimate_delivery_day',
             'stock_manage'
         ])->simplePaginate($perPage);
-    }*/
+}*/
 
 
 
-   /*public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
+/*public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
     {
         return Product::query()
             ->with([
@@ -679,4 +678,98 @@ class ProductRepository implements ProductRepositoryInterface
         }
 
         return $product;
-    }*/
+}*/
+
+
+/*
+    public function findBySlugOrId(string|int $identifier, ?int $locationId = null, ?string $type = null): ?Product
+    {
+        $selectedVariationId = null;
+        $product = null;
+
+        if ($type === 'variable') {
+            $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
+        } elseif ($type === 'single') {
+            $product = $this->fetchByProductIdentifier($identifier);
+        } else {
+            $product = $this->fetchByProductIdentifier($identifier);
+            if (!$product) {
+                $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
+            }
+        }
+
+        if ($product) {
+            $product->load([
+                'category:id,name,slug,image',
+                'brand:id,name,image',
+                'unit:id,name',
+                'images:id,product_id,image',
+                'variations' => function ($q) use ($locationId) {
+                    $q->select([
+                        'id',
+                        'product_id',
+                        'name',
+                        'sub_sku',
+                        'purchase_price',
+                        'sell_price',
+                        'created_at'
+                    ]);
+
+                    if ($locationId) {
+                        $q->with(['stocks' => function ($sq) use ($locationId) {
+                            $sq->where('location_id', $locationId)
+                                ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                        }]);
+                    } else {
+                        $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
+                    }
+                }
+            ]);
+
+            $product->selected_variation_id = $selectedVariationId;
+        }
+
+        return $product;
+    }
+
+    private function fetchByProductIdentifier(string|int $identifier): ?Product
+    {
+        return Product::query()
+            ->where('status', 1)
+            ->where('is_ecom', 1)
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('slug', $identifier)
+                        ->orWhere('sku', $identifier);
+                }
+            })
+            ->first();
+    }
+
+    private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
+    {
+        $variation = Variation::select('id', 'product_id', 'sub_sku')
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('sub_sku', $identifier);
+                }
+            })
+            ->first();
+
+        if ($variation) {
+            $selectedVariationId = $variation->id;
+
+            return Product::query()
+                ->where('status', 1)
+                ->where('is_ecom', 1)
+                ->where('id', $variation->product_id)
+                ->first();
+        }
+
+        return null;
+    }
+*/
