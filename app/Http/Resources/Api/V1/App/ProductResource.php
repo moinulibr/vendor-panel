@@ -34,7 +34,7 @@ class ProductResource extends JsonResource
                         ],
                         'is_variant'   => true,
                         'type'         => 'variable',
-                        'name'         => $product->name . ' - ' . $variant->name,
+                        'name'         => $product->name,// . ' - ' . $variant->name,
                         'name_bangla'  => $product->name_bangla,
                         'slug'         => $product->slug,
                         'sku'          => $variant->sub_sku,

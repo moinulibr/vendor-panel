@@ -31,7 +31,7 @@ class ProductDetailsResource extends JsonResource
         return [
             'id'                    => $this->id,
             'variation_id'          => $this->selected_variation_id ?? null,
-            'name'                  => $finalName,
+            'name'                  => $this->name,// ." - ". $formattedAttributes,
             'name_bangla'           => $this->name_bangla,
             'slug'                  => $this->slug,
             'sku'                   => $finalSku,
