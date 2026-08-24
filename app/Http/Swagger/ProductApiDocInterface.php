@@ -34,14 +34,14 @@ interface ProductApiDocInterface
     public function index(ProductFilterRequest $request);
 
     #[OA\Get(
-        path: "/api/v1/app/products/{identifier}?id={type}",
+        path: "/api/v1/app/products/{identifier}?type={p_details_type}",
         summary: "Get Single Product Details",
-        description: "Fetch product details by Product ID or Slug.",
+        description: "Fetch product details by Product ID.",
         tags: ["Product"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID or Slug"),
-            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "product or variant")
+            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID"),
+            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "single or variable")
         ],
         responses: [
             new OA\Response(response: 200, description: "Product details retrieved"),

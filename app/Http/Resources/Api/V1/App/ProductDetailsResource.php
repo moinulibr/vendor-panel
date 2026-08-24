@@ -63,8 +63,12 @@ class ProductDetailsResource extends JsonResource
             'images'                => ProductImageResource::collection($this->whenLoaded('images')),
             'variations'            => $this->type == 'variable' ? ProductVariationResource::collection($this->whenLoaded('variations')) : [],
         ];
-    }
-    /*public function toArray(Request $request): array
+    }   
+}
+
+
+
+/*public function toArray(Request $request): array
     {
         $selectedVariation = null;
         if ($this->selected_variation_id && $this->relationLoaded('variations')) {
@@ -114,5 +118,4 @@ class ProductDetailsResource extends JsonResource
             'variations'            => $this->type == 'variable' ? ProductVariationResource::collection($this->whenLoaded('variations')) : false,
         ];
     }
-    */
-}
+*/

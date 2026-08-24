@@ -4,9 +4,7 @@ namespace App\Http\Resources\Api\V1\App;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Api\V1\App\ProductVariationResource;
 use App\Http\Resources\Api\V1\App\ProductImageResource;
-use Illuminate\Support\Facades\Log;
 
 class ProductResource extends JsonResource
 {
@@ -18,13 +16,22 @@ class ProductResource extends JsonResource
         $collection = $resource->getCollection()->flatMap(function ($product) {
 
             if ($product->type === 'variable' && $product->relationLoaded('variations') && $product->variations->isNotEmpty()) {
-                return $product->variations->map(function ($variant) use ($product) {
+
+                $rawAttributes = is_string($product->variants) ? json_decode($product->variants, true) : ($product->variants ?? []);
+
+                return $product->variations->map(function ($variant) use ($product, $rawAttributes) {
                     $stockQty = $variant->relationLoaded('stocks') ? $variant->stocks->sum('qty_available') : 0;
+
+                    $singleVariantAttributes = self::formatVariantAttributes($rawAttributes, $variant->name);
 
                     return [
                         'id'           => $product->id,
                         'parent_id'    => $product->id,
                         'variation_id' => $variant->id,
+                        'p_details' => [
+                            'id'   => $variant->id,
+                            'type' => "variable"
+                        ],
                         'is_variant'   => true,
                         'type'         => 'variable',
                         'name'         => $product->name . ' - ' . $variant->name,
@@ -40,7 +47,10 @@ class ProductResource extends JsonResource
                         'is_feature'   => (bool) $product->is_feature,
                         'stock_qty'    => $stockQty,
                         'images'       => ProductImageResource::collection($product->images),
-                        //'created_at'   => $product->created_at,
+                        'category_name' => $product->category?->name ?? "N/L",
+                        'brand_name'    => $product->brand?->name ?? "N/L",
+
+                        'variant_attributes' => $singleVariantAttributes
                     ];
                 });
             }
@@ -49,6 +59,10 @@ class ProductResource extends JsonResource
                 'id'           => $product->id,
                 'parent_id'    => $product->id,
                 'variation_id' => null,
+                'p_details' => [
+                    'id'   => $product->id,
+                    'type' => "single"
+                ],
                 'is_variant'   => false,
                 'type'         => 'single',
                 'name'         => $product->name,
@@ -64,18 +78,59 @@ class ProductResource extends JsonResource
                 'is_feature'   => (bool) $product->is_feature,
                 'stock_qty'    => 0,
                 'images'       => ProductImageResource::collection($product->images),
-                'created_at'   => $product->created_at,
+                'category_name' => $product->category?->name ?? "N/L",
+                'brand_name'    => $product->brand?->name ?? "N/L",
+                'variant_attributes' => ""
             ]];
         });
+
         $resource->setCollection($collection);
 
         return parent::collection($resource);
+    }
+
+    /**
+     * Helper to map JSON variant attributes with specific variant name
+     * Output Example: "Color: Black, Size: S, material: gold"
+     */
+    private static function formatVariantAttributes(array $rawAttributes, ?string $variantName): string
+    {
+        if (empty($rawAttributes) || empty($variantName)) {
+            return "";
+        }
+
+        // Variant name to array format ("Black-S-gold" -> ["Black", "S", "gold"])
+        $variantValues = array_map('trim', explode('-', $variantName));
+        $matchedPairs = [];
+
+        foreach ($rawAttributes as $group) {
+            if (!is_array($group)) continue;
+
+            foreach ($group as $attributeKey => $values) {
+                if (!is_array($values)) continue;
+
+                foreach ($values as $value) {
+                    // Variant value matching (Case-insensitive check)
+                    foreach ($variantValues as $vVal) {
+                        if (strcasecmp($vVal, trim($value)) === 0) {
+                            $matchedPairs[] = ucfirst($attributeKey) . ': ' . $vVal;
+                            break 2;// Break both loops
+                        }
+                    }
+                }
+            }
+        }
+
+        return implode(', ', $matchedPairs);
     }
 
     public function toArray(Request $request): array
     {
         return parent::toArray($request);
     }
+}
+
+
     //This product resource class is used for showing product list [limited data]
    /* public function toArray(Request $request): array
     {
@@ -100,4 +155,3 @@ class ProductResource extends JsonResource
         ];
     }
     */
-}

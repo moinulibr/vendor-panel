@@ -12,131 +12,6 @@ use Illuminate\Contracts\Pagination\Paginator;
 class ProductRepository implements ProductRepositoryInterface
 {
     /**
-     * Get Filtered Products for Listing
-     */
-    public function getFilteredProductsOLD(array $filters, int $perPage = 20): Paginator
-    {
-        $search = !empty($filters['q']) ? trim($filters['q']) : null;
-        $locationId = $filters['location_id'] ?? null;
-        $matchedProductIdsFromVariation = [];
-
-        // 1. Fast Sub-SKU/Name Lookup from Variations Table
-        if ($search) {
-            $matchedProductIdsFromVariation = \DB::table('variations')
-                ->where(function ($q) use ($search) {
-                    $q->where('sub_sku', 'LIKE', "{$search}%")
-                        ->orWhere('name', 'LIKE', "%{$search}%");
-                })
-                ->limit(100)
-                ->pluck('product_id')
-                ->toArray();
-        }
-        // 2. Main Query Construction
-        $query = Product::query()
-            ->with([
-                'category:id,name,slug,image',
-                'brand:id,name,image',
-                'images:id,product_id,image',
-                'variations' => function ($q) use ($search, $locationId) {
-                    /*if ($search) {
-                        $q->where(function ($sub) use ($search) {
-                            $sub->where('sub_sku', 'LIKE', "{$search}%")
-                                ->orWhere('name', 'LIKE', "%{$search}%");
-                        });
-                    }*/
-
-                    // Stock Relation Multi-location query
-                    if ($locationId) {
-                        $q->with(['stocks' => function ($sq) use ($locationId) {
-                            $sq->where('location_id', $locationId)
-                                ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
-                        }]);
-                    } else {
-                        $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
-                    }
-                }
-            ])
-            ->where('is_new', 0)
-            ->where('status', 1)
-            ->where('is_ecom', 1);
-
-        // Filters
-        if (!empty($filters['category_ids'])) {
-            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
-            $query->whereIn('category_id', $categoryIds);
-        }
-
-        if (!empty($filters['brand_id'])) {
-            $query->where('brand_id', $filters['brand_id']);
-        }
-
-        if (isset($filters['min_price']) && isset($filters['max_price'])) {
-            $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
-        }
-
-        // Search Scope
-        if ($search) {
-            $query->where(function ($q) use ($search, $matchedProductIdsFromVariation, $locationId) {
-                $q->where('sku', 'LIKE', "{$search}%")
-                    ->orWhere('name', 'LIKE', "%{$search}%")
-                    ->orWhere('name_bangla', 'LIKE', "%{$search}%");
-
-                if (!empty($matchedProductIdsFromVariation)) {
-                    $q->orWhereIn('id', $matchedProductIdsFromVariation);
-                    $q->with(
-                        [
-                            'variations' => function ($q) use ($search, $locationId) {
-                                if ($search) {
-                                    $q->where(function ($sub) use ($search) {
-                                        $sub->where('sub_sku', 'LIKE', "{$search}%")
-                                            ->orWhere('name', 'LIKE', "%{$search}%");
-                                    });
-                                }
-
-                                // Stock Relation Multi-location query
-                                if ($locationId) {
-                                    $q->with(['stocks' => function ($sq) use ($locationId) {
-                                        $sq->where('location_id', $locationId)
-                                            ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
-                                    }]);
-                                } else {
-                                    $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
-                                }
-                            }
-                        ]
-                    );
-                }
-            });
-        }
-
-        // Sorting
-        $sortBy = $filters['sort_by'] ?? 'latest';
-        match ($sortBy) {
-            'name_asc'  => $query->orderBy('name', 'asc'),
-            'name_desc' => $query->orderBy('name', 'desc'),
-            default     => $query->orderBy('id', 'desc'),
-        };
-        return $query->select([
-            'id',
-            'name',
-            'name_bangla',
-            'slug',
-            'sku',
-            'image',
-            'category_id',
-            'brand_id',
-            'sell_price',
-            'is_feature',
-            //'purchase_price',
-            //'mrp_price',
-            //'min_price',
-            //'max_price',
-            'type',
-            'status',
-            'is_ecom'
-        ])->simplePaginate($perPage);
-    }
-    /**
      * Highly Scalable Product Filtering Query (Handles 2M+ Records)
      */
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
@@ -232,7 +107,8 @@ class ProductRepository implements ProductRepositoryInterface
             'type',
             'status',
             'is_ecom',
-            'is_feature'
+            'is_feature',
+            'variants'
         ])->simplePaginate($perPage);
     }
 
@@ -259,9 +135,9 @@ class ProductRepository implements ProductRepositoryInterface
         $selectedVariationId = null;
         $product = null;
 
-        if ($type === 'variant') {
+        if ($type === 'variable') {
             $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-        } elseif ($type === 'product') {
+        } elseif ($type === 'single') {
             $product = $this->fetchByProductIdentifier($identifier);
         } else {
             $product = $this->fetchByProductIdentifier($identifier);
@@ -371,6 +247,131 @@ class ProductRepository implements ProductRepositoryInterface
 
 
 
+/**
+ * Get Filtered Products for Listing
+ */
+/*public function getFilteredProductsOLD(array $filters, int $perPage = 20): Paginator
+{
+    $search = !empty($filters['q']) ? trim($filters['q']) : null;
+    $locationId = $filters['location_id'] ?? null;
+    $matchedProductIdsFromVariation = [];
+
+    // 1. Fast Sub-SKU/Name Lookup from Variations Table
+    if ($search) {
+        $matchedProductIdsFromVariation = \DB::table('variations')
+            ->where(function ($q) use ($search) {
+                $q->where('sub_sku', 'LIKE', "{$search}%")
+                    ->orWhere('name', 'LIKE', "%{$search}%");
+            })
+            ->limit(100)
+            ->pluck('product_id')
+            ->toArray();
+    }
+    // 2. Main Query Construction
+    $query = Product::query()
+        ->with([
+            'category:id,name,slug,image',
+            'brand:id,name,image',
+            'images:id,product_id,image',
+            'variations' => function ($q) use ($search, $locationId) {
+                //if ($search) {
+                    //$q->where(function ($sub) use ($search) {
+                        //$sub->where('sub_sku', 'LIKE', "{$search}%")
+                        //->orWhere('name', 'LIKE', "%{$search}%");
+                    //});
+                //}
+
+                // Stock Relation Multi-location query
+                if ($locationId) {
+                    $q->with(['stocks' => function ($sq) use ($locationId) {
+                        $sq->where('location_id', $locationId)
+                            ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                    }]);
+                } else {
+                    $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
+                }
+            }
+        ])
+        ->where('is_new', 0)
+        ->where('status', 1)
+        ->where('is_ecom', 1);
+
+    // Filters
+    if (!empty($filters['category_ids'])) {
+        $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
+        $query->whereIn('category_id', $categoryIds);
+    }
+
+    if (!empty($filters['brand_id'])) {
+        $query->where('brand_id', $filters['brand_id']);
+    }
+
+    if (isset($filters['min_price']) && isset($filters['max_price'])) {
+        $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
+    }
+
+    // Search Scope
+    if ($search) {
+        $query->where(function ($q) use ($search, $matchedProductIdsFromVariation, $locationId) {
+            $q->where('sku', 'LIKE', "{$search}%")
+                ->orWhere('name', 'LIKE', "%{$search}%")
+                ->orWhere('name_bangla', 'LIKE', "%{$search}%");
+
+            if (!empty($matchedProductIdsFromVariation)) {
+                $q->orWhereIn('id', $matchedProductIdsFromVariation);
+                $q->with(
+                    [
+                        'variations' => function ($q) use ($search, $locationId) {
+                            if ($search) {
+                                $q->where(function ($sub) use ($search) {
+                                    $sub->where('sub_sku', 'LIKE', "{$search}%")
+                                        ->orWhere('name', 'LIKE', "%{$search}%");
+                                });
+                            }
+
+                            // Stock Relation Multi-location query
+                            if ($locationId) {
+                                $q->with(['stocks' => function ($sq) use ($locationId) {
+                                    $sq->where('location_id', $locationId)
+                                        ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                                }]);
+                            } else {
+                                $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
+                            }
+                        }
+                    ]
+                );
+            }
+        });
+    }
+
+    // Sorting
+    $sortBy = $filters['sort_by'] ?? 'latest';
+    match ($sortBy) {
+        'name_asc'  => $query->orderBy('name', 'asc'),
+        'name_desc' => $query->orderBy('name', 'desc'),
+        default     => $query->orderBy('id', 'desc'),
+    };
+    return $query->select([
+        'id',
+        'name',
+        'name_bangla',
+        'slug',
+        'sku',
+        'image',
+        'category_id',
+        'brand_id',
+        'sell_price',
+        'is_feature',
+        //'purchase_price',
+        //'mrp_price',
+        //'min_price',
+        //'max_price',
+        'type',
+        'status',
+        'is_ecom'
+    ])->simplePaginate($perPage);
+}*/
 /*
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
