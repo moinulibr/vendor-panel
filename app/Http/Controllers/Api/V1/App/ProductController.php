@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Requests\Api\V1\App\ImageSearchRequest;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use App\Http\Resources\Api\V1\App\BrandResource;
 use App\Http\Resources\Api\V1\App\CategoryResource;
@@ -88,6 +89,33 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
                 'in_stock'      => true
             ]
         ], 200);
+    }
+
+    public function searchByImage(ImageSearchRequest $request): JsonResponse
+    {
+        try {
+            // TODO: Future Microservice Integration
+            // $image = $request->file('image');
+            // $matchedProductIds = $this->visionService->getMatchedProductIds($image);
+            // Temporary Mocking: Fetching standard products list using existing service logic
+            $products = $this->productService->getProductList($request->validated());
+
+            return response()->json([
+                'success'    => true,
+                'message'    => 'Image search completed successfully.',
+                'data'       => ProductResource::collection($products),
+                'pagination' => [
+                    'has_more' => $products->hasMorePages(),
+                    'per_page' => $products->perPage(),
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Image Search Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process image search.'
+            ], 500);
+        }
     }
 
     public function categories(): JsonResponse

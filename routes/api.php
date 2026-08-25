@@ -74,10 +74,12 @@ Route::prefix('v1/app')->group(function () {
             Route::get('products', 'index');
             Route::get('products/{identifier}', 'show');
 
+            Route::get('check-stock-quantity/{identifier}', 'checkStockQuantity');
+            Route::post('products/search-by-image', 'searchByImage');
+            
             // Categories & Brands
             Route::get('categories', 'categories');
             Route::get('brands', 'brands');
-            Route::get('check-stock-quantity/{identifier}', 'checkStockQuantity');
         });
 
     });

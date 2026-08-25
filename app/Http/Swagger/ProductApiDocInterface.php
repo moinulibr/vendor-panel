@@ -2,6 +2,7 @@
 
 namespace App\Http\Swagger;
 
+use App\Http\Requests\Api\V1\App\ImageSearchRequest;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -66,6 +67,38 @@ interface ProductApiDocInterface
         ]
     )]
     public function checkStockQuantity(Request $request, string|int $identifier);
+
+    #[OA\Post(
+        path: "/api/v1/app/products/search-by-image",
+        summary: "Search Products by Image",
+        description: "Upload an image to search for similar products (Visual Search). Currently returns filtered product list structure for microservice stub.",
+        tags: ["Product"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["image"],
+                    properties: [
+                        new OA\Property(property: "image", description: "Product Image File (jpg, png, webp)", type: "string", format: "binary"),
+                        new OA\Property(property: "location_id", description: "Location/Store ID for Stock Filtering", type: "integer", example: 1),
+                        new OA\Property(property: "per_page", description: "Items per page", type: "integer", default: 20)
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200, 
+                description: "Similar products retrieved successfully"
+            ),
+            new OA\Response(response: 422, description: "Validation Error / Invalid Image"),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 500, description: "Server Error")
+        ]
+    )]
+    public function searchByImage(ImageSearchRequest $request);
 
     #[OA\Get(
         path: "/api/v1/app/categories",
