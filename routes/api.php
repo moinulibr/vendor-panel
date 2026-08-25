@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\App\AuthController;
+use App\Http\Controllers\Api\V1\App\CartController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\CategoryController;
+use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -76,11 +78,22 @@ Route::prefix('v1/app')->group(function () {
 
             Route::get('check-stock-quantity/{identifier}', 'checkStockQuantity');
             Route::post('products/search-by-image', 'searchByImage');
-            
+
             // Categories & Brands
             Route::get('categories', 'categories');
             Route::get('brands', 'brands');
         });
+
+        // Cart Routes
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::put('/cart/{id}', [CartController::class, 'update']);
+        Route::delete('/cart/clear', [CartController::class, 'clear']);
+        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+
+        // Favorites Routes
+        Route::get('/favorites', [FavoriteController::class, 'index']);
+        Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
 
     });
 });

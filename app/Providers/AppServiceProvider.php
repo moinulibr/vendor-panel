@@ -6,8 +6,12 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 
 use App\Models\Setting;
+use App\Repositories\Cart\CartRepository;
+use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
+use App\Repositories\Favorite\FavoriteRepository;
+use App\Repositories\Favorite\Interface\FavoriteRepositoryInterface;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Repositories\Otp\OtpRepository;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
@@ -42,7 +46,9 @@ class AppServiceProvider extends ServiceProvider
             ProductRepository::class
         );
 
-
+        $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
+        $this->app->bind(FavoriteRepositoryInterface::class, FavoriteRepository::class);
+        
     }
 
     /**
