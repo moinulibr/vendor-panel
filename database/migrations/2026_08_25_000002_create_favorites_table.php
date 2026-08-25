@@ -8,18 +8,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('favorites', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->timestamps();
+        if (!Schema::hasTable('favorites')) {
+            Schema::create('favorites', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id');
+                $table->foreignId('product_id');
+                $table->foreignId('variation_id');
+                $table->string('type')->nullable()->comment('single, variable');
+                $table->timestamps();
 
-            $table->unique(['user_id', 'product_id']);
-        });
+                $table->unique(['user_id', 'product_id', 'variation_id'], 'favorite_product_variation_unique');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('favorites');
+        if (Schema::hasTable('favorites')) {
+            Schema::dropIfExists('favorites');
+        }
     }
 };

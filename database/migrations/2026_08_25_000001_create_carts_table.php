@@ -8,16 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('carts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
-            $table->foreignId('contact_id')->nullable()->constrained('contacts')->onDelete('cascade');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('carts')) {
+            Schema::create('carts', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->unique()->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('carts');
+        if (Schema::hasTable('carts')) {
+            Schema::dropIfExists('carts');
+        }
     }
 };
