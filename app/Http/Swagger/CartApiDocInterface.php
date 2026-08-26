@@ -116,12 +116,20 @@ interface CartApiDocInterface
         description: "Apply an overall coupon discount to the active user cart.",
         tags: ["Cart"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "retailer_user_id",
+                in: "query",
+                required: false,
+                description: "Get cart details by retailer user id. [when user is not retailer]",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["coupon_code"],
                 properties: [
-                    new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
                     new OA\Property(property: "coupon_code", type: "string", example: "PROMO2026")
                 ]
             )
@@ -132,6 +140,7 @@ interface CartApiDocInterface
         ]
     )]
     public function applyCoupon(ApplyCouponRequest $request);
+    
 
     #[OA\Delete(
         path: "/api/v1/app/cart/remove-coupon",
@@ -139,6 +148,9 @@ interface CartApiDocInterface
         description: "Remove applied coupon code and reset cart level discounts.",
         tags: ["Cart"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+        ],
         responses: [
             new OA\Response(response: 200, description: "Coupon removed successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
