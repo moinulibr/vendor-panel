@@ -21,7 +21,7 @@ class AddToCartRequest extends FormRequest
             'type'         => 'required|string|in:single,variable',
             'variation_id' => 'nullable|integer|exists:variations,id',
             'quantity'     => 'required|integer|min:1',
-            'retailer_id'  => [
+            'retailer_user_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',
@@ -31,7 +31,7 @@ class AddToCartRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'retailer_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
+            'retailer_user_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
         ];
     }
 }

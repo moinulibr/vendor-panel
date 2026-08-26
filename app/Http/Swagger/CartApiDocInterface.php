@@ -2,7 +2,10 @@
 
 namespace App\Http\Swagger;
 
+use App\Http\Requests\Api\V1\App\AddToCartAllClearRequest;
+use App\Http\Requests\Api\V1\App\AddToCartListRequest;
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
+use App\Http\Requests\Api\V1\App\ApplyCouponRemoveRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
 use App\Http\Requests\Api\V1\App\UpdateToCartRequest;
 use Illuminate\Http\Request;
@@ -16,12 +19,15 @@ interface CartApiDocInterface
         description: "Fetch all active cart items and calculations for the authenticated user.",
         tags: ["Cart"],
         security: [["sanctum" => []]],
+            parameters: [
+                new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+            ],
         responses: [
             new OA\Response(response: 200, description: "Cart fetched successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
-    public function index();
+    public function index(AddToCartListRequest $request);
 
     #[OA\Post(
         path: "/api/v1/app/cart",
@@ -95,11 +101,14 @@ interface CartApiDocInterface
         description: "Remove all items from the current user's cart.",
         tags: ["Cart"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+        ],
         responses: [
             new OA\Response(response: 200, description: "Cart cleared successfully")
         ]
     )]
-    public function clear();
+    public function clear(AddToCartAllClearRequest $request);
 
     #[OA\Post(
         path: "/api/v1/app/cart/apply-coupon",
@@ -134,5 +143,5 @@ interface CartApiDocInterface
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
-    public function removeCoupon();
+    public function removeCoupon(ApplyCouponRemoveRequest $request);
 }

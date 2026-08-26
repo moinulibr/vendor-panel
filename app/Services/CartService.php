@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Variation;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
+use App\Utils\UserType;
 use Exception;
 class CartService
 {
@@ -16,9 +17,10 @@ class CartService
         protected ProductRepositoryInterface $productRepository
         ) {}
 
-    public function getUserCart(int $userId): array
+    public function getUserCart(int $retailerId): array
     {
-        $cart = $this->cartRepository->getOrCreateCart($userId);
+        //always match with retailer id. 
+        $cart = $this->cartRepository->getOrCreateCart($retailerId);
         $cartItems = $cart->items()->with(['product', 'variation'])->get();
 
         $itemSubtotal = 0;
@@ -60,13 +62,13 @@ class CartService
         ];
     }
 
-    public function addToCart(int $userId, array $data): mixed
+    public function addToCart(int $retailerUserId, array $data): mixed
     {
         $productId = $data['type'] == "single" ? $data['product_id'] : $data['variation_id'];
 
         $product = $this->productRepository->findBySlugOrId($productId, null, $data['type']);
-        
-        $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->id ?? null);
+
+        $cart = $this->cartRepository->getOrCreateCart($retailerUserId, auth()->user()->id ?? null);
         
         $unitPrice = $product->sell_price;
         $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);

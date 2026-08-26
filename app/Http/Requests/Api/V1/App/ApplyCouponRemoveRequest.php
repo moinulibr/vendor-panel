@@ -5,7 +5,7 @@ namespace App\Http\Requests\Api\V1\App;
 use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ApplyCouponRequest extends FormRequest
+class ApplyCouponRemoveRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,7 +17,6 @@ class ApplyCouponRequest extends FormRequest
         $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::RETAILER;
         
         return [
-            'coupon_code' => 'required|string|max:50',
             'retailer_user_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',

@@ -11,10 +11,10 @@ class CartRepository implements CartRepositoryInterface
     public function getOrCreateCart(int $userId, ?int $created_by = null): Cart
     {
         return Cart::firstOrCreate(
-            ['user_id' => $userId], //retailer id
+            ['user_id' => $userId], //retailer user id
             [
                 'created_by' => $created_by,
-                'cart_from' => $data['favorite_from'] ?? 'moible_app'
+                'cart_from' => $data['cart_from'] ?? 'moible_app'
             ]
         );
     }
@@ -22,7 +22,7 @@ class CartRepository implements CartRepositoryInterface
     public function getSingleCart(int $userId ): Cart
     {
         return Cart::firstOrCreate(
-            ['user_id' => $userId]
+            ['user_id' => $userId] //retailer user id
         );
     }
 
