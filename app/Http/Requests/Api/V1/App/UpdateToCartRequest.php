@@ -13,6 +13,9 @@ class UpdateToCartRequest extends FormRequest
 
     public function rules(): array
     {
+
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::RETAILER;
+
         return [
             'quantity'     => 'required|integer|min:1',
         ];

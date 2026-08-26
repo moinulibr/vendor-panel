@@ -31,7 +31,9 @@ interface FavoriteApiDocInterface
             content: new OA\JsonContent(
                 required: ["product_id"],
                 properties: [
-                    new OA\Property(property: "product_id", type: "integer", example: 15)
+                    new OA\Property(property: "product_id", type: "integer", example: 10),
+                    new OA\Property(property: "type", type: "string", example: 'variable or single'),
+                    new OA\Property(property: "variation_id", type: "integer", example: 5, nullable: true),
                 ]
             )
         ),

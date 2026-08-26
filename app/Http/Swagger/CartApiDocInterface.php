@@ -35,6 +35,7 @@ interface CartApiDocInterface
                 required: ["product_id", "quantity"],
                 properties: [
                     new OA\Property(property: "product_id", type: "integer", example: 10),
+                    new OA\Property(property: "type", type: "string", example: 'variable or single'),
                     new OA\Property(property: "variation_id", type: "integer", example: 5, nullable: true),
                     new OA\Property(property: "quantity", type: "integer", example: 1)
                 ]

@@ -28,6 +28,7 @@ class UserResource extends JsonResource
             'retailer'    => $this->whenLoaded('retailer', function () {
                 return [
                     'retailer_id'   => $this->retailer->id,
+                    'retailer_user_id' => $this->retailer->user_id,
                     'shop_name'     => $this->retailer->shop_name,
                     'trade_license' => $this->retailer->trade_license,
                     'address'       => $this->retailer->address,
