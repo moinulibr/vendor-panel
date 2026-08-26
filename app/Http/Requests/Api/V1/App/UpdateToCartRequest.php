@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\App;
 
+use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateToCartRequest extends FormRequest
