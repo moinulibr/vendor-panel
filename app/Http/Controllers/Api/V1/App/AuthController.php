@@ -192,7 +192,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     {
         $this->authService->deleteAccount($request->user());
 
-        return response()->json(['status' => true, 'message' => 'Your account has been deleted।']);
+        return response()->json(['success' => true, 'message' => 'Your account has been deleted।']);
     }
 
     public function updateProfile(UpdateProfileRequest $request)

@@ -121,6 +121,7 @@ interface CartApiDocInterface
             content: new OA\JsonContent(
                 required: ["coupon_code"],
                 properties: [
+                    new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
                     new OA\Property(property: "coupon_code", type: "string", example: "PROMO2026")
                 ]
             )
