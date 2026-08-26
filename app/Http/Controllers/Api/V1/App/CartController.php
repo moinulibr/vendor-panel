@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
+use App\Http\Requests\Api\V1\App\UpdateToCartRequest;
+use App\Http\Resources\Api\V1\App\CartItemResource;
 use App\Http\Resources\Api\V1\App\CartResource;
 use App\Http\Swagger\CartApiDocInterface;
 use App\Services\CartService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Exception;
 
@@ -19,12 +20,19 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $cartData = $this->cartService->getUserCart(auth()->id());
-            return $this->sendResponse([
-                'items'   => CartResource::collection($cartData['items']),
-                'summary' => $cartData['summary']
-            ], 'Cart fetched successfully.');
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Cart fetched successfully.',
+                data: new CartResource($cartData),
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to fetch cart.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 
@@ -32,20 +40,60 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $cartItem = $this->cartService->addToCart(auth()->id(), $request->validated());
-            return $this->sendResponse(new CartResource($cartItem), 'Item added to cart successfully.', 201);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Item added to cart successfully.',
+                data: new CartItemResource($cartItem),
+                statusCode: 201
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to add item to cart.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
+
+    public function update(UpdateToCartRequest $request, int $cartItemId): JsonResponse
+    {
+        try {
+            $this->cartService->updateQuantity($cartItemId, $request->quantity);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Cart item updated successfully.',
+                data: null,
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
+        }
+    }
+
 
     public function applyCoupon(ApplyCouponRequest $request): JsonResponse
     {
         try {
             $this->cartService->applyCoupon(auth()->id(), $request->coupon_code);
-            return $this->sendResponse(null, 'Coupon applied successfully.');
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Coupon applied successfully.',
+                data: null,
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage(), [], 422);
-            return $this->sendError('Failed to apply coupon.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 422
+            );
         }
     }
 
@@ -53,31 +101,39 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $this->cartService->removeCoupon(auth()->id());
-            return $this->sendResponse(null, 'Coupon removed successfully.');
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Coupon removed successfully.',
+                data: null,
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to remove coupon.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 
-    public function update(Request $request, int $id): JsonResponse
-    {
-        $request->validate(['quantity' => 'required|integer|min:1']);
-
-        try {
-            $this->cartService->updateQuantity($id, $request->quantity);
-            return $this->sendResponse(null, 'Cart item updated successfully.');
-        } catch (Exception $e) {
-            return $this->sendError('Failed to update cart.', ['error' => $e->getMessage()]);
-        }
-    }
-
-    public function destroy(int $id): JsonResponse
+    public function removeCart(int $cartItemId): JsonResponse
     {
         try {
-            $this->cartService->removeItem($id);
-            return $this->sendResponse(null, 'Item removed from cart successfully.');
+            $this->cartService->removeItem($cartItemId);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Item removed from cart successfully.',
+                data: null,
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to remove item.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 
@@ -85,9 +141,19 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $this->cartService->clearCart(auth()->id());
-            return $this->sendResponse(null, 'Cart cleared successfully.');
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Cart cleared successfully.',
+                data: null,
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to clear cart.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 }

@@ -13,8 +13,8 @@ class FavoriteService
         return $this->favoriteRepository->getUserFavorites($userId);
     }
 
-    public function toggleFavorite(int $userId, int $productId): array
+    public function toggleFavorite(int $userId, array $data): array
     {
-        return $this->favoriteRepository->toggleFavorite($userId, $productId);
+        return $this->favoriteRepository->toggleFavorite($userId, $data);
     }
 }

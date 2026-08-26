@@ -16,7 +16,7 @@ return new class extends Migration
                 $table->foreignId('variation_id')->nullable()->constrained('variations')->onDelete('cascade');
                 $table->string('type')->nullable()->comment('single, variable');
                 $table->string('favorite_from')->nullable()->comment('retailer_app, web, sr etc.');
-                $table->foreignId('created_by')->nullable()->constrained('contacts')->onDelete('cascade')->comment('created by user (staff/retailer)');
+                $table->unsignedBigInteger('created_by')->nullable()->comment('created by user (staff/retailer)');
 
                 $table->timestamps();
                 

@@ -87,9 +87,9 @@ Route::prefix('v1/app')->group(function () {
         // Cart Routes
         Route::get('/cart', [CartController::class, 'index']);
         Route::post('/cart', [CartController::class, 'store']);
-        Route::put('/cart/{id}', [CartController::class, 'update']);
+        Route::put('/cart-update/{cartItemId}', [CartController::class, 'update']);
         Route::delete('/cart/clear', [CartController::class, 'clear']);
-        Route::delete('/cart/{id}', [CartController::class, 'destroy']);
+        Route::delete('/cart-item-remove/{cartItemId}', [CartController::class, 'removeCart']);
 
         // Coupon Routes
         Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon']);

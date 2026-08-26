@@ -6,12 +6,14 @@ use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Models\Product;
 use App\Models\Variation;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
+use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use Exception;
 class CartService
 {
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
-        protected CouponRepositoryInterface $couponRepository
+        protected CouponRepositoryInterface $couponRepository,
+        protected ProductRepositoryInterface $productRepository
         ) {}
 
     public function getUserCart(int $userId): array
@@ -60,11 +62,13 @@ class CartService
 
     public function addToCart(int $userId, array $data): mixed
     {
-        $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->contact_id ?? null);
-        $product = Product::findOrFail($data['product_id']);
-        $variation = isset($data['variation_id']) ? Variation::find($data['variation_id']) : null;
+        $productId = $data['type'] == "single" ? $data['product_id'] : $data['variation_id'];
 
-        $unitPrice = $variation ? $variation->default_sell_price : $product->sell_price;
+        $product = $this->productRepository->findBySlugOrId($productId, null, $data['type']);
+        
+        $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->id ?? null);
+        
+        $unitPrice = $product->sell_price;
         $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);
 
         $newQuantity = $existingItem ? ($existingItem->quantity + $data['quantity']) : $data['quantity'];
@@ -73,8 +77,14 @@ class CartService
             'product_id'   => $data['product_id'],
             'variation_id' => $data['variation_id'] ?? null,
             'quantity'     => $newQuantity,
+            'type'         => $data['type'],
             'unit_price'   => $unitPrice,
         ]);
+    }
+
+    public function updateQuantity(int $cartItemId, int $quantity): bool
+    {
+        return $this->cartRepository->updateQuantity($cartItemId, $quantity);
     }
 
     public function applyCoupon(int $userId, string $couponCode): bool
@@ -105,13 +115,8 @@ class CartService
 
     public function removeCoupon(int $userId): bool
     {
-        $cart = $this->cartRepository->getOrCreateCart($userId);
+        $cart = $this->cartRepository->getSingleCart($userId);
         return $this->cartRepository->clearCoupon($cart->id);
-    }
-
-    public function updateQuantity(int $cartItemId, int $quantity): bool
-    {
-        return $this->cartRepository->updateQuantity($cartItemId, $quantity);
     }
 
     public function removeItem(int $cartItemId): bool

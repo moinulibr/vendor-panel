@@ -8,11 +8,21 @@ use App\Repositories\Cart\Interface\CartRepositoryInterface;
 
 class CartRepository implements CartRepositoryInterface
 {
-    public function getOrCreateCart(int $userId, ?int $contactId = null): Cart
+    public function getOrCreateCart(int $userId, ?int $created_by = null): Cart
     {
         return Cart::firstOrCreate(
-            ['user_id' => $userId],
-            ['contact_id' => $contactId]
+            ['user_id' => $userId], //retailer id
+            [
+                'created_by' => $created_by,
+                'cart_from' => $data['favorite_from'] ?? 'moible_app'
+            ]
+        );
+    }
+
+    public function getSingleCart(int $userId ): Cart
+    {
+        return Cart::firstOrCreate(
+            ['user_id' => $userId]
         );
     }
 
@@ -31,6 +41,8 @@ class CartRepository implements CartRepositoryInterface
                 'cart_id'      => $cart->id,
                 'product_id'   => $data['product_id'],
                 'variation_id' => $data['variation_id'] ?? null,
+                'type'         => $data['type'],
+                'unit_price'   => $data['unit_price'],
             ],
             [
                 'quantity'        => $data['quantity'],

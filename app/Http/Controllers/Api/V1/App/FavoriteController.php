@@ -17,19 +17,39 @@ class FavoriteController extends BaseApiController implements FavoriteApiDocInte
     {
         try {
             $favorites = $this->favoriteService->getFavorites(auth()->id());
-            return $this->sendResponse(FavoriteResource::collection($favorites), 'Favorites fetched successfully.');
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Favorites fetched successfully.',
+                data: FavoriteResource::collection($favorites),
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to fetch favorites.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 
     public function toggle(ToggleFavoriteRequest $request): JsonResponse
     {
         try {
-            $result = $this->favoriteService->toggleFavorite(auth()->id(), $request->product_id);
-            return $this->sendResponse($result, 'Favorite status updated successfully.');
+            $result = $this->favoriteService->toggleFavorite(auth()->id(), $request->validated());
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Favorite status updated successfully.',
+                data: $result,
+                statusCode: 200
+            );
         } catch (Exception $e) {
-            return $this->sendError('Failed to update favorite status.', ['error' => $e->getMessage()]);
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 500
+            );
         }
     }
 }

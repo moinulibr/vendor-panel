@@ -4,6 +4,7 @@ namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
+use App\Http\Requests\Api\V1\App\UpdateToCartRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -48,13 +49,13 @@ interface CartApiDocInterface
     public function store(AddToCartRequest $request);
 
     #[OA\Put(
-        path: "/api/v1/app/cart/{id}",
+        path: "/api/v1/app/cart-update/{cartItemId}",
         summary: "Update Cart Item Quantity",
         description: "Update quantity of a specific item in the cart.",
         tags: ["Cart"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+            new OA\Parameter(name: "cartItemId", in: "path", required: true, schema: new OA\Schema(type: "integer"))
         ],
         requestBody: new OA\RequestBody(
             required: true,
@@ -70,10 +71,10 @@ interface CartApiDocInterface
             new OA\Response(response: 404, description: "Item not found")
         ]
     )]
-    public function update(Request $request, int $id);
+    public function update(UpdateToCartRequest $request, int $id);
 
     #[OA\Delete(
-        path: "/api/v1/app/cart/{id}",
+        path: "/api/v1/app/cart-item-remove/{cartItemId}",
         summary: "Remove Single Item from Cart",
         description: "Delete a cart item by its ID.",
         tags: ["Cart"],
@@ -85,7 +86,7 @@ interface CartApiDocInterface
             new OA\Response(response: 200, description: "Item removed from cart successfully")
         ]
     )]
-    public function destroy(int $id);
+    public function removeCart(int $cartItemId);
 
     #[OA\Delete(
         path: "/api/v1/app/cart/clear",

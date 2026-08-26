@@ -7,5 +7,5 @@ use Illuminate\Support\Collection;
 interface FavoriteRepositoryInterface
 {
     public function getUserFavorites(int $userId): Collection;
-    public function toggleFavorite(int $userId, int $productId): array;
+    public function toggleFavorite(int $userId, array $data): array;
 }

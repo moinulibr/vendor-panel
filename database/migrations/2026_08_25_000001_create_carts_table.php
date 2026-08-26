@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->decimal('discount_amount', 15, 4)->default(0);
                 $table->string('discount_type')->nullable()->comment('fixed, percentage');
                 $table->string('cart_from')->nullable()->comment('retailer_app, web, sr etc.');
-                $table->foreignId('created_by')->nullable()->constrained('contacts')->onDelete('cascade')->comment('created by user (staff/retailer)');
+                $table->unsignedBigInteger('created_by')->nullable()->comment('created by user (staff/retailer)');
 
                 $table->timestamps();
             });
