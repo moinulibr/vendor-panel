@@ -5,10 +5,14 @@ namespace App\Services;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Models\Product;
 use App\Models\Variation;
-
+use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
+use Exception;
 class CartService
 {
-    public function __construct(protected CartRepositoryInterface $cartRepository) {}
+    public function __construct(
+        protected CartRepositoryInterface $cartRepository,
+        protected CouponRepositoryInterface $couponRepository
+        ) {}
 
     public function getUserCart(int $userId): array
     {
@@ -75,17 +79,27 @@ class CartService
 
     public function applyCoupon(int $userId, string $couponCode): bool
     {
+        $cartData = $this->getUserCart($userId);
+        $grossTotal = $cartData['summary']['gross_total'];
+
+        if ($grossTotal <= 0) {
+            throw new Exception('Cart total must be greater than zero to apply coupon.');
+        }
+
+        // Validate coupon from CouponRepository using actual logic
+        $coupon = $this->couponRepository->findValidCoupon($couponCode, $grossTotal);
+
+        if (!$coupon) {
+            throw new Exception('Invalid or expired coupon code!');
+        }
+
         $cart = $this->cartRepository->getOrCreateCart($userId);
 
-        // Example logic: Normally you would validate coupon from a coupons table here.
-        // For demonstration, setting sample discount logic:
-        $discountAmount = 50.00;
-        $discountType = 'fixed';
-
         return $this->cartRepository->updateCoupon($cart->id, [
-            'coupon_code'     => $couponCode,
-            'discount_amount' => $discountAmount,
-            'discount_type'   => $discountType,
+            'coupon_code'     => $coupon->code,
+            'coupon_id'       => $coupon->id,
+            'discount_amount' => $coupon->amount,
+            'discount_type'   => $coupon->discount_type ?? 'fixed',
         ]);
     }
 

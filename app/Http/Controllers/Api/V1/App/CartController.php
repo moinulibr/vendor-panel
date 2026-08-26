@@ -44,6 +44,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
             $this->cartService->applyCoupon(auth()->id(), $request->coupon_code);
             return $this->sendResponse(null, 'Coupon applied successfully.');
         } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), [], 422);
             return $this->sendError('Failed to apply coupon.', ['error' => $e->getMessage()]);
         }
     }
