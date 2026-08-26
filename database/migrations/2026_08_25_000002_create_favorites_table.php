@@ -11,12 +11,15 @@ return new class extends Migration
         if (!Schema::hasTable('favorites')) {
             Schema::create('favorites', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id');
-                $table->foreignId('product_id');
-                $table->foreignId('variation_id');
+                $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('product_id')->nullable()->constrained('products')->onDelete('cascade');
+                $table->foreignId('variation_id')->nullable()->constrained('variations')->onDelete('cascade');
                 $table->string('type')->nullable()->comment('single, variable');
-                $table->timestamps();
+                $table->string('favorite_from')->nullable()->comment('retailer_app, web, sr etc.');
+                $table->foreignId('created_by')->nullable()->constrained('contacts')->onDelete('cascade')->comment('created by user (staff/retailer)');
 
+                $table->timestamps();
+                
                 $table->unique(['user_id', 'product_id', 'variation_id'], 'favorite_product_variation_unique');
             });
         }

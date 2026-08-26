@@ -3,6 +3,7 @@
 namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
+use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -97,4 +98,39 @@ interface CartApiDocInterface
         ]
     )]
     public function clear();
+
+    #[OA\Post(
+        path: "/api/v1/app/cart/apply-coupon",
+        summary: "Apply Coupon Code to Cart",
+        description: "Apply an overall coupon discount to the active user cart.",
+        tags: ["Cart"],
+        security: [["sanctum" => []]],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["coupon_code"],
+                properties: [
+                    new OA\Property(property: "coupon_code", type: "string", example: "PROMO2026")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Coupon applied successfully"),
+            new OA\Response(response: 422, description: "Invalid / Expired Coupon Code")
+        ]
+    )]
+    public function applyCoupon(ApplyCouponRequest $request);
+
+    #[OA\Delete(
+        path: "/api/v1/app/cart/remove-coupon",
+        summary: "Remove Coupon Code from Cart",
+        description: "Remove applied coupon code and reset cart level discounts.",
+        tags: ["Cart"],
+        security: [["sanctum" => []]],
+        responses: [
+            new OA\Response(response: 200, description: "Coupon removed successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function removeCoupon();
 }

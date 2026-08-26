@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
+use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
 use App\Http\Resources\Api\V1\App\CartResource;
 use App\Http\Swagger\CartApiDocInterface;
 use App\Services\CartService;
@@ -34,6 +35,26 @@ class CartController extends BaseApiController implements CartApiDocInterface
             return $this->sendResponse(new CartResource($cartItem), 'Item added to cart successfully.', 201);
         } catch (Exception $e) {
             return $this->sendError('Failed to add item to cart.', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function applyCoupon(ApplyCouponRequest $request): JsonResponse
+    {
+        try {
+            $this->cartService->applyCoupon(auth()->id(), $request->coupon_code);
+            return $this->sendResponse(null, 'Coupon applied successfully.');
+        } catch (Exception $e) {
+            return $this->sendError('Failed to apply coupon.', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function removeCoupon(): JsonResponse
+    {
+        try {
+            $this->cartService->removeCoupon(auth()->id());
+            return $this->sendResponse(null, 'Coupon removed successfully.');
+        } catch (Exception $e) {
+            return $this->sendError('Failed to remove coupon.', ['error' => $e->getMessage()]);
         }
     }
 

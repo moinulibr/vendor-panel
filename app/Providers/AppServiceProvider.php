@@ -8,6 +8,8 @@ use Illuminate\Pagination\Paginator;
 use App\Models\Setting;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
+use App\Repositories\Coupon\CouponRepository;
+use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
 use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
 use App\Repositories\Favorite\FavoriteRepository;
@@ -46,8 +48,10 @@ class AppServiceProvider extends ServiceProvider
             ProductRepository::class
         );
 
+        $this->app->bind(CouponRepositoryInterface::class, CouponRepository::class);
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavoriteRepositoryInterface::class, FavoriteRepository::class);
+        
         
     }
 

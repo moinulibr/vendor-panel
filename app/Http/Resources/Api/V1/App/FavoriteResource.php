@@ -11,10 +11,13 @@ class FavoriteResource extends JsonResource
     {
         return [
             'id'           => $this->id,
+            'type'         => $this->type,
             'product_id'   => $this->product_id,
             'product_name' => $this->product->name ?? null,
+            'variation_id'    => $this->variation_id,
+            'variation_name'  => $this->variation->name ?? null,
             'sell_price'   => $this->product->sell_price ?? null,
-            'image_url'    => $this->product->image_url ?? null,
+            'image_url'    => $this->product->image ? getImage('products', $this->product->image) : null,
         ];
     }
 }

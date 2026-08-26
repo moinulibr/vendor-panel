@@ -54,4 +54,24 @@ class CartRepository implements CartRepositoryInterface
     {
         return CartItem::where('cart_id', $cartId)->delete();
     }
+
+    public function updateCoupon(int $cartId, array $couponData): bool
+    {
+        return Cart::where('id', $cartId)->update([
+            'coupon_code'     => $couponData['coupon_code'],
+            'coupon_id'       => $couponData['coupon_id'] ?? null,
+            'discount_amount' => $couponData['discount_amount'],
+            'discount_type'   => $couponData['discount_type'] ?? 'fixed',
+        ]);
+    }
+
+    public function clearCoupon(int $cartId): bool
+    {
+        return Cart::where('id', $cartId)->update([
+            'coupon_code'     => null,
+            'coupon_id'       => null,
+            'discount_amount' => 0,
+            'discount_type'   => null,
+        ]);
+    }
 }

@@ -14,7 +14,9 @@ class ToggleFavoriteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_id' => 'required|integer|exists:products,id',
+            'product_id'    => 'required|integer|exists:products,id',
+            'type'          => 'required|string|in:single,variable',
+            'variation_id'  => 'nullable|integer|exists:variations,id',
         ];
     }
 }

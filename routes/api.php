@@ -91,6 +91,10 @@ Route::prefix('v1/app')->group(function () {
         Route::delete('/cart/clear', [CartController::class, 'clear']);
         Route::delete('/cart/{id}', [CartController::class, 'destroy']);
 
+        // Coupon Routes
+        Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon']);
+        Route::delete('/cart/remove-coupon', [CartController::class, 'removeCoupon']);
+
         // Favorites Routes
         Route::get('/favorites', [FavoriteController::class, 'index']);
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
