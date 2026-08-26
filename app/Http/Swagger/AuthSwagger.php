@@ -388,4 +388,23 @@ interface AuthSwagger
         ]
     )]
     public function vendors(UserFilterRequest $request);
+
+    #[OA\Get(
+        path: "/api/v1/app/retailers",
+        summary: "Get Retailer List",
+        description: "Fetch list of active retailers for filters and dropdowns.",
+        tags: ["User & Vendor"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by retailer name, email or mobile"),
+            new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
+            new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
+            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Retailer list retrieved successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function retailers(UserFilterRequest $request);
 }
