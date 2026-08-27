@@ -2,6 +2,7 @@
 
 namespace App\Http\Swagger;
 
+use App\Http\Requests\Api\V1\App\ToggleFavoriteListRequest;
 use App\Http\Requests\Api\V1\App\ToggleFavoriteRequest;
 use OpenApi\Attributes as OA;
 
@@ -13,12 +14,15 @@ interface FavoriteApiDocInterface
         description: "Fetch list of all favorited/hearted products for the user.",
         tags: ["Favorite"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+        ],
         responses: [
             new OA\Response(response: 200, description: "Favorites retrieved successfully"),
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
-    public function index();
+    public function index(ToggleFavoriteListRequest $request);
 
     #[OA\Post(
         path: "/api/v1/app/favorites/toggle",
@@ -26,6 +30,15 @@ interface FavoriteApiDocInterface
         description: "Heart/Unheart a product. If exists it removes, otherwise adds.",
         tags: ["Favorite"],
         security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "retailer_user_id",
+                in: "query",
+                required: false,
+                description: "Get cart details by retailer user id. [when user is not retailer]",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(

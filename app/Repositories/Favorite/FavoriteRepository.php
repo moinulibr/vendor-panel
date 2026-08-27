@@ -10,7 +10,7 @@ class FavoriteRepository implements FavoriteRepositoryInterface
 {
     public function getUserFavorites(int $userId): Collection
     {
-        return Favorite::with('product')->where('user_id', $userId)->get();
+        return Favorite::with('product', 'variation')->where('user_id', $userId)->get();
     }
 
     public function toggleFavorite(int $userId, array $data): array

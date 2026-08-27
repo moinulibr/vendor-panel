@@ -2,27 +2,20 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Requests\Api\V1\App\ToggleFavoriteListRequest;
 use App\Http\Requests\Api\V1\App\ToggleFavoriteRequest;
 use App\Http\Resources\Api\V1\App\FavoriteResource;
-use App\Http\Swagger\FavoriteApiDocInterface;
 use App\Services\FavoriteService;
-use App\Utils\UserType;
 use Illuminate\Http\JsonResponse;
 use Exception;
 
-class FavoriteController extends BaseApiController implements FavoriteApiDocInterface
+class SettingsController extends BaseApiController
 {
     public function __construct(protected FavoriteService $favoriteService) {}
 
-    public function index(ToggleFavoriteListRequest $request): JsonResponse
+    public function index(): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
-                $retailerId = $request->retailer_user_id;
-            }
-            $favorites = $this->favoriteService->getFavorites($retailerId);
+            $favorites = $this->favoriteService->getFavorites(auth()->id());
 
             return $this->jsonResponse(
                 success: true,
@@ -42,11 +35,7 @@ class FavoriteController extends BaseApiController implements FavoriteApiDocInte
     public function toggle(ToggleFavoriteRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
-                $retailerId = $request->retailer_user_id;
-            }
-            $result = $this->favoriteService->toggleFavorite($retailerId, $request->validated());
+            $result = $this->favoriteService->toggleFavorite(auth()->id(), $request->validated());
 
             return $this->jsonResponse(
                 success: true,

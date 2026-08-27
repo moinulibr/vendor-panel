@@ -5,7 +5,7 @@ namespace App\Http\Requests\Api\V1\App;
 use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ToggleFavoriteRequest extends FormRequest
+class ToggleFavoriteListRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,9 +17,6 @@ class ToggleFavoriteRequest extends FormRequest
         $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::RETAILER;
 
         return [
-            'product_id'    => 'required|integer|exists:products,id',
-            'type'          => 'required|string|in:single,variable',
-            'variation_id'  => 'nullable|integer|exists:variations,id',
             'retailer_user_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
