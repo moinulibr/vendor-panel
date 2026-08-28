@@ -104,5 +104,9 @@ Route::prefix('v1/app')->group(function () {
         Route::get('/get-setting-data', [SettingsController::class, 'getSettingData']);
         Route::get('/delivery-charge-info',[SettingsController::class, 'getDeliveryChargeInfo']);
         Route::get('/sr-order-create', [SettingsController::class, 'srOrderCreate']);
+        Route::get('/sr-cart-create', [SettingsController::class, 'srCartCreate']);
+        Route::get('/sr-favorite-create', [SettingsController::class, 'srFavoriteCreate']);
+
+        Route::get('/order-edit-info', [SettingsController::class, 'srOrderEditInfo']);
     });
 });
