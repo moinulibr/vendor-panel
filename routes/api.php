@@ -102,5 +102,6 @@ Route::prefix('v1/app')->group(function () {
 
         //setting static data [temporary]
         Route::get('/get-setting-data', [SettingsController::class, 'getSettingData']);
+        Route::get('/delivery-charge-info',[SettingsController::class, 'getDeliveryChargeInfo']);   
     });
 });
