@@ -18,7 +18,7 @@ class SettingsController extends BaseApiController
             $favorites = $this->favoriteService->getFavorites(auth()->id());
 
             return $this->jsonResponse(
-                success: true,
+            success: true,  
                 message: 'Favorites fetched successfully.',
                 data: FavoriteResource::collection($favorites),
                 statusCode: 200

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\CategoryController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\ProductController;
+use App\Http\Controllers\Api\V1\App\SettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -99,5 +100,7 @@ Route::prefix('v1/app')->group(function () {
         Route::get('/favorites', [FavoriteController::class, 'index']);
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
 
+        //setting static data [temporary]
+        Route::get('/get-setting-data', [SettingsController::class, 'getSettingData']);
     });
 });
