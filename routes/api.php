@@ -101,12 +101,8 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
 
         //setting static data [temporary]
-        Route::get('/get-setting-data', [SettingsController::class, 'getSettingData']);
-        Route::get('/delivery-charge-info',[SettingsController::class, 'getDeliveryChargeInfo']);
-        Route::get('/sr-order-create', [SettingsController::class, 'srOrderCreate']);
-        Route::get('/sr-cart-create', [SettingsController::class, 'srCartCreate']);
-        Route::get('/sr-favorite-create', [SettingsController::class, 'srFavoriteCreate']);
+        Route::get('/feature/delivery',[SettingsController::class, 'featureDelivery']);
+        Route::get('/features/status', [SettingsController::class, 'getFeaturesStatus']);
 
-        Route::get('/order-edit-info', [SettingsController::class, 'srOrderEditInfo']);
     });
 });
