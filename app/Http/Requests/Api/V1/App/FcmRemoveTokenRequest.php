@@ -22,7 +22,7 @@ class FcmRemoveTokenRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'fcm_token.required_if' => 'বর্তমান ডিভাইসের টোকেন মুছে ফেলার জন্য FCM টোকেন প্রদান করুন।',
+            'fcm_token.required_if' => 'বর্তমান ডিভাইসের টোকেন মুছে ফেলার জন্য FCM টোকেন প্রদান করুন। Please provide FCM token for current device.',
             'remove_scope.required' => 'টোকেন মোছার ধরণ (remove_scope) উল্লেখ করা বাধ্যতামূলক।',
             'remove_scope.in'       => 'remove_scope এর মান অবশ্যই current_device অথবা all_devices হতে হবে।',
         ];

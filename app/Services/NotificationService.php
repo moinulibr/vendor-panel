@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserDeviceToken;
-use App\Repositories\NotificationRepositoryInterface;
+use App\Repositories\Notification\Interface\NotificationRepositoryInterface;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -15,7 +15,10 @@ class NotificationService
     protected NotificationRepositoryInterface $notificationRepo;
     protected Messaging $messaging;
 
-    public function __construct(NotificationRepositoryInterface $notificationRepo, Messaging $messaging)
+    public function __construct(
+        NotificationRepositoryInterface $notificationRepo,
+         Messaging $messaging
+        )
     {
         $this->notificationRepo = $notificationRepo;
         $this->messaging = $messaging;

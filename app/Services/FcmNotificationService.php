@@ -2,25 +2,25 @@
 
 namespace App\Services;
 
-use App\Models\Notification;
+use App\Models\Notification as DbNotification;
 use App\Models\User;
 use App\Models\UserDeviceToken;
-use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
+use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 
 class FcmNotificationService
 {
     protected UserDeviceTokenRepositoryInterface $tokenRepo;
     protected Messaging $messaging;
+
     public function __construct(
         UserDeviceTokenRepositoryInterface $tokenRepo,
         Messaging $messaging
-    )
-    {
+    ) {
         $this->tokenRepo = $tokenRepo;
         $this->messaging = $messaging;
     }
@@ -38,17 +38,8 @@ class FcmNotificationService
         return $this->tokenRepo->removeToken($user, $data);
     }
 
-
     /**
-     * sendToUser function
-     *
-     * @param integer|null $userId
-     * @param string $title
-     * @param string $body
-     * @param string $type
-     * @param string $targetChannel
-     * @param array $data
-     * @return Notification|null
+     * Send Notification to a specific User
      */
     public function sendToUser(
         ?int $userId,
@@ -57,25 +48,25 @@ class FcmNotificationService
         string $type = 'system',
         string $targetChannel = 'app',
         array $data = []
-    ): ?Notification {
+    ): ?DbNotification {
 
-        //1. Save data to database as in-app notification history
-        $dbNotification = Notification::create([
-            'user_id' => $userId,
-            'title' => $title,
-            'body' => $body,
-            'type' => $type,
+        // 1. Save data to database as in-app notification history
+        $dbNotification = DbNotification::create([
+            'user_id'        => $userId,
+            'title'          => $title,
+            'body'           => $body,
+            'type'           => $type,
             'target_channel' => $targetChannel,
-            'data' => $data,
-            'read_at' => null,
+            'data'           => $data,
+            'read_at'        => null,
         ]);
 
-        //2. if the target channel is mobile app or all, then send fcm push notification
+        // 2. Send FCM push notification if target channel is app or all
         if (in_array($targetChannel, ['app', 'all']) && $userId) {
             $this->dispatchFcmToUserDevices($userId, $title, $body, $data);
         }
 
-        //3. if the target channel is web admin or all, then Web Socket/Reverb event broadcast event
+        // 3. Web Socket/Reverb event broadcast
         if (in_array($targetChannel, ['web_admin', 'all'])) {
             // broadcast(new \App\Events\AdminNotificationEvent($dbNotification))->toOthers();
         }
@@ -84,17 +75,10 @@ class FcmNotificationService
     }
 
     /**
-     * dispatchFcmToUserDevices function
-     *
-     * @param integer $userId
-     * @param string $title
-     * @param string $body
-     * @param array $data
-     * @return void
+     * Dispatch FCM Push Notification to all active user devices
      */
     protected function dispatchFcmToUserDevices(int $userId, string $title, string $body, array $data = []): void
     {
-        // Collect user's all FCM tokens
         $tokens = UserDeviceToken::where('user_id', $userId)
             ->whereNotNull('fcm_token')
             ->pluck('fcm_token')
@@ -104,7 +88,7 @@ class FcmNotificationService
             return;
         }
 
-        // value of $data will be string 
+        // Convert all values in data payload to string (FCM V1 Requirement)
         $formattedData = array_map(fn($val) => is_array($val) ? json_encode($val) : (string)$val, $data);
 
         $message = CloudMessage::new()
@@ -112,14 +96,15 @@ class FcmNotificationService
             ->withData($formattedData);
 
         try {
-            // send multicast to multiple device
             $this->messaging->sendMulticast($message, $tokens);
         } catch (\Throwable $e) {
             Log::error("FCM Multicast Error for User ID {$userId}: " . $e->getMessage());
         }
     }
 
-
+    /**
+     * Send Push Notification to Multiple FCM Tokens (Bulk / Campaign)
+     */
     public function sendToMultipleUsers(array $fcmTokens, string $title, string $body, array $data = []): array
     {
         $validTokens = array_values(array_filter($fcmTokens));
@@ -128,12 +113,14 @@ class FcmNotificationService
             return ['success' => 0, 'failure' => 0];
         }
 
+        $formattedData = array_map(fn($val) => is_array($val) ? json_encode($val) : (string)$val, $data);
+
+        // Fixed: Use FirebaseNotification alias instead of App\Models\Notification
         $message = CloudMessage::new()
-            ->withNotification(Notification::create($title, $body))
-            ->withData($data);
+            ->withNotification(FirebaseNotification::create($title, $body))
+            ->withData($formattedData);
 
         try {
-            // send all tokens  firebase sendmulticast
             $report = $this->messaging->sendMulticast($message, $validTokens);
 
             return [
@@ -146,18 +133,3 @@ class FcmNotificationService
         }
     }
 }
-
-
-/*
-$notificationService->sendToUser(
-    userId: $user->id,
-    title: "New Order Placed!",
-    body: "Your order #105 has been received successfully.",
-    type: "order_created",
-    targetChannel: "all", // মোবাইল অ্যাপে FCM যাবে + ডাটাবেজে সেভ হবে + ওয়েব অ্যাডমিনে রিয়েলটাইম অ্যালার্ট হবে
-    data: [
-        'order_id' => 105,
-        'click_action' => '/orders/105'
-    ]
-);
-*/

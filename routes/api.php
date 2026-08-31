@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\App\CartController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\CategoryController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
+use App\Http\Controllers\Api\V1\App\NotificationController;
 use App\Http\Controllers\Api\V1\App\ProductController;
 use App\Http\Controllers\Api\V1\App\SettingsController;
 use App\Http\Controllers\Api\V1\App\TestingFeaturesController;
@@ -54,9 +55,15 @@ Route::prefix('v1/app')->group(function () {
         //fcm token api
         Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
         Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
-        
-        //real file notification route here
 
+        //real file notification route here
+        // Notification Management Group
+        Route::prefix('notifications')->controller(NotificationController::class)->group(function () {
+            Route::get('/', 'index');                      // GET  /api/v1/app/notifications
+            Route::post('/{id}/read', 'markAsRead');       // POST /api/v1/app/notifications/{id}/read
+            Route::post('/read-all', 'markAllAsRead');     // POST /api/v1/app/notifications/read-all
+        });
+        
         // Internal Staff Only Routes (access_type = 1) - SR only
         Route::middleware(['access.type:1'])->group(function () {
             // SR / Staff specific APIs
@@ -69,7 +76,7 @@ Route::prefix('v1/app')->group(function () {
             Route::delete('/delete-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteRetailerShippingAddress']);
         });
 
-        //Category
+        //test notification
         Route::get('/send-notification', [TestingFeaturesController::class, 'testingNotification']);
 
         // Product Routes

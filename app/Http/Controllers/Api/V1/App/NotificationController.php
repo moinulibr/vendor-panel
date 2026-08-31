@@ -2,67 +2,115 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Requests\Api\V1\App\FcmRemoveTokenRequest;
-use App\Http\Requests\Api\V1\App\FcmStoreTokenRequest;
 use App\Http\Resources\Api\V1\App\NotificationResource;
-//use App\Http\Swagger\FcmNotificationApiDocInterface;
-use App\Services\FcmNotificationService;
+use App\Http\Swagger\NotificationApiDocInterface;
 use App\Services\NotificationService;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
-class NotificationController extends BaseApiController
+class NotificationController extends BaseApiController implements NotificationApiDocInterface
 {
     protected NotificationService $notificationService;
-    protected FcmNotificationService $fcmService;
 
-    public function __construct(NotificationService $notificationService, FcmNotificationService $fcmService)
+    public function __construct(NotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
-        $this->fcmService = $fcmService;
     }
 
-    public function index(Request $request)
+    /**
+     * Get paginated user notifications
+     */
+    public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $channel = $request->get('channel', 'app');
-        $notifications = $this->notificationService->getUserNotifications($user, $channel, $request->get('per_page', 15));
-        $unreadCount = $this->notificationService->getUnreadCount($user, $channel);
+        try {
+            $user = $request->user();
+            $channel = $request->get('channel', 'app');
+            $perPage = (int) $request->get('per_page', 15);
 
-        return $this->sendSuccessResponse([
-            'unread_count'  => $unreadCount,
-            'notifications' => NotificationResource::collection($notifications)->response()->getData(true)
-        ], 'Notifications retrieved successfully.');
+            /** @var \Illuminate\Pagination\LengthAwarePaginator $notifications */
+            $notifications = $this->notificationService->getUserNotifications($user, $channel, $perPage);
+            $unreadCount = $this->notificationService->getUnreadCount($user, $channel);
+
+            // CHANGED: Custom Standard Response matching your provided sample
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifications retrieved successfully.',
+                'data'    => [
+                    'unread_count'  => $unreadCount,
+                    'notifications' => NotificationResource::collection($notifications->items()),
+                ],
+                'pagination' => [
+                    'total'        => $notifications->total(),
+                    'count'        => $notifications->count(),
+                    'per_page'     => $notifications->perPage(),
+                    'current_page' => $notifications->currentPage(),
+                    'total_pages'  => $notifications->lastPage(),
+                    'has_more'     => $notifications->hasMorePages(),
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Fetch Notifications Error: ' . $e->getMessage());
+
+            // CHANGED: Standard Error Response
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch notifications.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
-    public function markAsRead(Request $request, $id)
+    /**
+     * Mark single notification as read
+     */
+    public function markAsRead(Request $request, $id): JsonResponse
     {
-        $user = $request->user();
-        $this->notificationService->markAsRead($user, (int) $id);
+        try {
+            $user = $request->user();
+            $this->notificationService->markAsRead($user, (int) $id);
 
-        return $this->sendSuccessResponse([], 'Notification marked as read.');
+            // CHANGED: Standard Success Response
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification marked as read successfully.',
+                'data'    => null
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Mark Notification Read Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark notification as read.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
-    public function markAllAsRead(Request $request)
+    /**
+     * Mark all notifications as read
+     */
+    public function markAllAsRead(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $this->notificationService->markAllAsRead($user);
+        try {
+            $user = $request->user();
+            $this->notificationService->markAllAsRead($user);
 
-        return $this->sendSuccessResponse([], 'All notifications marked as read.');
-    }
+            // CHANGED: Standard Success Response
+            return response()->json([
+                'success' => true,
+                'message' => 'All notifications marked as read successfully.',
+                'data'    => null
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Mark All Notifications Read Error: ' . $e->getMessage());
 
-    public function storeFcmToken(FcmStoreTokenRequest $request)
-    {
-        $user = $request->user();
-        $this->fcmService->storeOrUpdateToken($user, $request->validated());
-
-        return $this->sendSuccessResponse([], 'FCM token saved successfully.');
-    }
-
-    public function removeFcmToken(FcmRemoveTokenRequest $request)
-    {
-        $user = $request->user();
-        $this->fcmService->removeToken($user, $request->validated());
-
-        return $this->sendSuccessResponse([], 'FCM token(s) removed successfully.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to mark all notifications as read.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }
