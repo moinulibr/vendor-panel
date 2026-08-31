@@ -38,7 +38,18 @@ class FcmNotificationService
         return $this->tokenRepo->removeToken($user, $data);
     }
 
-    //send to single user
+
+    /**
+     * sendToUser function
+     *
+     * @param integer|null $userId
+     * @param string $title
+     * @param string $body
+     * @param string $type
+     * @param string $targetChannel
+     * @param array $data
+     * @return Notification|null
+     */
     public function sendToUser(
         ?int $userId,
         string $title,
@@ -48,7 +59,7 @@ class FcmNotificationService
         array $data = []
     ): ?Notification {
 
-        // ১. আপনার `notifications` টেবিলে ডাটা সেভ করা (In-app Notification History)
+        //1. Save data to database as in-app notification history
         $dbNotification = Notification::create([
             'user_id' => $userId,
             'title' => $title,
@@ -59,12 +70,12 @@ class FcmNotificationService
             'read_at' => null,
         ]);
 
-        // ২. যদি টার্গেট চ্যানেল Mobile App বা All হয়, তবে FCM Push Notification পাঠানো
+        //2. if the target channel is mobile app or all, then send fcm push notification
         if (in_array($targetChannel, ['app', 'all']) && $userId) {
             $this->dispatchFcmToUserDevices($userId, $title, $body, $data);
         }
 
-        // ৩. যদি টার্গেট চ্যানেল Web Admin বা All হয়, তবে Web Socket/Reverb Event Broadcast করা
+        //3. if the target channel is web admin or all, then Web Socket/Reverb event broadcast event
         if (in_array($targetChannel, ['web_admin', 'all'])) {
             // broadcast(new \App\Events\AdminNotificationEvent($dbNotification))->toOthers();
         }
@@ -73,11 +84,17 @@ class FcmNotificationService
     }
 
     /**
-     * ইউজারের সব কটি নিবন্ধিত ডিভাইসে FCM Push পাঠানো
+     * dispatchFcmToUserDevices function
+     *
+     * @param integer $userId
+     * @param string $title
+     * @param string $body
+     * @param array $data
+     * @return void
      */
     protected function dispatchFcmToUserDevices(int $userId, string $title, string $body, array $data = []): void
     {
-        // ইউজারের সব FCM টোকেন সংগ্রহ
+        // Collect user's all FCM tokens
         $tokens = UserDeviceToken::where('user_id', $userId)
             ->whereNotNull('fcm_token')
             ->pluck('fcm_token')
@@ -87,7 +104,7 @@ class FcmNotificationService
             return;
         }
 
-        // $data-এর মানগুলো অবশ্যই String হতে হবে (FCM Requirement)
+        // value of $data will be string 
         $formattedData = array_map(fn($val) => is_array($val) ? json_encode($val) : (string)$val, $data);
 
         $message = CloudMessage::new()
@@ -95,7 +112,7 @@ class FcmNotificationService
             ->withData($formattedData);
 
         try {
-            // একসাথে একাধিক ডিভাইসে পাঠানো
+            // send multicast to multiple device
             $this->messaging->sendMulticast($message, $tokens);
         } catch (\Throwable $e) {
             Log::error("FCM Multicast Error for User ID {$userId}: " . $e->getMessage());
@@ -116,7 +133,7 @@ class FcmNotificationService
             ->withData($data);
 
         try {
-            // Firebase sendMulticast ব্যবহার করে একসাথে সব টোকেনে নোটিফিকেশন পাঠায়
+            // send all tokens  firebase sendmulticast
             $report = $this->messaging->sendMulticast($message, $validTokens);
 
             return [

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\App\CategoryController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\ProductController;
 use App\Http\Controllers\Api\V1\App\SettingsController;
+use App\Http\Controllers\Api\V1\App\TestingFeaturesController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -69,7 +70,7 @@ Route::prefix('v1/app')->group(function () {
         });
 
         //Category
-        Route::get('/get-categories', [CategoryController::class, 'getCategories']);
+        Route::get('/send-notification', [TestingFeaturesController::class, 'testingNotification']);
 
         // Product Routes
         Route::controller(ProductController::class)->group(function () {
