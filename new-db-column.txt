@@ -1,3 +1,32 @@
+firebase
+- storage/app/firebase/firebase_credentials.json
+- .env file => FIREBASE_CREDENTIALS=storage/app/firebase/firebase_credentials.json
+- not need for live- #composer require kreait/laravel-firebase
+- not need for live- #php artisan vendor:publish --provider="Kreait\Laravel\Firebase\ServiceProvider" --tag=config
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #maybe it's used
     Users table
     -----------> 
     1. email nullable ->created a migration file

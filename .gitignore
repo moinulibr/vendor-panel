@@ -20,6 +20,7 @@
 /public/storage
 /storage/*.key
 /storage
+/storage/app/firebase/firebase_credentials.json
 /vendor
 /bootstrap/cache/*.php
 .env

@@ -14,7 +14,7 @@ return new class extends Migration
         if(!Schema::hasTable('notifications')) {
             Schema::create('notifications', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->nullable(); // Recipient User/Admin ID
+                $table->foreignId('user_id')->nullable()->comment('Recipient User/Admin ID'); // Recipient User/Admin ID
                 $table->string('title')->nullable();
                 $table->text('body')->nullable();
                 $table->string('type')->default('system'); // order_created, order_cancelled, offer, payment
