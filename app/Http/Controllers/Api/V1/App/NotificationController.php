@@ -33,7 +33,6 @@ class NotificationController extends BaseApiController implements NotificationAp
             $notifications = $this->notificationService->getUserNotifications($user, $channel, $perPage);
             $unreadCount = $this->notificationService->getUnreadCount($user, $channel);
 
-            // CHANGED: Custom Standard Response matching your provided sample
             return response()->json([
                 'success' => true,
                 'message' => 'Notifications retrieved successfully.',
@@ -53,7 +52,6 @@ class NotificationController extends BaseApiController implements NotificationAp
         } catch (Exception $e) {
             Log::error('Fetch Notifications Error: ' . $e->getMessage());
 
-            // CHANGED: Standard Error Response
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch notifications.',
@@ -71,7 +69,6 @@ class NotificationController extends BaseApiController implements NotificationAp
             $user = $request->user();
             $this->notificationService->markAsRead($user, (int) $id);
 
-            // CHANGED: Standard Success Response
             return response()->json([
                 'success' => true,
                 'message' => 'Notification marked as read successfully.',
@@ -97,7 +94,6 @@ class NotificationController extends BaseApiController implements NotificationAp
             $user = $request->user();
             $this->notificationService->markAllAsRead($user);
 
-            // CHANGED: Standard Success Response
             return response()->json([
                 'success' => true,
                 'message' => 'All notifications marked as read successfully.',

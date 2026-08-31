@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Notification;
 use App\Models\User;
 use App\Models\UserDeviceToken;
 use App\Repositories\Notification\Interface\NotificationRepositoryInterface;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
@@ -17,14 +19,13 @@ class NotificationService
 
     public function __construct(
         NotificationRepositoryInterface $notificationRepo,
-         Messaging $messaging
-        )
-    {
+        Messaging $messaging
+    ) {
         $this->notificationRepo = $notificationRepo;
         $this->messaging = $messaging;
     }
 
-    public function getUserNotifications(User $user, string $channel = 'app', int $perPage = 15)
+    public function getUserNotifications(User $user, string $channel = 'app', int $perPage = 15): LengthAwarePaginator
     {
         return $this->notificationRepo->getUserNotifications($user, $channel, $perPage);
     }
@@ -45,14 +46,7 @@ class NotificationService
     }
 
     /**
-     * 🚀 Master Notification Dispatcher (Supports DB + FCM Push)
-     *
-     * @param int $userId Recipient User ID
-     * @param string $title Title
-     * @param string $body Message body
-     * @param string $type e.g. order_created, order_cancelled
-     * @param string $targetChannel 'app', 'web_admin', or 'all'
-     * @param array $payloadData Custom JSON payload
+     * Master Notification Dispatcher (DB Store + FCM Push Engine)
      */
     public function sendNotification(
         int $userId,
@@ -61,9 +55,9 @@ class NotificationService
         string $type = 'system',
         string $targetChannel = 'all',
         array $payloadData = []
-    ): void {
-        // ১. ডাটাবেজে রেকর্ড সেভ করা
-        $this->notificationRepo->createNotification([
+    ): Notification {
+        // 1. Save in-app notification to Database
+        $notification = $this->notificationRepo->createNotification([
             'user_id'        => $userId,
             'title'          => $title,
             'body'           => $body,
@@ -72,8 +66,9 @@ class NotificationService
             'data'           => $payloadData,
         ]);
 
-        // ২. ডেসটিনেশন ফিল্টার করে একটিভ টোকেন বের করা
-        $tokenQuery = UserDeviceToken::where('user_id', $userId);
+        // 2. Fetch Active FCM Tokens based on Channel Filter
+        $tokenQuery = UserDeviceToken::where('user_id', $userId)
+            ->whereNotNull('fcm_token');
 
         if ($targetChannel === 'app') {
             $tokenQuery->whereIn('device_type', ['android', 'ios']);
@@ -81,35 +76,38 @@ class NotificationService
             $tokenQuery->where('device_type', 'web');
         }
 
-        $tokens = $tokenQuery->pluck('fcm_token')->toArray();
+        $tokens = array_filter($tokenQuery->pluck('fcm_token')->toArray());
 
-        // ৩. Firebase HTTP v1 API দিয়ে মাল্টিকাস্ট পুশ সেশন এক্সিকিউট করা
+        // 3. Dispatch Push Notification via FCM
         if (!empty($tokens)) {
             $this->sendFcmPush($tokens, $title, $body, $payloadData);
         }
+
+        return $notification;
     }
 
     /**
-     * Kreait Firebase SDK FCM Push Engine
+     * FCM Multicast Sender
      */
     private function sendFcmPush(array $tokens, string $title, string $body, array $payloadData): void
     {
         try {
             $fcmNotification = FcmNotification::create($title, $body);
 
-            // Payload data string এ কনভার্ট করা (FCM requirements)
-            $formattedData = array_map('strval', $payloadData);
+            // Safe String Casting for Nested Objects in FCM Data Payload
+            $formattedData = array_map(function ($value) {
+                return is_array($value) ? json_encode($value) : (string) $value;
+            }, $payloadData);
 
             $message = CloudMessage::new()
                 ->withNotification($fcmNotification)
                 ->withData($formattedData);
 
-            // Multiple device tokens এ একসাথে পাঠাতে sendMulticast
             $report = $this->messaging->sendMulticast($message, $tokens);
 
-            Log::info("FCM Sent Success: {$report->successes()->count()}, Failures: {$report->failures()->count()}");
-        } catch (\Exception $e) {
-            Log::error("FCM Push Dispatch Error: " . $e->getMessage());
+            Log::info("FCM Dispatch Success: {$report->successes()->count()}, Failures: {$report->failures()->count()}");
+        } catch (\Throwable $e) {
+            Log::error("FCM Push Engine Error: " . $e->getMessage());
         }
     }
 }

@@ -29,6 +29,7 @@ class NotificationRepository implements NotificationRepositoryInterface
     {
         return (bool) Notification::where('user_id', $user->id)
             ->where('id', $notificationId)
+            ->whereNull('read_at')
             ->update(['read_at' => now()]);
     }
 
@@ -39,7 +40,7 @@ class NotificationRepository implements NotificationRepositoryInterface
             ->update(['read_at' => now()]);
     }
 
-    public function createNotification(array $data)
+    public function createNotification(array $data): Notification
     {
         return Notification::create([
             'user_id'        => $data['user_id'],
