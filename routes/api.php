@@ -3,12 +3,12 @@
 use App\Http\Controllers\Api\V1\App\AuthController;
 use App\Http\Controllers\Api\V1\App\CartController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
-use App\Http\Controllers\Api\V1\App\CategoryController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\NotificationController;
 use App\Http\Controllers\Api\V1\App\ProductController;
 use App\Http\Controllers\Api\V1\App\SettingsController;
 use App\Http\Controllers\Api\V1\App\TestingFeaturesController;
+use App\Http\Controllers\Api\V1\App\UserDeviceAndFcmTokenController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -53,15 +53,18 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/update-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'updateRetailerShippingAddress']);
 
         //fcm token api
-        Route::post('store-fcm-token', [FcmNotificationController::class, 'storeFcmToken']);
-        Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
+        //Route::post('store-fcm-toke', [FcmNotificationController::class, 'storeFcmToken']);
+        //Route::post('remove-fcm-token', [FcmNotificationController::class, 'removeFcmToken']);
+        Route::post('store-fcm-token', [UserDeviceAndFcmTokenController::class, 'storeFcmToken']);
+        Route::post('remove-fcm-token', [UserDeviceAndFcmTokenController::class, 'removeFcmToken']);
+        //test notification
+        Route::get('/send-notification', [TestingFeaturesController::class, 'testingNotification']);
 
         //real file notification route here
-        // Notification Management Group
         Route::prefix('notifications')->controller(NotificationController::class)->group(function () {
             Route::get('/', 'index');                      // GET  /api/v1/app/notifications
-            Route::post('/{id}/read', 'markAsRead');       // POST /api/v1/app/notifications/{id}/read
-            Route::post('/read-all', 'markAllAsRead');     // POST /api/v1/app/notifications/read-all
+            Route::get('read/{id}', 'markAsRead');       // GET /api/v1/app/notifications/{id}/read
+            Route::get('/read-all', 'markAllAsRead');     // GET /api/v1/app/notifications/read-all
         });
         
         // Internal Staff Only Routes (access_type = 1) - SR only
@@ -75,9 +78,6 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
             Route::delete('/delete-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteRetailerShippingAddress']);
         });
-
-        //test notification
-        Route::get('/send-notification', [TestingFeaturesController::class, 'testingNotification']);
 
         // Product Routes
         Route::controller(ProductController::class)->group(function () {

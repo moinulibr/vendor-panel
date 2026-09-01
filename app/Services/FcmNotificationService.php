@@ -3,40 +3,23 @@
 namespace App\Services;
 
 use App\Models\Notification as DbNotification;
-use App\Models\User;
 use App\Models\UserDeviceToken;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
-use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 
 class FcmNotificationService
 {
-    protected UserDeviceTokenRepositoryInterface $tokenRepo;
     protected Messaging $messaging;
 
     public function __construct(
-        UserDeviceTokenRepositoryInterface $tokenRepo,
         Messaging $messaging
     ) {
-        $this->tokenRepo = $tokenRepo;
         $this->messaging = $messaging;
     }
 
-    public function storeOrUpdateToken(User $user, array $data): bool
-    {
-        return $this->tokenRepo->updateOrCreateToken($user, $data);
-    }
-
-    public function removeToken(User $user, array $data): bool
-    {
-        if (!$this->tokenRepo->findDeviceToken($user, $data['fcmToken'])) {
-            throw new Exception("Token not found.", 422);
-        }
-        return $this->tokenRepo->removeToken($user, $data);
-    }
 
     /**
      * Send Notification to a specific User

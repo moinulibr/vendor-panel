@@ -10,12 +10,12 @@ class UserDeviceTokenRepository implements UserDeviceTokenRepositoryInterface
 {
     public function updateOrCreateToken(User $user, array $data): bool
     {
-        // ১. যদি এই fcm_token টি অন্য কোনো ইউজারের ড্রাইভে থাকে, তবে সেটি আগে ডিলিট করে ক্লিন করা হবে
+        // 1. - if this fcm_token already exists in another user's device, delete other user's device
         UserDeviceToken::where('fcm_token', $data['fcm_token'])
             ->where('user_id', '!=', $user->id)
             ->delete();
 
-        // ২. একই ইউজার ও ডিভাইস আইডি বা টোকেনের সাপেক্ষে আপডেট বা ক্রিয়েট করা
+        // 2. - update or create base on same user and device 
         UserDeviceToken::updateOrCreate(
             [
                 'user_id'   => $user->id,
@@ -34,12 +34,12 @@ class UserDeviceTokenRepository implements UserDeviceTokenRepositoryInterface
     {
         $query = UserDeviceToken::where('user_id', $user->id);
 
-        // যদি সব ডিভাইস থেকে সরাতে চায়
+        // if remove token from all devices
         if ($data['remove_scope'] === 'all_devices') {
             return (bool) $query->delete();
         }
 
-        // শুধু নির্দিষ্ট বর্তমান ডিভাইস থেকে সরাতে চাইলে
+        // if remove token from current device
         if (!empty($data['fcm_token'])) {
             return (bool) $query->where('fcm_token', $data['fcm_token'])->delete();
         }

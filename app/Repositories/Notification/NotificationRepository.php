@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repositories;
+namespace App\Repositories\Notification;
 
 use App\Models\Notification;
 use App\Models\User;

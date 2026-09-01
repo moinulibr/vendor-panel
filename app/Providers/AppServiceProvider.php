@@ -14,6 +14,8 @@ use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
 use App\Repositories\Favorite\FavoriteRepository;
 use App\Repositories\Favorite\Interface\FavoriteRepositoryInterface;
+use App\Repositories\Notification\Interface\NotificationRepositoryInterface;
+use App\Repositories\Notification\NotificationRepository;
 use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Repositories\Otp\OtpRepository;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
@@ -41,6 +43,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             UserDeviceTokenRepositoryInterface::class,
             UserDeviceTokenRepository::class
+        );
+
+        $this->app->bind(
+            NotificationRepositoryInterface::class,
+            NotificationRepository::class
         );
 
         $this->app->bind(

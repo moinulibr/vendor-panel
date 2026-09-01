@@ -55,8 +55,8 @@ interface NotificationApiDocInterface
     )]
     public function index(Request $request);
 
-    #[OA\Post(
-        path: "/api/v1/app/notifications/{id}/read",
+    #[OA\Get(
+        path: "/api/v1/app/notifications/read/{id}",
         summary: "Mark Single Notification as Read",
         tags: ["Notification"],
         security: [["sanctum" => []]],
@@ -81,7 +81,7 @@ interface NotificationApiDocInterface
     )]
     public function markAsRead(Request $request, $id);
 
-    #[OA\Post(
+    #[OA\Get(
         path: "/api/v1/app/notifications/read-all",
         summary: "Mark All Notifications as Read",
         tags: ["Notification"],
