@@ -79,7 +79,19 @@ class FcmNotificationService
             ->withData($formattedData);
 
         try {
-            $this->messaging->sendMulticast($message, $tokens);
+            //$this->messaging->sendMulticast($message, $tokens);
+            $report = $this->messaging->sendMulticast($message, $tokens);
+
+            Log::info("FCM Total Target Tokens: " . count($tokens));
+            Log::info("FCM Success Count: " . $report->successes()->count());
+            Log::info("FCM Failure Count: " . $report->failures()->count());
+
+            // যদি ব্যর্থ হয়, আসল কারণ দেখতে:
+            if ($report->hasFailures()) {
+                foreach ($report->failures()->getItems() as $failure) {
+                    Log::error("FCM Delivery Failed: " . $failure->error()->getMessage());
+                }
+            }
         } catch (\Throwable $e) {
             Log::error("FCM Multicast Error for User ID {$userId}: " . $e->getMessage());
         }
