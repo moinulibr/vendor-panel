@@ -110,6 +110,8 @@ if (Schema::hasTable('products')) {
 
 if (!Schema::hasColumn('variations', 'image')) {
     Schema::table('variations', function (Blueprint $table) {
+        $table->text('attribute')->nullable()->after('name')->comment('variation attributes');
+        $table->string('slug')->nullable()->after('attribute')->comment('variation slug');
         $table->decimal('retail_price', 12, 2)->default(0)->after('sell_price')->comment('Retail Price for all mobile app users');
         $table->decimal('wholesale_price', 12, 2)->default(0)->after('retail_price')->comment('Wholesale Price for mobile app reatiler/dealer users');
         $table->string('image')->nullable()->after('wholesale_price')->comment('Variants Product Image');
