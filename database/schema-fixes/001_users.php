@@ -29,6 +29,7 @@ if (Schema::hasTable('users')) {
         });
     }
 
+    //add a new user type dealer
     if (Schema::hasColumn('users', 'user_type')) {
         DB::statement("
             ALTER TABLE users
