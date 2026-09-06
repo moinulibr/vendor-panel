@@ -44,7 +44,7 @@ class UserType
     */
 
     public static function list(): array
-    {
+    {   //dealer user
         return [
             self::ADMIN              => 'Admin',
             self::STAFF              => 'Staff',
