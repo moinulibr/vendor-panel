@@ -27,7 +27,7 @@ class UserType
     public const VENDOR             = 3;
     public const SR                 = 4;
     public const RETAILER           = 5;
-    public const SUPPLIER           = 6;
+    public const SUPPLIER           = 6; //dealer
     public const ECOMMERCE_CUSTOMER = 7;
     public const POS_CUSTOMER       = 8;
     public const RESELLER           = 9;
