@@ -129,6 +129,18 @@ if (!Schema::hasColumn('variations', 'image')) {
 //$table->string('meta_keywords')->nullable();
 
 
+//$table->softDeletes();
+//$table->string('slug')->unique();
+//$table->unsignedBigInteger('image_size')->nullable();
+// Flags
+//$table->boolean('is_active')->default(true);
+//$table->boolean('is_default')->default(false); // For single products
+//$table->integer('display_order')->default(0);
+// Additional
+//$table->string('barcode')->nullable();
+//$table->string('mpn')->nullable(); // Manufacturer Part Number
+
+
 Schema::table('products', function (Blueprint $table) {
 
     if (!hasIndex('products', 'ft_products_name')) {
