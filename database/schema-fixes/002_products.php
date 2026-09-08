@@ -118,6 +118,21 @@ if (!Schema::hasColumn('variations', 'image')) {
         $table->boolean('is_visible')->nullable()->default(1)->after('image')->comment('Variation type product will be visible AND single type product will be not visible');
     });
 }
+//$table->softDeletes();
+//$table->string('slug')->unique();
+//$table->unsignedBigInteger('image_size')->nullable();
+// Flags
+//$table->boolean('is_active')->default(true);
+//$table->boolean('is_default')->default(false); // For single products
+//$table->integer('display_order')->default(0);
+// Additional
+//$table->string('barcode')->nullable();
+//$table->string('mpn')->nullable(); // Manufacturer Part Number
+
+// price matters -
+// retailer_price, vendor_wholesale_price, vendor_retail_price, vendor_purchase_price
+// dealer_price
+
 
 // $table->enum('type', ['single', 'variable', 'combo', 'service'])->default('single');
 // $table->enum('status', ['draft', 'active', 'inactive', 'archived'])->default('draft');
@@ -129,16 +144,7 @@ if (!Schema::hasColumn('variations', 'image')) {
 //$table->string('meta_keywords')->nullable();
 
 
-//$table->softDeletes();
-//$table->string('slug')->unique();
-//$table->unsignedBigInteger('image_size')->nullable();
-// Flags
-//$table->boolean('is_active')->default(true);
-//$table->boolean('is_default')->default(false); // For single products
-//$table->integer('display_order')->default(0);
-// Additional
-//$table->string('barcode')->nullable();
-//$table->string('mpn')->nullable(); // Manufacturer Part Number
+
 
 
 Schema::table('products', function (Blueprint $table) {
