@@ -119,6 +119,16 @@ if (!Schema::hasColumn('variations', 'image')) {
     });
 }
 
+// $table->enum('type', ['single', 'variable', 'combo', 'service'])->default('single');
+// $table->enum('status', ['draft', 'active', 'inactive', 'archived'])->default('draft');
+
+//main products
+// SEO & Meta
+//$table->string('meta_title')->nullable();
+//$table->text('meta_description')->nullable();
+//$table->string('meta_keywords')->nullable();
+
+
 Schema::table('products', function (Blueprint $table) {
 
     if (!hasIndex('products', 'ft_products_name')) {
