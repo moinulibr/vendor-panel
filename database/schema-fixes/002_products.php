@@ -112,12 +112,20 @@ if (!Schema::hasColumn('variations', 'image')) {
     Schema::table('variations', function (Blueprint $table) {
         $table->text('attribute')->nullable()->after('name')->comment('variation attributes');
         $table->string('slug')->nullable()->after('attribute')->comment('variation slug');
-        $table->decimal('retail_price', 12, 2)->default(0)->after('sell_price')->comment('Retail Price for all mobile app users');
+        $table->decimal('mrp', 12, 2)->default(0)->after('sell_price')->comment('mrp = sell_price');
+        $table->decimal('retail_price', 12, 2)->default(0)->after('mrp')->comment('Retail Price for all mobile app users');
         $table->decimal('wholesale_price', 12, 2)->default(0)->after('retail_price')->comment('Wholesale Price for mobile app reatiler/dealer users');
         $table->string('image')->nullable()->after('wholesale_price')->comment('Variants Product Image');
         $table->boolean('is_visible')->nullable()->default(1)->after('image')->comment('Variation type product will be visible AND single type product will be not visible');
+        $table->boolean('is_default')->default(false);
+        $table->unsignedBigInteger('image_size')->nullable();
+        $table->string('barcode')->nullable();
+        $table->string('mpn')->nullable()->comment('Manufacturer Part Number'); // Manufacturer Part Number
+        $table->enum('status', ['draft', 'active', 'inactive', 'archived'])->default('draft')->comment('Variant Product Status - Draft, Active, Inactive, Archived');
+        $table->softDeletes();
     });
 }
+
 //$table->softDeletes();
 //$table->string('slug')->unique();
 //$table->unsignedBigInteger('image_size')->nullable();
