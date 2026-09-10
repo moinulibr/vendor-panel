@@ -115,6 +115,10 @@ if (!Schema::hasColumn('variations', 'image')) {
         $table->decimal('mrp', 12, 2)->default(0)->after('sell_price')->comment('mrp = sell_price');
         $table->decimal('retail_price', 12, 2)->default(0)->after('mrp')->comment('Retail Price for all mobile app users');
         $table->decimal('wholesale_price', 12, 2)->default(0)->after('retail_price')->comment('Wholesale Price for mobile app reatiler/dealer users');
+        $table->decimal('vendor_purchase_price', 12, 2)->default(0)->after('wholesale_price')->comment('vendor purchase price');
+        $table->decimal('vendor_wholesale_price_for_platform', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor price for platform/marketplace');
+        $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_wholesale_price_for_platform')->comment('vendor wholesale price');
+        $table->decimal('vendor_retail_price', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('mrp = sell_price');
         $table->string('image')->nullable()->after('wholesale_price')->comment('Variants Product Image');
         //$table->boolean('is_visible')->nullable()->default(1)->after('image')->comment('Variation type product will be visible AND single type product will be not visible');
         $table->boolean('is_single_type')->default(false)->comment('single product = true and all variations product = false');
@@ -125,6 +129,9 @@ if (!Schema::hasColumn('variations', 'image')) {
         $table->tinyInteger('status')->default(3)->comment('Variant Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived'); //, ['draft', 'active', 'inactive', 'archived']
         $table->softDeletes();
     });
+    //vendor_base_price 
+    //vendor_mrp
+    //dealer_price 
 }
 
 //$table->softDeletes();
