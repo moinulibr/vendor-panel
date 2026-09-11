@@ -110,31 +110,41 @@ if (Schema::hasTable('products')) {
 
 if (!Schema::hasColumn('variations', 'image')) {
     Schema::table('variations', function (Blueprint $table) {
+        // Basic Details & Slug
         $table->text('attribute')->nullable()->after('name')->comment('variation attributes');
         $table->string('slug')->nullable()->after('attribute')->comment('variation slug');
+
+        // Core App Pricing (For Customers, Dealers & Wholesalers)
         $table->decimal('mrp', 12, 2)->default(0)->after('sell_price')->comment('maximum retail price');
         $table->decimal('retail_price', 12, 2)->default(0)->after('mrp')->comment('Retail Price is below of mrp');
         $table->decimal('dealer_price', 12, 2)->default(0)->after('retail_price')->comment('dealer price for dealer user only');
         $table->decimal('wholesale_price', 12, 2)->default(0)->after('dealer_price')->comment('Wholesale Price');
+
+        // Vendor / B2B Pricing Structure
         $table->decimal('vendor_purchase_price', 12, 2)->default(0)->after('wholesale_price')->comment('vendor purchase price');
         $table->decimal('vendor_base_price', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor base price for platform/marketplace');
         $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_base_price')->comment('vendor wholesale price');
-        $table->decimal('vendor_retail_price', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('mrp = sell_price');
-        $table->decimal('vendor_mrp', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('vendor_mrp = sell_price');
-        $table->string('image')->nullable()->after('wholesale_price')->comment('Variants Product Image');
-        //$table->boolean('is_visible')->nullable()->default(1)->after('image')->comment('Variation type product will be visible AND single type product will be not visible');
+        $table->decimal('vendor_mrp', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('vendor recommended retail price / mrp');
+
+        $table->timestamp('last_price_updated_date')->nullable()->after('vendor_mrp')->comment('Timestamp of the last price change');
+        $table->json('before_updated_prices')->nullable()->after('last_price_updated_date')->comment('Historical prices snapshot before the last update');
+
+        // Media & Identifiers
+        $table->string('image')->nullable()->after('before_updated_prices')->comment('Variants Product Image');
+        $table->unsignedBigInteger('image_size')->nullable()->after('image');
+        $table->string('barcode')->nullable()->after('image_size');
+        $table->string('mpn')->nullable()->after('barcode')->comment('Manufacturer Part Number');
+        $table->string('custom_code')->nullable()->after('mpn')->comment('Custom Code');
+
+        // Flags & Product Types
         $table->boolean('is_single_type')->default(false)->comment('single product = true and all variations product = false');
         $table->boolean('is_default_selected_variant')->default(false)->comment('a single product variant can have only one default selected variant');
-        $table->unsignedBigInteger('image_size')->nullable();
-        $table->string('barcode')->nullable();
-        $table->string('mpn')->nullable()->comment('Manufacturer Part Number'); // Manufacturer Part Number
-        $table->string('custom_code')->nullable()->comment('Customr Code');
-        $table->tinyInteger('status')->default(3)->comment('Variant Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived'); //, ['draft', 'active', 'inactive', 'archived']
+
+        // Status & Soft Deletes
+        $table->tinyInteger('status')->default(3)->comment('Variant Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived');
         $table->softDeletes();
+        //$table->boolean('is_visible')->nullable()->default(1)->after('image')->comment('Variation type product will be visible AND single type product will be not visible');
     });
-    //vendor_base_price 
-    //vendor_mrp
-    //dealer_price 
 }
 
 //$table->softDeletes();
