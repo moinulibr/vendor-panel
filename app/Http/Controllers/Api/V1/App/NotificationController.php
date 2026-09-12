@@ -109,4 +109,38 @@ class NotificationController extends BaseApiController implements NotificationAp
             ], 500);
         }
     }
+
+
+    /**
+     * Delete a single notification
+     */
+    public function deleteSingleNotification(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $deleted = $this->notificationService->deleteSingleNotification($user, (int) $id);
+
+            if (!$deleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Notification not found or access denied.',
+                    'data'    => null
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notification deleted successfully.',
+                'data'    => null
+            ], 200);
+        } catch (Exception $e) {
+            Log::error('Delete Single Notification Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete notification.',
+                'error'   => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
 }

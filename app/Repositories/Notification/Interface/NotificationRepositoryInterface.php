@@ -13,4 +13,5 @@ interface NotificationRepositoryInterface
     public function markAsRead(User $user, int $notificationId): bool;
     public function markAllAsRead(User $user): bool;
     public function createNotification(array $data): Notification;
+    public function deleteSingleNotification(User $user, int $notificationId): bool;
 }

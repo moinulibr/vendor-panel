@@ -46,6 +46,17 @@ class NotificationService
     }
 
     /**
+     * Delete single notification for a user
+     */
+    public function deleteSingleNotification(User $user, int $notificationId): bool
+    {
+        return $this->notificationRepo->deleteSingleNotification($user, $notificationId);
+    }
+
+
+
+    
+    /**
      * Master Notification Dispatcher (DB Store + FCM Push Engine)
      */
     public function sendNotification(

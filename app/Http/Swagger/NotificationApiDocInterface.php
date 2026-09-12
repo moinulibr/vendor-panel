@@ -103,4 +103,31 @@ interface NotificationApiDocInterface
         ]
     )]
     public function markAllAsRead(Request $request);
+
+    #[OA\Delete(
+        path: "/api/v1/app/notifications/{id}",
+        summary: "Delete Single Notification",
+        tags: ["Notification"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer", example: 1))
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Notification deleted successfully",
+                content: new OA\JsonContent(
+                    example: [
+                        "success" => true,
+                        "message" => "Notification deleted successfully.",
+                        "data" => null
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 404, description: "Notification not found"),
+            new OA\Response(response: 500, description: "Server Error")
+        ]
+    )]
+    public function deleteSingleNotification(Request $request, $id);
 }

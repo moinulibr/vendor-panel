@@ -69,7 +69,7 @@ if (Schema::hasTable('products')) {
             $table->decimal('vendor_purchase_price', 12, 2)->default(0)->after('wholesale_price')->comment('vendor purchase price');
         }
         if (!Schema::hasColumn('products', 'vendor_base_price')) {
-            $table->decimal('vendor_base_price', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor base price for platform/marketplace');
+            $table->decimal('vendor_base_price', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor base price = purchase price of platform/marketplace');
         }
         if (!Schema::hasColumn('products', 'vendor_wholesale_price')) {
             $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_base_price')->comment('vendor wholesale price');

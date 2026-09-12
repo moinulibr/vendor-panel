@@ -65,6 +65,7 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/', 'index');                      // GET  /api/v1/app/notifications
             Route::get('read/{id}', 'markAsRead');       // GET /api/v1/app/notifications/{id}/read
             Route::get('/read-all', 'markAllAsRead');     // GET /api/v1/app/notifications/read-all
+            Route::delete('/{id}', 'deleteSingleNotification'); // DELETE /api/v1/app/notifications/{id}
         });
         
         // Internal Staff Only Routes (access_type = 1) - SR only

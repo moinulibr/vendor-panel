@@ -51,4 +51,10 @@ class NotificationRepository implements NotificationRepositoryInterface
             'data'           => $data['data'] ?? null,
         ]);
     }
+    public function deleteSingleNotification(User $user, int $notificationId): bool
+    {
+        return (bool) Notification::where('user_id', $user->id)
+            ->where('id', $notificationId)
+            ->delete();
+    }
 }
