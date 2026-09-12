@@ -114,7 +114,7 @@ class NotificationController extends BaseApiController implements NotificationAp
     /**
      * Delete a single notification
      */
-    public function deleteSingleNotification(Request $request, $id): JsonResponse
+    public function deleteSingleNotification(Request $request, int $id): JsonResponse
     {
         try {
             $user = $request->user();

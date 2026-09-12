@@ -129,5 +129,5 @@ interface NotificationApiDocInterface
             new OA\Response(response: 500, description: "Server Error")
         ]
     )]
-    public function deleteSingleNotification(Request $request, $id);
+    public function deleteSingleNotification(Request $request, int $id);
 }
