@@ -4,8 +4,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+//db:schema-fix
 // ==============================================================================
-// [ADDED] Custom helper function to check if an index exists in MySQL
+// Custom helper function to check if an index exists in MySQL
 // ==============================================================================
 if (!function_exists('hasIndex')) {
     function hasIndex(string $table, string $indexName): bool
@@ -15,50 +16,96 @@ if (!function_exists('hasIndex')) {
             SELECT COUNT(1) as total 
             FROM INFORMATION_SCHEMA.STATISTICS 
             WHERE TABLE_SCHEMA = ? 
-              AND TABLE_NAME = ? 
-              AND INDEX_NAME = ?
+            AND TABLE_NAME = ? 
+            AND INDEX_NAME = ?
         ", [$database, $table, $indexName]);
 
         return ($result[0]->total ?? 0) > 0;
     }
 }
 
+// ==============================================================================
+// 1. PRODUCTS TABLE (Columns & Indexes)
+// ==============================================================================
 if (Schema::hasTable('products')) {
+    Schema::table('products', function (Blueprint $table) {
 
-    if (!Schema::hasColumn('products', 'created_by')) {
-        Schema::table('products', function (Blueprint $table) {
-            $table->unsignedBigInteger('created_by')
-                ->nullable()
-                ->after('updated_at')
-                ->comment('Creator User ID');
-        });
-    }
+        // 1. Core Columns
+        if (!Schema::hasColumn('products', 'created_by')) {
+            $table->unsignedBigInteger('created_by')->nullable()->after('updated_at')->comment('Creator User ID');
+        }
 
-    if (Schema::hasColumn('products', 'user_id')) {
-        DB::statement("
-            ALTER TABLE products
-            MODIFY COLUMN user_id BIGINT UNSIGNED NULL
-            COMMENT 'Foreign key reference to vendor (users.id)'
-        ");
-    }
-
-    if (!Schema::hasColumn('products', 'min_price')) {
-        Schema::table('products', function (Blueprint $table) {
+        if (!Schema::hasColumn('products', 'min_price')) {
             $table->decimal('min_price', 12, 2)->default(0)->after('sell_price');
             $table->decimal('max_price', 12, 2)->default(0)->after('min_price');
-        });
-    }
+        }
 
-    if (!Schema::hasColumn('products', 'retail_price')) {
-        Schema::table('products', function (Blueprint $table) {
-            $table->decimal('retail_price', 12, 2)->default(0)->after('sell_price')->comment('Retail Price for all mobile app users');
-        });
-    }
+        if (!Schema::hasColumn('products', 'barcode')) {
+            $table->string('barcode')->nullable()->after('type');
+        }
+        if (!Schema::hasColumn('products', 'mpn')) {
+            $table->string('mpn')->nullable()->after('barcode')->comment('Manufacturer Part Number');
+        }
+        if (!Schema::hasColumn('products', 'custom_code')) {
+            $table->string('custom_code')->nullable()->after('mpn')->comment('Custom Code');
+        }
 
-    // High Performance Composite & Single Indexes for Products Table
-    Schema::table('products', function (Blueprint $table) {
-        // Base Status & Catalog Compound Indexes
-        // <-- MODIFIED: Index থাকলে এড়িয়ে যাবে, না থাকলে তৈরি করবে
+        // 2. Pricing Columns
+        if (!Schema::hasColumn('products', 'mrp')) {
+            $table->decimal('mrp', 12, 2)->default(0)->after('wholesale_price')->comment('maximum retail price');
+        }
+        if (!Schema::hasColumn('products', 'retail_price')) {
+            $table->decimal('retail_price', 12, 2)->default(0)->after('mrp')->comment('Retail Price is below of mrp');
+        }
+        if (!Schema::hasColumn('products', 'dealer_price')) {
+            $table->decimal('dealer_price', 12, 2)->default(0)->after('retail_price')->comment('dealer price for dealer user only');
+        }
+        if (!Schema::hasColumn('products', 'wholesale_price')) {
+            $table->decimal('wholesale_price', 12, 2)->default(0)->after('dealer_price')->comment('Wholesale Price');
+        }
+
+        // 3. Vendor / B2B Pricing Structure
+        if (!Schema::hasColumn('products', 'vendor_purchase_price')) {
+            $table->decimal('vendor_purchase_price', 12, 2)->default(0)->after('wholesale_price')->comment('vendor purchase price');
+        }
+        if (!Schema::hasColumn('products', 'vendor_base_price')) {
+            $table->decimal('vendor_base_price', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor base price for platform/marketplace');
+        }
+        if (!Schema::hasColumn('products', 'vendor_wholesale_price')) {
+            $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_base_price')->comment('vendor wholesale price');
+        }
+        if (!Schema::hasColumn('products', 'vendor_mrp')) {
+            $table->decimal('vendor_mrp', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('vendor recommended retail price / mrp');
+        }
+
+        // 4. Logs & Price History
+        if (!Schema::hasColumn('products', 'last_price_updated_date')) {
+            $table->timestamp('last_price_updated_date')->nullable()->after('vendor_mrp')->comment('Timestamp of the last price change');
+        }
+        if (!Schema::hasColumn('products', 'before_updated_prices')) {
+            $table->json('before_updated_prices')->nullable()->after('last_price_updated_date')->comment('Historical prices snapshot before the last update');
+        }
+
+        // 5. Status & Soft Deletes
+        if (!Schema::hasColumn('products', 'status')) {
+            $table->tinyInteger('status')->default(3)->comment('Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived');
+        }
+        if (!Schema::hasColumn('products', 'deleted_at')) {
+            $table->softDeletes();
+        }
+
+        // 6. Meta for SEO (FIXED TYPO: meta_titlename -> meta_title)
+        if (!Schema::hasColumn('products', 'meta_title')) {
+            $table->string('meta_title')->nullable()->after('deleted_at')->comment('meta title');
+        }
+        if (!Schema::hasColumn('products', 'meta_description')) {
+            $table->text('meta_description')->nullable()->after('meta_title')->comment('meta description');
+        }
+        if (!Schema::hasColumn('products', 'meta_keywords')) {
+            $table->string('meta_keywords')->nullable()->after('meta_description')->comment('meta keywords');
+        }
+
+        // 7. Indexes Strategy
         if (!hasIndex('products', 'idx_products_status_ecom_new')) {
             $table->index(['status', 'is_ecom', 'is_new'], 'idx_products_status_ecom_new');
         }
@@ -72,175 +119,143 @@ if (Schema::hasTable('products')) {
             $table->index(['min_price', 'max_price'], 'idx_products_price_range');
         }
 
-        // Search Indexes
+        // Single Column Search Indexes
         if (!hasIndex('products', 'idx_products_sku')) {
             $table->index('sku', 'idx_products_sku');
         }
         if (!hasIndex('products', 'idx_products_name')) {
             $table->index('name', 'idx_products_name');
         }
+        if (!hasIndex('products', 'idx_products_category_id')) {
+            $table->index('category_id', 'idx_products_category_id');
+        }
+        if (!hasIndex('products', 'idx_products_brand_id')) {
+            $table->index('brand_id', 'idx_products_brand_id');
+        }
+
+        // Full Text Index
+        if (!hasIndex('products', 'ft_products_name')) {
+            $table->fullText(['name', 'name_bangla'], 'ft_products_name');
+        }
     });
 
-    // Product Variations Table Indexes
-    if (Schema::hasTable('variations')) {
-        Schema::table('variations', function (Blueprint $table) {
-            // <-- MODIFIED: Check before adding variations index
-            if (!hasIndex('variations', 'idx_variations_sub_sku')) {
-                $table->index('sub_sku', 'idx_variations_sub_sku');
-            }
-            if (!hasIndex('variations', 'idx_variations_subsku_product')) {
-                $table->index(['sub_sku', 'product_id'], 'idx_variations_subsku_product');
-            }
-            if (!hasIndex('variations', 'idx_variations_pid_subsku')) {
-                $table->index(['product_id', 'sub_sku'], 'idx_variations_pid_subsku');
-            }
-        });
-    }
-
-    // Stock Table Indexing for Faster Join/Query
-    if (Schema::hasTable('product_stocks')) {
-        Schema::table('product_stocks', function (Blueprint $table) {
-            // <-- MODIFIED: Check before adding stocks index
-            if (!hasIndex('product_stocks', 'idx_stocks_product_variation')) {
-                $table->index(['product_id', 'variation_id'], 'idx_stocks_product_variation');
-            }
-        });
+    // Modify user_id via raw statement safely
+    if (Schema::hasColumn('products', 'user_id')) {
+        DB::statement("
+            ALTER TABLE products
+            MODIFY COLUMN user_id BIGINT UNSIGNED NULL
+            COMMENT 'Foreign key reference to vendor (users.id)'
+        ");
     }
 }
 
+// ==============================================================================
+// 2. VARIATIONS TABLE (Columns & Indexes)
+// ==============================================================================
+if (Schema::hasTable('variations')) {
+    Schema::table('variations', function (Blueprint $table) {
 
-if(Schema::hasTable('variations')){
-    // 1. Basic Details & Slug
-    if (!Schema::hasColumn('variations', 'attribute')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 1. Basic Details & Slug
+        if (!Schema::hasColumn('variations', 'attribute')) {
             $table->text('attribute')->nullable()->after('name')->comment('variation attributes');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'slug')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'slug')) {
             $table->string('slug')->nullable()->after('attribute')->comment('variation slug');
-        });
-    }
+        }
 
-    // 2. Core App Pricing
-    if (!Schema::hasColumn('variations', 'mrp')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 2. Core App Pricing
+        if (!Schema::hasColumn('variations', 'mrp')) {
             $table->decimal('mrp', 12, 2)->default(0)->after('sell_price')->comment('maximum retail price');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'retail_price')) {
-        Schema::table(
-        'variations',
-        function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'retail_price')) {
             $table->decimal('retail_price', 12, 2)->default(0)->after('mrp')->comment('Retail Price is below of mrp');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'dealer_price')) {
-        Schema::table(
-        'variations',
-        function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'dealer_price')) {
             $table->decimal('dealer_price', 12, 2)->default(0)->after('retail_price')->comment('dealer price for dealer user only');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'wholesale_price')) {
-        Schema::table(
-        'variations',
-        function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'wholesale_price')) {
             $table->decimal('wholesale_price', 12, 2)->default(0)->after('dealer_price')->comment('Wholesale Price');
-        });
-    }
+        }
 
-    // 3. Vendor / B2B Pricing Structure
-    if (!Schema::hasColumn('variations', 'vendor_purchase_price')) {
-        Schema::table('variations', function (Blueprint $table) {
+        // 3. Vendor / B2B Pricing Structure
+        if (!Schema::hasColumn('variations', 'vendor_purchase_price')) {
             $table->decimal('vendor_purchase_price', 12, 2)->default(0)->after('wholesale_price')->comment('vendor purchase price');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'vendor_base_price')) {
-        Schema::table(
-            'variations',
-            function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'vendor_base_price')) {
             $table->decimal('vendor_base_price', 12, 2)->default(0)->after('vendor_purchase_price')->comment('vendor base price for platform/marketplace');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'vendor_wholesale_price')) {
-        Schema::table(
-            'variations',
-            function (Blueprint $table) {
-        $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_base_price')->comment('vendor wholesale price');
-            });
-    }
-    if (!Schema::hasColumn('variations', 'vendor_mrp')) {
-        Schema::table(
-            'variations',
-            function (Blueprint $table) {
-                $table->decimal('vendor_mrp', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('vendor recommended retail price / mrp');
-            });
-    }
+        }
+        if (!Schema::hasColumn('variations', 'vendor_wholesale_price')) {
+            $table->decimal('vendor_wholesale_price', 12, 2)->default(0)->after('vendor_base_price')->comment('vendor wholesale price');
+        }
+        if (!Schema::hasColumn('variations', 'vendor_mrp')) {
+            $table->decimal('vendor_mrp', 12, 2)->default(0)->after('vendor_wholesale_price')->comment('vendor recommended retail price / mrp');
+        }
 
-    // 4. Logs & Price History
-    if (!Schema::hasColumn('variations', 'last_price_updated_date')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 4. Logs & Price History
+        if (!Schema::hasColumn('variations', 'last_price_updated_date')) {
             $table->timestamp('last_price_updated_date')->nullable()->after('vendor_mrp')->comment('Timestamp of the last price change');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'before_updated_prices')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'before_updated_prices')) {
             $table->json('before_updated_prices')->nullable()->after('last_price_updated_date')->comment('Historical prices snapshot before the last update');
-        });
-    }
+        }
 
-    // 5. Media & Identifiers
-    if (!Schema::hasColumn('variations', 'image')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 5. Media & Identifiers
+        if (!Schema::hasColumn('variations', 'image')) {
             $table->string('image')->nullable()->after('before_updated_prices')->comment('Variants Product Image');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'image_size')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'image_size')) {
             $table->unsignedBigInteger('image_size')->nullable()->after('image');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'barcode')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'barcode')) {
             $table->string('barcode')->nullable()->after('image_size');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'mpn')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'mpn')) {
             $table->string('mpn')->nullable()->after('barcode')->comment('Manufacturer Part Number');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'custom_code')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'custom_code')) {
             $table->string('custom_code')->nullable()->after('mpn')->comment('Custom Code');
-        });
-    }
+        }
 
-    // 6. Flags & Product Types
-    if (!Schema::hasColumn('variations', 'is_single_type')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 6. Flags & Product Types
+        if (!Schema::hasColumn('variations', 'is_single_type')) {
             $table->boolean('is_single_type')->default(false)->comment('single product = true and all variations product = false');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'is_default_selected_variant')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'is_default_selected_variant')) {
             $table->boolean('is_default_selected_variant')->default(false)->comment('a single product variant can have only one default selected variant');
-        });
-    }
+        }
 
-    // 7. Status & Soft Deletes
-    if (!Schema::hasColumn('variations', 'status')) {
-        Schema::table('variations',function (Blueprint $table) {
+        // 7. Status & Soft Deletes
+        if (!Schema::hasColumn('variations', 'status')) {
             $table->tinyInteger('status')->default(3)->comment('Variant Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived');
-        });
-    }
-    if (!Schema::hasColumn('variations', 'deleted_at')) {
-        Schema::table('variations',function (Blueprint $table) {
+        }
+        if (!Schema::hasColumn('variations', 'deleted_at')) {
             $table->softDeletes();
-        });
-    }
+        }
+
+        // Indexes for Variations
+        if (!hasIndex('variations', 'idx_variations_product_id')) {
+            $table->index('product_id', 'idx_variations_product_id');
+        }
+        if (!hasIndex('variations', 'idx_variations_sub_sku')) {
+            $table->index('sub_sku', 'idx_variations_sub_sku');
+        }
+        if (!hasIndex('variations', 'idx_variations_pid_subsku')) {
+            $table->index(['product_id', 'sub_sku'], 'idx_variations_pid_subsku');
+        }
+    });
 }
+
+// ==============================================================================
+// 3. PRODUCT STOCKS TABLE (Indexes)
+// ==============================================================================
+if (Schema::hasTable('product_stocks')) {
+    Schema::table('product_stocks', function (Blueprint $table) {
+        if (!hasIndex('product_stocks', 'idx_stocks_product_variation')) {
+            $table->index(['product_id', 'variation_id'], 'idx_stocks_product_variation');
+        }
+    });
+}
+
 /*if (!Schema::hasColumn('variations', 'image')) {
     Schema::table('variations', function (Blueprint $table) {
         // Basic Details & Slug
