@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Services\FcmNotificationService;
+use App\Utils\UserType;
 use Exception;
 
 class TestingFeaturesController extends BaseApiController
@@ -14,6 +15,8 @@ class TestingFeaturesController extends BaseApiController
 
     public function testingNotification(\Illuminate\Http\Request $request)
     {
+        \Log::info(UserType::getLabel(9));
+        return;
         try {
             $user = $request->user();
             $this->notificationService->sendToUser(

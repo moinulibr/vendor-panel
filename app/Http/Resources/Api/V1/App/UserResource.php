@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1\App;
 
+use App\Utils\UserType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,6 +10,14 @@ class UserResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $comments = [];
+        foreach (UserType::list() as $value => $label) {
+            $comments[] = strtoupper(str_replace([' ', '(', ')'], ['_', '', ''], $label)) . " = {$value}";
+        }
+        $commentString = implode('; ', $comments);
+
+        $isSwitchingAccount = $this->user_type == UserType::GENERAL_APP_CUSTOMER ? true : false;
+
         return [
             'id'          => $this->id,
             'name'        => $this->name,
@@ -16,7 +25,13 @@ class UserResource extends JsonResource
             'mobile'      => $this->mobile,
             'status'      => (bool) $this->status == 1 ? "active" : 'inactive',
             'user_type'   => $this->user_type,
-            'note'        => 'user type -> ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; ECOMMERCE_CUSTOMER = 6; POS_CUSTOMER = 7; RESELLER = 8; DELIVERY_MAN = 9; PLUMBER = 10; GUEST = 11; OTHERS = 12;',
+            'user_type_label' => UserType::getLabel($this->user_type),
+            'user_account'=> [
+                'isEnableToSwitchingAccount' => $isSwitchingAccount,
+                'switchingFrom' => $isSwitchingAccount ? $this->user_type : false,
+                'switchingTo' => $isSwitchingAccount ? ($this->user_type == UserType::GENERAL_APP_CUSTOMER ? UserType::DEALER : UserType::GENERAL_APP_CUSTOMER) : false,
+                'isCustomFormNeedToSwitching' => $this->user_type == UserType::GENERAL_APP_CUSTOMER ? true : false
+            ],
             'access_type' => $this->access_type,
 
             'profile_picture' => $this->image
@@ -25,7 +40,7 @@ class UserResource extends JsonResource
                     : asset('storage/' . $this->image))
                 : asset('image/default-avatar.png'),
 
-            'retailer'    => $this->whenLoaded('retailer', function () {
+            'retailer' => $this->whenLoaded('retailer', function () {
                 return [
                     'retailer_id'   => $this->retailer->id,
                     'retailer_user_id' => $this->retailer->user_id,
@@ -36,7 +51,8 @@ class UserResource extends JsonResource
                 ];
             }),
             'created_at'  => $this->created_at?->toIso8601String(),
-
+            'note'        => 'user typies ->' . $commentString,
+            'user type modified note' => 'We considar this Retailer User is as a Dealer User',
         ];
     }
 }

@@ -24,7 +24,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
+            if (auth()->user()->user_type != UserType::DEALER) {
                 $retailerId = $request->retailer_user_id;
             }
 
@@ -49,7 +49,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
+            if (auth()->user()->user_type != UserType::DEALER) {
                 $retailerId = $request->retailer_user_id;
             }
 
@@ -95,7 +95,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
+            if (auth()->user()->user_type != UserType::DEALER) {
                 $retailerId = $request->retailer_user_id;
             }
 
@@ -120,7 +120,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
+            if (auth()->user()->user_type != UserType::DEALER) {
                 $retailerId = $request->retailer_user_id;
             }
             $this->cartService->removeCoupon($retailerId);
@@ -164,7 +164,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::RETAILER) {
+            if (auth()->user()->user_type != UserType::DEALER) {
                 $retailerId = $request->retailer_user_id;
             }
 

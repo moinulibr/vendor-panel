@@ -244,7 +244,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         try {
             $user = $request->user();
             // Check if Retailer or SR
-            if($user->user_type == UserType::RETAILER){
+            if($user->user_type == UserType::DEALER){
                 $retailerId = $user->id;
             }else{
                 $retailerId = $request->retailer_id;
@@ -273,7 +273,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         try {
             $user = $request->user();
             // Check if Retailer or SR
-            if ($user->user_type == UserType::RETAILER) {
+            if ($user->user_type == UserType::DEALER) {
                 $retailerId = $user->id;
             } else {
                 $retailerId = $request->retailer_id;

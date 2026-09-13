@@ -26,15 +26,16 @@ class UserType
     public const STAFF              = 2;
     public const VENDOR             = 3;
     public const SR                 = 4;
-    public const RETAILER           = 5;
-    public const SUPPLIER           = 6; //dealer
+    public const DEALER             = 5; //dealer
+    public const SUPPLIER           = 6; 
     public const ECOMMERCE_CUSTOMER = 7;
     public const POS_CUSTOMER       = 8;
-    public const RESELLER           = 9;
-    public const DELIVERY_MAN       = 10;
-    public const PLUMBER            = 11;
-    public const GUEST              = 12;
-    public const OTHERS             = 13;
+    public const GENERAL_APP_CUSTOMER = 9; //moible app customer as special customer
+    public const RESELLER           = 10;
+    public const DELIVERY_MAN       = 11;
+    public const PLUMBER            = 12;
+    public const GUEST              = 13;
+    public const OTHERS             = 14;
 
 
     /*
@@ -49,10 +50,11 @@ class UserType
             self::ADMIN              => 'Admin',
             self::STAFF              => 'Staff',
             self::VENDOR             => 'Vendor',
-            self::SR                 => 'Sales Representative (SR)',
-            self::RETAILER           => 'Retailer',
+            self::SR                 => 'SR', //Sales Representative
+            self::DEALER           => 'Dealer',
             self::SUPPLIER           => 'Supplier',
             self::ECOMMERCE_CUSTOMER => 'Ecommerce Customer',
+            self::GENERAL_APP_CUSTOMER => 'Exclusive Customer',
             self::POS_CUSTOMER       => 'POS Customer',
             self::RESELLER           => 'Reseller',
             self::DELIVERY_MAN       => 'Delivery Man',
@@ -179,7 +181,7 @@ class UserType
                 'retailer',
                 'retailer user',
             ])) {
-                return self::RETAILER;
+                return self::DEALER;
             }
 
 
@@ -317,7 +319,7 @@ class UserType
                 return self::OTHERS;
             }
         }
-    //dealer
+        //dealer
 
         /*
         |--------------------------------------------------------------------------
@@ -363,7 +365,7 @@ class UserType
     | Match Role
     |--------------------------------------------------------------------------
     |
-    | Exact match অথবা meaningful phrase match.
+    | Exact match or meaningful phrase match.
     |
     */
 
@@ -410,9 +412,7 @@ class UserType
         return false;
     }
     
-    /**
-     * ইউজার টাইপ আইডি থেকে নাম পাওয়ার সেন্ট্রাল লজিক
-     */
+
     public static function getLabel(?int $userTypeId): string
     {
         if (is_null($userTypeId)) {
@@ -421,21 +421,17 @@ class UserType
         return self::list()[$userTypeId] ?? 'Unknown Type';
     }
 
-    /**
-     * কাস্টমার গ্রুপ চেকিং (ভবিষ্যতে নতুন কোনো কাস্টমার টাইপ আসলে শুধু এই অ্যারেতে বসাবেন)
-     */
+    
     public static function isCustomer(?int $userTypeId): bool
     {
         return in_array($userTypeId, [
             self::ECOMMERCE_CUSTOMER,
             self::POS_CUSTOMER,
-            self::RESELLER
+            self::RESELLER,
+            self::GENERAL_APP_CUSTOMER
         ]);
     }
 
-    /**
-     * ইন্টারনাল স্টাফ চেকিং (কারা ব্যাকঅফিস বা সিস্টেম কন্ট্রোল করতে পারে)
-     */
     public static function isInternalStaff(?int $userTypeId): bool
     {
         return in_array($userTypeId, [

@@ -35,8 +35,8 @@ class UserRepository implements UserRepositoryInterface
             'email'       => $data['email'] ?? null,
             'password'    => $data['password'] ?? null,
             'status'      => 1,
-            'access_type' => $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE, ///UserType::RETAILER  UserType::EXTERNAL_ACCESS_TYPE,
-            'user_type' => $data['user_type'] ?? UserType::RETAILER
+            'access_type' => $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE, ///UserType::DEALER  UserType::EXTERNAL_ACCESS_TYPE,
+            'user_type' => $data['user_type'] ?? UserType::DEALER
         ]);
     }
 
@@ -153,7 +153,7 @@ class UserRepository implements UserRepositoryInterface
 
     public function getRetailers(array $filters, int $perPage = 20): Paginator
     {
-        $query = User::where('user_type', UserType::RETAILER)
+        $query = User::where('user_type', UserType::DEALER)
             ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
             ->where('status', 1)
             ->whereNull('deleted_at')

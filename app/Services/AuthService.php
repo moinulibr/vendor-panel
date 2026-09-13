@@ -104,7 +104,7 @@ class AuthService
                 'email'        => $data['email'] ?? null,
                 'mobile'      => $data['mobile'],
                 'password'    => isset($data['password']) ? Hash::make($data['password']) : null,
-                'user_type'   => $data['user_type'] ?? UserType::RETAILER,
+                'user_type'   => $data['user_type'] ?? UserType::DEALER,
                 'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 

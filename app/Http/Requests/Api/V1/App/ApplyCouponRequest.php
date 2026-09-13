@@ -14,7 +14,7 @@ class ApplyCouponRequest extends FormRequest
 
     public function rules(): array
     {
-        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::RETAILER;
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
         
         return [
             'coupon_code' => 'required|string|max:50',

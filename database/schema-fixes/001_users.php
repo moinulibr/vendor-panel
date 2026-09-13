@@ -1,5 +1,6 @@
 <?php
 
+use App\Utils\UserType;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -31,13 +32,20 @@ if (Schema::hasTable('users')) {
 
     //add a new user type dealer
     if (Schema::hasColumn('users', 'user_type')) {
+        $comments = [];
+        foreach (UserType::list() as $value => $label) {
+            $comments[] = strtoupper(str_replace([' ', '(', ')'], ['_', '', ''], $label)) . " = {$value}";
+        }
+
+        $commentString = implode('; ', $comments);
+        
         DB::statement("
             ALTER TABLE users
             MODIFY COLUMN user_type TINYINT(1)
-            COMMENT 'ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; SUPPLIER = 6; ECOMMERCE_CUSTOMER = 7; POS_CUSTOMER = 8; RESELLER = 9; DELIVERY_MAN = 10; PLUMBER = 11; GUEST = 12; OTHERS = 13'
+            COMMENT '{$commentString}'
         ");
+        //DB::statement("ALTER TABLE users MODIFY COLUMN user_type TINYINT(1) COMMENT 'ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; SUPPLIER = 6; ECOMMERCE_CUSTOMER = 7; POS_CUSTOMER = 8; RESELLER = 9; DELIVERY_MAN = 10; PLUMBER = 11; GUEST = 12; OTHERS = 13'");
     }
-
 
     if (Schema::hasColumn('users', 'status')) {
         DB::statement("
