@@ -104,11 +104,11 @@ class AuthService
                 'email'        => $data['email'] ?? null,
                 'mobile'      => $data['mobile'],
                 'password'    => isset($data['password']) ? Hash::make($data['password']) : null,
-                'user_type'   => $data['user_type'] ?? UserType::DEALER,
+                'user_type'   => $data['user_type'] ?? UserType::GENERAL_APP_CUSTOMER,
                 'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 
-            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && !empty($data['shop_name'])) {
+            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && $data['user_type'] == UserType::DEALER && !empty($data['shop_name'])) {
                 $this->userRepo->createRetailer([
                     'user_id'   => $user->id,
                     'shop_name' => $data['shop_name'],
