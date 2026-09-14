@@ -41,8 +41,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             //'mobile.unique'         => 'এই নম্বরটি অন্য একটি অ্যাকাউন্টে ব্যবহৃত হচ্ছে।',
-            'email.unique'          => 'এই ইমেইলটি অন্য একটি অ্যাকাউন্টে ব্যবহৃত হচ্ছে।',
-            'shop_name.required_if' => 'রিটেইলার অ্যাকাউন্টের জন্য দোকানের নাম দেওয়া বাধ্যতামূলক।',
+            'email.unique'          => 'This email is already registered।',
+            'shop_name.required_if' => 'Retailer account requires shop name।',
         ];
     }
 }

@@ -218,6 +218,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
+    // Get Retailer shipping address
     public function getRetailerShippingAddresses($retailer_id){
         try {
             if (!$retailer_id) {
@@ -239,6 +240,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
+    // Add Retailer shipping address
     public function createRetailerShippingAddress(AddRetailerShippingAddressRequest $request)
     {
         try {
@@ -268,6 +270,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
+    // Update Retailer shipping address
     public function updateRetailerShippingAddress(string|int $shippingAddressId, UpdateRetailerShippingAddressRequest $request)
     {
         try {
@@ -292,6 +295,8 @@ class AuthController extends BaseApiController implements AuthSwagger
             return $this->jsonResponse(false, $e->getMessage(), null, 500);
         }
     }
+
+    // Delete Retailer shipping address
     public function deleteRetailerShippingAddress(int $shippingAddressId,Request $request)
     {
         $this->authService->deleteRetailerShippingAddress($shippingAddressId, $request->user()->id);
@@ -299,7 +304,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         return response()->json(['status' => true, 'message' => 'Shipping Address Deleted Successfully!']);
     }
 
-
+    // vendors
     public function vendors(UserFilterRequest $request): JsonResponse
     {
         try {
