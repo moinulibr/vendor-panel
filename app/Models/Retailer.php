@@ -16,6 +16,7 @@ class Retailer extends Model
         'address',
         'area',
         'status',
+        'license_image'
     ];
 
     public function user()

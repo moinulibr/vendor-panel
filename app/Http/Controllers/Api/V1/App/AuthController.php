@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\Api\V1\App\ResetPasswordRequest;
 use App\Http\Requests\Api\V1\App\RegisterRequest;
 use App\Http\Requests\Api\V1\App\SendOtpRequest;
+use App\Http\Requests\Api\V1\App\SwitchUserTypeRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfileRequest;
 use App\Http\Requests\Api\V1\App\UpdateRetailerShippingAddressRequest;
@@ -341,4 +342,29 @@ class AuthController extends BaseApiController implements AuthSwagger
             return response()->json(['success' => false, 'message' => 'Failed to fetch retailers.'], 500);
         }
     }
+
+    public function switchingUserType(SwitchUserTypeRequest $request): JsonResponse 
+    {
+        try {
+            $result = $this->authService->switchUserType($request->validated());
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'User profile successfully switched to Dealer.',
+                data: [
+                    'retailer' => new UserResource($result['retailer'])
+                ],
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: $statusCode
+            );
+        }
+    }
+
 }

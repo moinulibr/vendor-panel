@@ -51,6 +51,7 @@ Route::prefix('v1/app')->group(function () {
         //shipping address
         Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
         Route::post('/update-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'updateRetailerShippingAddress']);
+        Route::post('/switch-user-type', [AuthController::class, 'switchingUserType']);
 
         //fcm token api
         //Route::post('store-fcm-toke', [FcmNotificationController::class, 'storeFcmToken']);

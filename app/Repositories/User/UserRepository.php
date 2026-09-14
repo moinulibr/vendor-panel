@@ -187,4 +187,24 @@ class UserRepository implements UserRepositoryInterface
 
         return $query->simplePaginate($perPage);
     }
+
+    public function createOrUpdateRetailer(array $data): Retailer
+    {
+        return Retailer::updateOrCreate(
+            ['user_id' => $data['user_id']],
+            [
+                'shop_name'     => $data['shop_name'] ?? null,
+                'trade_license' => $data['trade_license'] ?? null,
+                'license_image' => $data['license_image'] ?? null,
+                'status'        => $data['status'] ?? 1,
+            ]
+        );
+    }
+
+    public function updateUserType(int $userId, int $toUserTypeId): bool
+    {
+        return User::where('id', $userId)->update([
+            'user_type' => $toUserTypeId
+        ]);
+    }
 }

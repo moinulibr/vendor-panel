@@ -99,6 +99,15 @@ if (Schema::hasTable('user_addresses')) {
 }
 
 
+if (Schema::hasTable('retailers')) {
+
+    if (!Schema::hasColumn('retailers', 'license_image')) {
+        Schema::table('retailers', function (Blueprint $table) {
+            $table->string('license_image')->nullable();
+        });
+    }
+}
+
 //Retailer shipping address table
 if (Schema::hasTable('retailer_shipping_addresses')) {
 

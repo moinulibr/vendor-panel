@@ -2,6 +2,7 @@
 
 namespace App\Repositories\User\Interface;
 
+use App\Models\Retailer;
 use Illuminate\Contracts\Pagination\Paginator;
 use App\Models\RetailerShippingAddress;
 use App\Models\User;
@@ -28,4 +29,7 @@ interface UserRepositoryInterface
 
     public function getVendors(array $filters, int $perPage = 20): Paginator;
     public function getRetailers(array $filters, int $perPage = 20): Paginator;
+
+    public function createOrUpdateRetailer(array $data): Retailer;
+    public function updateUserType(int $userId, int $toUserTypeId): bool;
 }

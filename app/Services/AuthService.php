@@ -108,10 +108,10 @@ class AuthService
                 'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 
-            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && $data['user_type'] == UserType::DEALER && !empty($data['shop_name'])) {
+            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && $data['user_type'] == UserType::DEALER || $data['user_type'] == UserType::GENERAL_APP_CUSTOMER) {
                 $this->userRepo->createRetailer([
                     'user_id'   => $user->id,
-                    'shop_name' => $data['shop_name'],
+                    'shop_name' => $data['shop_name'] ?? null,
                     'address'   => $data['address'] ?? null,
                     'trade_license'   => $data['trade_license'] ?? null,
                 ]);
@@ -251,5 +251,43 @@ class AuthService
     {
         $perPage = $filters['per_page'] ?? 20;
         return $this->userRepo->getRetailers($filters, $perPage);
+    }
+
+    public function switchUserType(array $data): array
+    {
+        DB::beginTransaction();
+        try {
+            // Handle Image Upload if exists
+            if (isset($data['license_image']) && $data['license_image'] instanceof \Illuminate\Http\UploadedFile) {
+                $path = $data['license_image']->store('trade_licenses', 'public');
+                $data['license_image'] = $path;
+            }
+
+            // 1. Create or Update Retailer Table
+            $retailer = $this->userRepo->createOrUpdateRetailer([
+                'user_id'       => $data['user_id'],
+                'shop_name'     => $data['shop_name'],
+                'trade_license' => $data['trade_license'] ?? null,
+                'license_image' => $data['license_image'] ?? null,
+            ]);
+
+            // 2. Update User Table user_type
+            $this->userRepo->updateUserType($data['user_id'], $data['to_user_type_id']);
+
+            DB::commit();
+
+            return [
+                'retailer' => $retailer
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            // Delete uploaded file if transaction fails
+            if (isset($path) && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+
+            throw new Exception($e->getMessage(), 500);
+        }
     }
 }
