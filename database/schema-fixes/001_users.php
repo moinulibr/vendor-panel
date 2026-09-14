@@ -75,13 +75,24 @@ if (Schema::hasTable('user_addresses')) {
         });
     }
 
+    //user type column in user_addresses table
     if (!Schema::hasColumn('user_addresses', 'user_type')) {
         Schema::table('user_addresses', function (Blueprint $table) {
             $table->tinyInteger('user_type')
                 ->default(2)
                 ->after('user_id')
-                ->comment('ADMIN = 1; STAFF = 2; VENDOR = 3; SR = 4; RETAILER = 5; SUPPLIER = 6; ECOMMERCE_CUSTOMER = 7; POS_CUSTOMER = 8; RESELLER = 9; DELIVERY_MAN = 10; PLUMBER = 11; GUEST = 12; OTHERS = 13');
+                ->comment('{$commentString}');
         });
+    }else{
+        $commentString = '';
+        foreach (UserType::list() as $value => $label) {
+            $commentString .= strtoupper(str_replace([' ', '(', ')'], ['_', '', ''], $label)) . " = {$value}; ";
+        }
+        DB::statement("
+            ALTER TABLE user_addresses
+            MODIFY COLUMN user_type TINYINT(1)
+            COMMENT '{$commentString}'
+        ");
     }
 
 
