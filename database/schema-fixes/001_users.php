@@ -119,5 +119,4 @@ if (Schema::hasTable('retailer_shipping_addresses')) {
                 ->comment('area field for retailer shipping address');
         });
     }
-
 }
