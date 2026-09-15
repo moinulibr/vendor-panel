@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Swagger\SettingsSwagger;
+use App\Utils\UserType;
 use Illuminate\Http\JsonResponse;
 
-class SettingsController extends BaseApiController
+class SettingsController extends BaseApiController implements SettingsSwagger
 {
 
     public function featureDelivery(): JsonResponse
@@ -16,6 +18,40 @@ class SettingsController extends BaseApiController
                     'type' => 'string',
                     'value' => 'আলোচনা সাপেক্ষ',
                     'note' => 'if type is string, then value will be string. if type is integer, then value will be also integer.'
+                ]
+            ],
+        ], 200);
+    }
+    public function featureCouponAndDiscount(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'Feature settings fetched successfully',
+            'data'    => [
+                // ১. কুপন সেটিংস ও রুলস
+                'coupon' => [
+                    'isApplicable'        => true,  // মোবাইল অ্যাপে কুপন অপশন অন/অফ
+                    'minOrderAmount'      => 500,   // কুপন অ্যাপ্লাই করতে অন্তত কত টাকার অর্ডার লাগবে
+                    'maxDiscountAmount'   => 2000,  // কুপন দিয়ে সর্বোচ্চ কত টাকা পর্যন্ত ছাড় পাওয়া যাবে
+                    'allowOnDiscountedItem' => false, // প্রোডাক্টে অলরেডি ডিসকাউন্ট থাকলে এই কুপন কাজ করবে কিনা
+                    'warningMessage'      => 'Coupon cannot be applied if cart contains discounted items.', // নিয়ম না মানলে ওয়ার্নিং
+                    'alertMessage'        => 'Minimum order amount for using coupon is ৳500.',
+                ],
+
+                // ২. প্রোডাক্ট ডিসকাউন্ট সেটিংস ও রুলস
+                'discount' => [
+                    'isApplicable'        => true,  // প্রোডাক্ট ডিসকাউন্ট ওভারঅল সিস্টেম অন/অফ
+                    'allowWithCoupon'     => false, // প্রোডাক্টে ডিসকাউন্ট থাকা অবস্থায় এক্সট্রা কুপন ছাড় দেওয়া যাবে কিনা
+                    'maxDiscountPercent'  => 50,    // যেকোনো প্রোডাক্টে সর্বোচ্চ কত % পর্যন্ত ডিসকাউন্ট হতে পারে
+                    'warningMessage'      => 'Product discount is not combinable with promotional coupons.',
+                    'alertMessage'        => null,
+                ],
+
+                // ৩. গ্লোবাল কার্ট ও ইন্টারঅ্যাকশন রুলস (Coupon + Discount Combined Rules)
+                'globalRules' => [
+                    'allowBothInSingleOrder' => true, // একই অর্ডারে ডিসকাউন্টেড প্রোডাক্ট + নন-ডিসকাউন্টেড প্রোডাক্টে কুপন দুটো একসাথে এলাউড কিনা
+                    'stackDiscountAndCoupon' => false, // একই নির্দিষ্ট প্রোডাক্টের ওপর ডিসকাউন্ট + কুপন দুটি একসাথে ওভারল্যাপ করবে কিনা
+                    'conflictPolicyMessage'  => 'You can only apply coupon on non-discounted products in your cart.',
                 ]
             ],
         ], 200);
@@ -32,7 +68,11 @@ class SettingsController extends BaseApiController
         return response()->json([
             'success' => true,
             'data'    => [
-                'sr_user' => [
+                "loged_in_user_type_id" => auth()->user()->user_type,
+                "applicable_user_type_id" => UserType::DEALER,
+                "user_type_id_" => UserType::DEALER,
+                "user_type_label" => UserType::getLabel(UserType::DEALER),
+                "user_type_id_".UserType::DEALER => [
                     'auth' => [
                         'can_register'        => true,
                         'can_login'           => true,

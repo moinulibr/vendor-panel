@@ -113,6 +113,7 @@ Route::prefix('v1/app')->group(function () {
         //setting static data [temporary]
         Route::get('/feature/delivery',[SettingsController::class, 'featureDelivery']);
         Route::get('/features/status', [SettingsController::class, 'getFeaturesStatus']);
+        Route::get('/features/coupon-and-discount', [SettingsController::class, 'featureCouponAndDiscount']);
 
     });
 });
