@@ -198,14 +198,27 @@ class AuthController extends BaseApiController implements AuthSwagger
 
     public function updateProfile(UpdateProfileRequest $request)
     {
-        $user = $request->user();
-        $updatedUser = $this->authService->updateProfile($user, $request->validated());
+        try {
+            $user = $request->user();
+            $updatedUser = $this->authService->updateProfile($user, $request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile updated successfully',
-            'data'    => new UserResource($updatedUser)
-        ], 200);
+            return $this->jsonResponse(
+                success: true,
+                message: 'Profile updated successfully.',
+                data: [
+                    'user' => new UserResource($updatedUser)
+                ],
+                statusCode: 200
+            );
+        } catch (\Exception $e) {
+            $statusCode = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: $statusCode
+            );
+        }
     }
 
     public function profilePictureUpdate(UpdateProfilePictureRequest $request)
@@ -352,7 +365,7 @@ class AuthController extends BaseApiController implements AuthSwagger
                 success: true,
                 message: 'User profile successfully switched to Dealer.',
                 data: [
-                    'retailer' => new UserResource($result['retailer'])
+                    'user' => new UserResource($result['user'])
                 ],
                 statusCode: 200
             );

@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1\App;
 use App\Utils\UserType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource
 {
@@ -47,6 +48,8 @@ class UserResource extends JsonResource
                     'retailer_user_id' => $this->retailer->user_id,
                     'shop_name'     => $this->retailer->shop_name,
                     'trade_license' => $this->retailer->trade_license,
+                    'license_image' => $this->retailer->license_image
+                        ? asset(Storage::url($this->retailer->license_image)) : null,
                     'address'       => $this->retailer->address,
                     'status'        => $this->retailer->status,
                 ];

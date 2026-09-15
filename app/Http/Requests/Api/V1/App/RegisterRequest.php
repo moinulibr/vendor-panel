@@ -35,7 +35,7 @@ class RegisterRequest extends FormRequest
                 'string',
                 'max:150'
             ],
-            'address'   => ['nullable', 'string'],
+            'address'   => ['required', 'string','max:250'],
         ];
     }
 

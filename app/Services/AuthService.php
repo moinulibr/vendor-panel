@@ -159,7 +159,7 @@ class AuthService
     }
 
 
-    public function getProfile($user): array
+    public function getProfile(User $user): array
     {
         return [
             'user' => $user->load('retailer'),
@@ -168,6 +168,17 @@ class AuthService
 
     public function updateProfile(User $user, array $data): User
     {
+        // Handle license image upload if present
+        if (isset($data['license_image']) && $data['license_image'] instanceof \Illuminate\Http\UploadedFile) {
+            // Delete old image if exists
+            if ($user->retailer && $user->retailer->license_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->retailer->license_image);
+            }
+
+            // Store new image
+            $data['license_image'] = $data['license_image']->store('trade_licenses', 'public');
+        }
+
         return $this->userRepo->updateProfile($user, $data);
     }
     
@@ -253,6 +264,12 @@ class AuthService
         return $this->userRepo->getRetailers($filters, $perPage);
     }
 
+    /**
+     * switch User tye function
+     *
+     * @param array $data
+     * @return array
+     */
     public function switchUserType(array $data): array
     {
         DB::beginTransaction();
@@ -272,12 +289,12 @@ class AuthService
             ]);
 
             // 2. Update User Table user_type
-            $this->userRepo->updateUserType($data['user_id'], $data['to_user_type_id']);
+           $user = $this->userRepo->updateUserType($data['user_id'], $data['to_user_type_id']);
 
             DB::commit();
 
             return [
-                'retailer' => $retailer
+                'user' => $this->userRepo->findById($data['user_id'])
             ];
         } catch (Exception $e) {
             DB::rollBack();

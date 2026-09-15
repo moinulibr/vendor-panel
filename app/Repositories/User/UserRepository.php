@@ -43,25 +43,74 @@ class UserRepository implements UserRepositoryInterface
     public function updateProfile(User $user, array $data): User
     {
         return DB::transaction(function () use ($user, $data) {
-            $user->update([
-                'name'   => $data['name'],
-                'email'  => $data['email'] ?? $user->email,
-                'mobile' => $data['mobile'] ?? $user->mobile,
-            ]);
+            // Update User Base Info
+            $userData = [
+                'name' => $data['name'],
+            ];
 
-            if (isset($data['shop_name']) || isset($data['address']) || isset($data['trade_license'])) {
+            if (isset($data['email'])) {
+                $userData['email'] = $data['email'] ?? $user->email;
+            }
+
+            if (isset($data['mobile'])) {
+                $userData['mobile'] = $data['mobile'] ?? $user->mobile;
+            }
+
+            $user->update($userData);
+
+            // Update or Create Retailer Info if relevant fields are passed
+            if (
+                array_key_exists('shop_name', $data) ||
+                array_key_exists('address', $data) ||
+                array_key_exists('trade_license', $data) ||
+                array_key_exists('license_image', $data)
+            ) {
+                $retailerData = [];
+
+                if (array_key_exists('shop_name', $data)) {
+                    $retailerData['shop_name'] = $data['shop_name'];
+                }
+                if (array_key_exists('address', $data)) {
+                    $retailerData['address'] = $data['address'];
+                }
+                if (array_key_exists('trade_license', $data)) {
+                    $retailerData['trade_license'] = $data['trade_license'];
+                }
+                if (array_key_exists('license_image', $data)) {
+                    $retailerData['license_image'] = $data['license_image'];
+                }
+
                 $user->retailer()->updateOrCreate(
                     ['user_id' => $user->id],
-                    [
-                        'shop_name'     => $data['shop_name'] ?? optional($user->retailer)->shop_name,
-                        'address'       => $data['address'] ?? optional($user->retailer)->address,
-                        'trade_license' => $data['trade_license'] ?? optional($user->retailer)->trade_license,
-                    ]
+                    $retailerData
                 );
             }
 
             return $user->load('retailer');
         });
+
+        /*
+            return DB::transaction(function () use ($user, $data) {
+                $user->update([
+                    'name'   => $data['name'],
+                    'email'  => $data['email'] ?? $user->email,
+                    'mobile' => $data['mobile'] ?? $user->mobile,
+                ]);
+
+                if (isset($data['shop_name']) || isset($data['address']) || isset($data['trade_license'])) {
+                    $user->retailer()->updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'shop_name'     => $data['shop_name'] ?? optional($user->retailer)->shop_name,
+                            'address'       => $data['address'] ?? optional($user->retailer)->address,
+                            'trade_license' => $data['trade_license'] ?? optional($user->retailer)->trade_license,
+                        ]
+                    );
+                }
+
+                return $user->load('retailer');
+            });
+        */
     }
 
     public function createRetailer(array $data)
@@ -201,6 +250,7 @@ class UserRepository implements UserRepositoryInterface
         );
     }
 
+    //update user type
     public function updateUserType(int $userId, int $toUserTypeId): bool
     {
         return User::where('id', $userId)->update([
