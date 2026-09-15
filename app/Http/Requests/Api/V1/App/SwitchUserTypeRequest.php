@@ -17,6 +17,7 @@ class SwitchUserTypeRequest extends FormRequest
         //retailer_user_id
         return [
             'user_id'           => ['required', 'integer', 'exists:users,id'],
+            'retailer_id'       => ['required', 'integer', 'exists:retailers,id'],
             'from_user_type_id' => ['required', 'integer'],
             'to_user_type_id'   => ['required', 'integer'],
             'shop_name'         => ['required', 'string', 'max:255'],

@@ -155,7 +155,7 @@ interface AuthSwagger
     public function profile(Request $request);
 
     #[OA\Post(
-        path: "/api/v1/app/retailer/switch-to-dealer",
+        path: "/api/v1/app/retailer/switch-user-type",
         summary: "Switch Customer to Dealer Profile",
         security: [["sanctum" => []]],
         tags: ["Authentication"],
@@ -164,9 +164,10 @@ interface AuthSwagger
             content: new OA\MediaType(
                 mediaType: "multipart/form-data",
                 schema: new OA\Schema(
-                    required: ["user_id", "from_user_type_id", "to_user_type_id", "shop_name"],
+                    required: ["user_id", 'retailer_id', "from_user_type_id", "to_user_type_id", "shop_name"],
                     properties: [
                         new OA\Property(property: "user_id", type: "integer", example: 12),
+                        new OA\Property(property: "retailer_id", type: "integer", example: 10),
                         new OA\Property(property: "from_user_type_id", type: "integer", example: 9),
                         new OA\Property(property: "to_user_type_id", type: "integer", example: 5),
                         new OA\Property(property: "shop_name", type: "string", example: "Bismillah Enterprise"),

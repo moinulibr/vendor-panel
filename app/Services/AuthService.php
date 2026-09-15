@@ -285,20 +285,22 @@ class AuthService
             }
 
             // 1. Create or Update Retailer Table
-            $retailer = $this->userRepo->createOrUpdateRetailer([
+            $this->userRepo->createOrUpdateRetailer([
                 'user_id'       => $data['user_id'],
+                'retailer_id'   => $data['retailer_id'],
                 'shop_name'     => $data['shop_name'],
                 'trade_license' => $data['trade_license'] ?? null,
                 'license_image' => $data['license_image'] ?? null,
+                'status'        => $data['status'] ?? null,
             ]);
 
             // 2. Update User Table user_type
-           $user = $this->userRepo->updateUserType($data['user_id'], $data['to_user_type_id']);
+           $this->userRepo->updateUserType($data['user_id'], $data['to_user_type_id']);
 
             DB::commit();
 
             return [
-                'user' => $this->userRepo->findById($data['user_id'])
+                'user' => $this->userRepo->findById($data['user_id'])?->load('retailer')
             ];
         } catch (Exception $e) {
             DB::rollBack();

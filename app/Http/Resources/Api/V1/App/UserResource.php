@@ -49,7 +49,7 @@ class UserResource extends JsonResource
                     'license_image' => $this->retailer->license_image
                         ? asset(Storage::url($this->retailer->license_image)) : null,
                     'address'       => $this->retailer->address,
-                    'status'        => $this->retailer->status,
+                    'status'        => $this->retailer->status == 1 || $this->retailer->status == "active" ? "active" : "inactive",
                 ];
             }),
             'created_at'  => $this->created_at?->toIso8601String(),
