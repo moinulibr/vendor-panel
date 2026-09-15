@@ -155,6 +155,36 @@ interface AuthSwagger
     public function profile(Request $request);
 
     #[OA\Post(
+        path: "/api/v1/app/retailer/switch-to-dealer",
+        summary: "Switch Customer to Dealer Profile",
+        security: [["sanctum" => []]],
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\MediaType(
+                mediaType: "multipart/form-data",
+                schema: new OA\Schema(
+                    required: ["user_id", "from_user_type_id", "to_user_type_id", "shop_name"],
+                    properties: [
+                        new OA\Property(property: "user_id", type: "integer", example: 12),
+                        new OA\Property(property: "from_user_type_id", type: "integer", example: 9),
+                        new OA\Property(property: "to_user_type_id", type: "integer", example: 5),
+                        new OA\Property(property: "shop_name", type: "string", example: "Bismillah Enterprise"),
+                        new OA\Property(property: "trade_license", type: "string", example: "TL-1029384", nullable: true),
+                        new OA\Property(property: "license_image", type: "string", format: "binary", nullable: true)
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Successfully switched to Dealer"),
+            new OA\Response(response: 400, description: "Bad Request / Processing Error"),
+            new OA\Response(response: 422, description: "Validation Error")
+        ]
+    )]
+    public function switchingUserType(SwitchUserTypeRequest $request);
+
+    #[OA\Post(
         path: "/api/v1/app/update-profile",
         summary: "Update User Profile Information",
         description: "Updates authenticated user's profile and retailer details",
@@ -408,35 +438,5 @@ interface AuthSwagger
         ]
     )]
     public function retailers(UserFilterRequest $request);
-
-
-    #[OA\Post(
-        path: "/api/v1/app/retailer/switch-to-dealer",
-        summary: "Switch Customer to Dealer Profile",
-        security: [["sanctum" => []]],
-        tags: ["Retailer"],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\MediaType(
-                mediaType: "multipart/form-data",
-                schema: new OA\Schema(
-                    required: ["user_id", "from_user_type_id", "to_user_type_id", "shop_name"],
-                    properties: [
-                        new OA\Property(property: "user_id", type: "integer", example: 12),
-                        new OA\Property(property: "from_user_type_id", type: "integer", example: 9),
-                        new OA\Property(property: "to_user_type_id", type: "integer", example: 5),
-                        new OA\Property(property: "shop_name", type: "string", example: "Bismillah Enterprise"),
-                        new OA\Property(property: "trade_license", type: "string", example: "TL-1029384", nullable: true),
-                        new OA\Property(property: "license_image", type: "string", format: "binary", nullable: true)
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: "Successfully switched to Dealer"),
-            new OA\Response(response: 400, description: "Bad Request / Processing Error"),
-            new OA\Response(response: 422, description: "Validation Error")
-        ]
-    )]
-    public function switchingUserType(SwitchUserTypeRequest $request);
+  
 }
