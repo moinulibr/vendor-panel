@@ -37,10 +37,8 @@ class UserResource extends JsonResource
             'access_type' => $this->access_type,
 
             'profile_picture' => $this->image
-                ? (filter_var($this->image, FILTER_VALIDATE_URL)
-                    ? $this->image
-                    : asset('storage/' . $this->image))
-                : asset('image/default-avatar.png'),
+                ? (filter_var($this->image, FILTER_VALIDATE_URL) ? $this->image : asset('storage/' . $this->image))
+                : asset('image/default-avatar.png'), //asset(Storage::url($this->image)) same result
 
             'retailer' => $this->whenLoaded('retailer', function () {
                 return [

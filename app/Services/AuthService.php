@@ -210,16 +210,20 @@ class AuthService
     }
 
 
-    public function profilePictureUpdate($user, $imageFile): string
+    public function profilePictureUpdate(User $user, $imageFile)
     {
-        if ($user->image && Storage::disk('public')->exists($user->image)) {
-            Storage::disk('public')->delete($user->image);
+        // Handle license image upload if present
+        if (isset($imageFile) && $imageFile instanceof \Illuminate\Http\UploadedFile) {
+            // Delete old image if exists
+            if ($user->image && $imageFile) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
+            }
+
+            // Store new image
+            $path = $imageFile->store('user_profile', 'public');
+            $this->userRepo->updateProfilePicture($user, $path);
+            return asset(Storage::url($path));
         }
-
-        $path = $imageFile->store('avatars', 'public');
-        $this->userRepo->updateProfilePicture($user, $path);
-
-        return Storage::disk('public')->url($path);
     }
 
     public function addRetailerShippingAddress(int $retailerId, array $data)
