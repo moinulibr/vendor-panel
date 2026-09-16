@@ -5,6 +5,7 @@ namespace App\Http\Resources\Api\V1\App;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Api\V1\App\ProductImageResource;
+use App\Utils\UserType;
 
 class ProductResource extends JsonResource
 {
@@ -13,16 +14,22 @@ class ProductResource extends JsonResource
      */
     public static function collection($resource)
     {
-        $collection = $resource->getCollection()->flatMap(function ($product) {
+        // Query param (user_type) dynamic capturing
+        $userType = (int) request()->query('user_type', 9); // 5 = Dealer, 9 = Regular Customer (default)
+
+        $collection = $resource->getCollection()->flatMap(function ($product) use ($userType) {
 
             if ($product->type === 'variable' && $product->relationLoaded('variations') && $product->variations->isNotEmpty()) {
 
                 $rawAttributes = is_string($product->variants) ? json_decode($product->variants, true) : ($product->variants ?? []);
 
-                return $product->variations->map(function ($variant) use ($product, $rawAttributes) {
+                return $product->variations->map(function ($variant) use ($product, $rawAttributes, $userType) {
                     $stockQty = $variant->relationLoaded('stocks') ? $variant->stocks->sum('qty_available') : 0;
 
                     $singleVariantAttributes = self::formatVariantAttributes($rawAttributes, $variant->name);
+
+                    // Dynamic Price Calculation
+                    $prices = self::calculatePrices($product, $variant, $userType);
 
                     return [
                         'id'           => $product->id,
@@ -34,14 +41,14 @@ class ProductResource extends JsonResource
                         ],
                         'is_variant'   => true,
                         'type'         => 'variable',
-                        'name'         => $product->name,// . ' - ' . $variant->name,
+                        'name'         => $product->name,
                         'name_bangla'  => $product->name_bangla,
                         'slug'         => $product->slug,
                         'sku'          => $variant->sub_sku,
                         'parent_sku'   => $product->sku,
                         'image_url'    => $product->image ? getImage('products', $product->image) : null,
-                        'sell_price'   => (float) ($variant->sell_price ?? $product->sell_price),
-                        'mrp_price'    => (float) (($variant->sell_price ?? $product->sell_price) + 20),
+                        'sell_price'   => $prices['sell_price'],
+                        'mrp_price'    => $prices['mrp_price'],
                         'category_id'  => $product->category_id,
                         'brand_id'     => $product->brand_id,
                         'is_feature'   => (bool) $product->is_feature,
@@ -49,11 +56,13 @@ class ProductResource extends JsonResource
                         'images'       => ProductImageResource::collection($product->images),
                         'category_name' => $product->category?->name ?? "N/L",
                         'brand_name'    => $product->brand?->name ?? "N/L",
-
                         'variant_attributes' => $singleVariantAttributes
                     ];
                 });
             }
+
+            // Dynamic Price Calculation for Single Product
+            $prices = self::calculatePrices($product, null, $userType);
 
             return [[
                 'id'           => $product->id,
@@ -71,8 +80,8 @@ class ProductResource extends JsonResource
                 'sku'          => $product->sku,
                 'parent_sku'   => $product->sku,
                 'image_url'    => $product->image ? getImage('products', $product->image) : null,
-                'sell_price'   => (float) $product->sell_price,
-                'mrp_price'    => (float) ($product->sell_price + 20),
+                'sell_price'   => $prices['sell_price'],
+                'mrp_price'    => $prices['mrp_price'],
                 'category_id'  => $product->category_id,
                 'brand_id'     => $product->brand_id,
                 'is_feature'   => (bool) $product->is_feature,
@@ -90,8 +99,37 @@ class ProductResource extends JsonResource
     }
 
     /**
+     * Helper to calculate dynamic sell_price & mrp_price based on User Type.
+     * 
+     * User Type 5 = Dealer Price (Fallback to Sell Price if empty)
+     * User Type 9 = Regular / Wholesale Price (Fallback to Sell Price if empty)
+     */
+    private static function calculatePrices($product, $variant = null, int $userType = 9): array
+    {
+        $baseSellPrice = $variant?->sell_price ?? $product->sell_price ?? 0;
+        $baseMrp = $variant?->mrp ?? $product->mrp ?? ($baseSellPrice + 20);
+
+        if ($userType == UserType::DEALER) {
+            // Dealer User (5)
+            $dealerPrice = $variant?->dealer_price ?? $product->dealer_price;
+            $finalSellPrice = !empty($dealerPrice) ? (float) $dealerPrice : (float) $baseSellPrice;
+        } elseif ($userType == UserType::GENERAL_APP_CUSTOMER) {
+            // Regular / Wholesale Customer (9)
+            $wholesalePrice = $variant?->wholesale_price ?? $product->wholesale_price;
+            $finalSellPrice = !empty($wholesalePrice) ? (float) $wholesalePrice : (float) $baseSellPrice;
+        } else {
+            // Default Customer Price
+            $finalSellPrice = (float) $baseSellPrice;
+        }
+
+        return [
+            'sell_price' => $finalSellPrice,
+            'mrp_price'  => (float) $baseMrp,
+        ];
+    }
+
+    /**
      * Helper to map JSON variant attributes with specific variant name
-     * Output Example: "Color: Black, Size: S, material: gold"
      */
     private static function formatVariantAttributes(array $rawAttributes, ?string $variantName): string
     {
@@ -99,7 +137,6 @@ class ProductResource extends JsonResource
             return "";
         }
 
-        // Variant name to array format ("Black-S-gold" -> ["Black", "S", "gold"])
         $variantValues = array_map('trim', explode('-', $variantName));
         $matchedPairs = [];
 
@@ -110,11 +147,10 @@ class ProductResource extends JsonResource
                 if (!is_array($values)) continue;
 
                 foreach ($values as $value) {
-                    // Variant value matching (Case-insensitive check)
                     foreach ($variantValues as $vVal) {
                         if (strcasecmp($vVal, trim($value)) === 0) {
                             $matchedPairs[] = ucfirst($attributeKey) . ': ' . $vVal;
-                            break 2;// Break both loops
+                            break 2;
                         }
                     }
                 }

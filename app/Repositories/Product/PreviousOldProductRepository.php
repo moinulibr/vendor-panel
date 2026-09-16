@@ -8,13 +8,11 @@ use App\Models\Product;
 use App\Models\Variation;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use Illuminate\Contracts\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Builder;
 
-class ProductRepository implements ProductRepositoryInterface
+class PreviousOldProductRepository implements ProductRepositoryInterface
 {
     /**
-     * Get optimized products list for POS search.
-     * Handles single and variable products seamlessly up to 10M records.
+     * Highly Scalable Product Filtering Query (Handles 2M+ Records)
      */
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
@@ -25,12 +23,11 @@ class ProductRepository implements ProductRepositoryInterface
         $query = Product::query()
             ->where('is_new', 0)
             ->where('status', 1);
+            //->where('is_mobile_app', 1);
 
-        // 1. Base Filters
+        // 1. Base Category & Brand Filters
         if (!empty($filters['category_ids'])) {
-            $categoryIds = is_array($filters['category_ids'])
-                ? $filters['category_ids']
-                : explode(',', $filters['category_ids']);
+            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
             $query->whereIn('category_id', $categoryIds);
         }
 
@@ -42,60 +39,62 @@ class ProductRepository implements ProductRepositoryInterface
             $query->where('user_id', $filters['user_id']);
         }
 
-        if (isset($filters['min_price'], $filters['max_price'])) {
+        if (isset($filters['min_price']) && isset($filters['max_price'])) {
             $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
         }
 
-        // 2. High-Performance Search Execution
+        // 2. High-Performance Search Logic
         if ($search) {
-            $query->where(function (Builder $mainQuery) use ($search, $variableStatus) {
-                // Check Main Product Match (SKU, Name, Bangla Name)
-                $mainQuery->where('sku', 'LIKE', "{$search}%")
-                    ->orWhere('name', 'LIKE', "{$search}%")
-                    ->orWhere('name_bangla', 'LIKE', "{$search}%")
-                    // Check Variation Match via Fast Subquery EXISTS (Sub-SKU, Barcode, Name)
-                    ->orWhereExists(function ($subQuery) use ($search, $variableStatus) {
-                        $subQuery->selectRaw(1)
-                            ->from('variations as pv')
-                            ->whereColumn('pv.product_id', 'products.id')
-                            ->where('pv.status', $variableStatus)
-                            ->whereNull('pv.deleted_at')
-                            ->where(function ($q) use ($search) {
-                                $q->where('pv.sub_sku', 'LIKE', "{$search}%")
-                                    ->orWhere('pv.barcode', 'LIKE', "{$search}%")
-                                    ->orWhere('pv.name', 'LIKE', "{$search}%");
-                            });
-                    });
-            });
-
-            // Smart Relations Loading (Single Product + Variable Product Conditional Load)
-            $query->with(['variations' => function ($v) use ($search, $locationId, $variableStatus) {
-                $v->where('status', $variableStatus)->whereNull('deleted_at');
-
-                $v->where(function ($q) use ($search) {
-                    // Match Specific Variation
-                    $q->where('sub_sku', 'LIKE', "{$search}%")
-                        ->orWhere('barcode', 'LIKE', "{$search}%")
+            // Check if product name or SKU matches directly
+            /* $isProductMatched = Product::query()
+                ->where('sku', 'LIKE', "{$search}%")
+                ->orWhere('name', 'LIKE', "{$search}%")
+                ->orWhere('name_bangla', 'LIKE', "{$search}%")
+                ->where('is_new', 0)
+                ->where('status', 1)
+                ->where('is_mobile_app', 1)
+                ->exists();*/
+            $isProductMatched = (clone $query)
+                ->where(function ($q) use ($search) {
+                    $q->where('sku', 'LIKE', "{$search}%")
                         ->orWhere('name', 'LIKE', "{$search}%")
-                        // Or Load All Variations (Including Default Single Variation) if Parent Matches
-                        ->orWhereHas('product', function ($p) use ($search) {
-                            $p->where('sku', 'LIKE', "{$search}%")
-                                ->orWhere('name', 'LIKE', "{$search}%")
-                                ->orWhere('name_bangla', 'LIKE', "{$search}%");
-                        });
-                });
-
-                $this->applyStockRelation($v, $locationId);
-            }]);
+                        ->orWhere('name_bangla', 'LIKE', "{$search}%");
+                })
+                ->exists();
+                
+            if ($isProductMatched) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('sku', 'LIKE', "{$search}%")
+                    ->orWhere('name', 'LIKE', "{$search}%")
+                    ->orWhere('name_bangla', 'LIKE', "{$search}%");
+                })
+                ->with(['variations' => function ($v) use ($locationId, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at');
+                    $this->applyStockRelation($v, $locationId);
+                }]);
+            } else {
+                $query->whereHas('variations', function ($v) use ($search, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at')
+                    ->where('sub_sku', 'LIKE', "{$search}%")
+                    ->orWhere('name', 'LIKE', "{$search}%");
+                })
+                ->with(['variations' => function ($v) use ($search, $locationId, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at');
+                    $v->where(function ($sub) use ($search) {
+                        $sub->where('sub_sku', 'LIKE', "{$search}%")
+                            ->orWhere('name', 'LIKE', "{$search}%");
+                    });
+                    $this->applyStockRelation($v, $locationId);
+                }]);
+            }
         } else {
-            // Default Eager Load without search term
             $query->with(['variations' => function ($v) use ($locationId, $variableStatus) {
                 $v->where('status', $variableStatus)->whereNull('deleted_at');
                 $this->applyStockRelation($v, $locationId);
             }]);
         }
 
-        // 3. Selective Eager Loading for Base Relations
+        // 3. Eager Load Common Relations
         $query->with([
             'category:id,name,slug,image',
             'brand:id,name,image',
@@ -110,7 +109,6 @@ class ProductRepository implements ProductRepositoryInterface
             default     => $query->orderBy('id', 'desc'),
         };
 
-        // 5. Select Essential Columns & Paginate
         return $query->select([
             'id',
             'name',
@@ -127,7 +125,8 @@ class ProductRepository implements ProductRepositoryInterface
             'retail_price',
             'type',
             'status',
-            'is_feature'
+            'is_feature',
+            'variants'
         ])->simplePaginate($perPage);
     }
 

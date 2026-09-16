@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\App\ProductDetailsResource;
 use App\Http\Resources\Api\V1\App\ProductResource;
 use App\Http\Swagger\ProductApiDocInterface;
 use App\Services\ProductService;
+use App\Utils\UserType;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -25,11 +26,16 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
     public function index(ProductFilterRequest $request): JsonResponse
     {
         try {
+            $userType = auth()->user()->user_type;
+            if(auth()->user()->user_type == UserType::SR) {
+                $userType = (int) $request->query('user_type', 9); // Default to regular customer (9)
+            }
+
             $products = $this->productService->getProductList($request->validated());
 
             return response()->json([
                 'success' => true,
-                'data' => ProductResource::collection($products),
+                'data' => ProductResource::collection($products)->additional(['user_type' => $userType]),
                 'pagination' => [
                     'has_more' => $products->hasMorePages(),
                     'per_page' => $products->perPage(),
