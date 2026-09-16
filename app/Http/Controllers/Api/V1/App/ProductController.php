@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class ProductController extends BaseApiController implements ProductApiDocInterface
 {
@@ -28,14 +29,15 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         try {
             $userType = auth()->user()->user_type;
             if(auth()->user()->user_type == UserType::SR) {
-                $userType = (int) $request->query('user_type', 9); // Default to regular customer (9)
+                $userType = (int) $request->query('user_type', UserType::GENERAL_APP_CUSTOMER); // Default to regular customer (9)
             }
+            Session::put('userTypeForProductListFormSession', $userType);
 
             $products = $this->productService->getProductList($request->validated());
 
             return response()->json([
                 'success' => true,
-                'data' => ProductResource::collection($products)->additional(['user_type' => $userType]),
+                'data' => ProductResource::collection($products),
                 'pagination' => [
                     'has_more' => $products->hasMorePages(),
                     'per_page' => $products->perPage(),

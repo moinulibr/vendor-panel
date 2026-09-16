@@ -12,7 +12,7 @@ interface ProductApiDocInterface
     #[OA\Get(
         path: "/api/v1/app/products",
         summary: "Get Filtered Product List",
-        description: "Fetch paginated products with multi-category, brand, vendor, search, and price range filters.",
+        description: "Fetch paginated products with multi-category, brand, vendor, search, user_type filters.",
         tags: ["Product"],
         security: [["sanctum" => []]],
         parameters: [
@@ -21,6 +21,7 @@ interface ProductApiDocInterface
             //new OA\Parameter(name: "sub_category_ids", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Comma-separated sub-category IDs"),
             new OA\Parameter(name: "brand_id", in: "query", required: false, schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Vendor User ID"),
+            new OA\Parameter(name: "user_type", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user type."),
             //new OA\Parameter(name: "min_price", in: "query", required: false, schema: new OA\Schema(type: "number", format: "float")),
             //new OA\Parameter(name: "max_price", in: "query", required: false, schema: new OA\Schema(type: "number", format: "float")),
             new OA\Parameter(name: "sort_by", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["latest", "name_asc", "name_desc"])),

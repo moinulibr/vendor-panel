@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\App;
 
+use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ProductFilterRequest extends FormRequest
@@ -13,6 +14,8 @@ class ProductFilterRequest extends FormRequest
 
     public function rules(): array
     {
+        $isSrUser = auth()->check() && auth()->user()->user_type == UserType::SR;
+
         return [
             'q'               => 'nullable|string|max:255',
             'category_ids'    => 'nullable|string',
@@ -24,6 +27,10 @@ class ProductFilterRequest extends FormRequest
             //'max_price'       => 'nullable|numeric|gte:min_price',
             'sort_by'         => 'nullable|string|in:latest,price_low,price_high,name_asc,name_desc',
             'per_page'        => 'nullable|integer|min:1|max:100',
+            'user_type'          => [
+                $isSrUser ? 'required' : 'nullable',
+                'integer'
+            ],
         ];
     }
 }

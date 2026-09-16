@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Api\V1\App\ProductImageResource;
 use App\Utils\UserType;
+use Illuminate\Support\Facades\Session;
 
 class ProductResource extends JsonResource
 {
@@ -14,8 +15,8 @@ class ProductResource extends JsonResource
      */
     public static function collection($resource)
     {
-        // Query param (user_type) dynamic capturing
-        $userType = (int) request()->query('user_type', 9); // 5 = Dealer, 9 = Regular Customer (default)
+        $userType = Session::get('userTypeForProductListFormSession', UserType::GENERAL_APP_CUSTOMER); // 5 = Dealer, 9 = Regular Customer (default)
+        Session::put('userTypeForProductListFormSession', null);
 
         $collection = $resource->getCollection()->flatMap(function ($product) use ($userType) {
 
