@@ -39,9 +39,11 @@ if (Schema::hasTable('products')) {
             $table->decimal('min_price', 12, 2)->default(0)->after('sell_price');
             $table->decimal('max_price', 12, 2)->default(0)->after('min_price');
         }
-
+        if (!Schema::hasColumn('products', 'is_mobile_app')) {
+            $table->boolean('is_mobile_app')->default(false)->after('is_ecom')->comment('is applicabe for mobile app or not');
+        }
         if (!Schema::hasColumn('products', 'barcode')) {
-            $table->string('barcode')->nullable()->after('type');
+            $table->string('barcode')->nullable()->after('is_mobile_app');
         }
         if (!Schema::hasColumn('products', 'mpn')) {
             $table->string('mpn')->nullable()->after('barcode')->comment('Manufacturer Part Number');
@@ -253,6 +255,17 @@ if (Schema::hasTable('product_stocks')) {
         if (!hasIndex('product_stocks', 'idx_stocks_product_variation')) {
             $table->index(['product_id', 'variation_id'], 'idx_stocks_product_variation');
         }
+    });
+}
+
+if (Schema::hasTable('product_images')) {
+    Schema::table(
+        'product_images',
+        function (Blueprint $table) {
+            // 1. Core Columns
+            if (!Schema::hasColumn('product_images', 'variation_id')) {
+                $table->foreignId('variation_id')->nullable()->after('product_id')->comment('Product Variation ID');
+            }
     });
 }
 

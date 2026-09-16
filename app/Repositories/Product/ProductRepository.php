@@ -16,13 +16,14 @@ class ProductRepository implements ProductRepositoryInterface
      */
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
+        $variableStatus = 3;
         $search = !empty($filters['q']) ? trim($filters['q']) : null;
         $locationId = $filters['location_id'] ?? null;
 
         $query = Product::query()
             ->where('is_new', 0)
-            ->where('status', 1)
-            ->where('is_ecom', 1);
+            ->where('status', 1);
+            //->where('is_mobile_app', 1);
 
         // 1. Base Category & Brand Filters
         if (!empty($filters['category_ids'])) {
@@ -45,27 +46,40 @@ class ProductRepository implements ProductRepositoryInterface
         // 2. High-Performance Search Logic
         if ($search) {
             // Check if product name or SKU matches directly
-            $isProductMatched = Product::query()
+            /* $isProductMatched = Product::query()
                 ->where('sku', 'LIKE', "{$search}%")
                 ->orWhere('name', 'LIKE', "{$search}%")
                 ->orWhere('name_bangla', 'LIKE', "{$search}%")
-                ->exists();
-
-            if ($isProductMatched) {
-                $query->where(function ($q) use ($search) {
+                ->where('is_new', 0)
+                ->where('status', 1)
+                ->where('is_mobile_app', 1)
+                ->exists();*/
+            $isProductMatched = (clone $query)
+                ->where(function ($q) use ($search) {
                     $q->where('sku', 'LIKE', "{$search}%")
                         ->orWhere('name', 'LIKE', "{$search}%")
                         ->orWhere('name_bangla', 'LIKE', "{$search}%");
                 })
-                    ->with(['variations' => function ($v) use ($locationId) {
-                        $this->applyStockRelation($v, $locationId);
-                    }]);
-            } else {
-                $query->whereHas('variations', function ($v) use ($search) {
-                    $v->where('sub_sku', 'LIKE', "{$search}%")
-                        ->orWhere('name', 'LIKE', "{$search}%");
+                ->exists();
+                
+            if ($isProductMatched) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('sku', 'LIKE', "{$search}%")
+                    ->orWhere('name', 'LIKE', "{$search}%")
+                    ->orWhere('name_bangla', 'LIKE', "{$search}%");
                 })
-                ->with(['variations' => function ($v) use ($search, $locationId) {
+                ->with(['variations' => function ($v) use ($locationId, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at');
+                    $this->applyStockRelation($v, $locationId);
+                }]);
+            } else {
+                $query->whereHas('variations', function ($v) use ($search, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at')
+                    ->where('sub_sku', 'LIKE', "{$search}%")
+                    ->orWhere('name', 'LIKE', "{$search}%");
+                })
+                ->with(['variations' => function ($v) use ($search, $locationId, $variableStatus) {
+                    $v->where('status', $variableStatus)->whereNull('deleted_at');
                     $v->where(function ($sub) use ($search) {
                         $sub->where('sub_sku', 'LIKE', "{$search}%")
                             ->orWhere('name', 'LIKE', "{$search}%");
@@ -74,7 +88,8 @@ class ProductRepository implements ProductRepositoryInterface
                 }]);
             }
         } else {
-            $query->with(['variations' => function ($v) use ($locationId) {
+            $query->with(['variations' => function ($v) use ($locationId, $variableStatus) {
+                $v->where('status', $variableStatus)->whereNull('deleted_at');
                 $this->applyStockRelation($v, $locationId);
             }]);
         }
@@ -83,7 +98,7 @@ class ProductRepository implements ProductRepositoryInterface
         $query->with([
             'category:id,name,slug,image',
             'brand:id,name,image',
-            'images:id,product_id,image',
+            'images:id,product_id,variation_id,image',
         ]);
 
         // 4. Sorting
@@ -104,9 +119,12 @@ class ProductRepository implements ProductRepositoryInterface
             'category_id',
             'brand_id',
             'sell_price',
+            'mrp',
+            'dealer_price',
+            'wholesale_price',
+            'retail_price',
             'type',
             'status',
-            'is_ecom',
             'is_feature',
             'variants'
         ])->simplePaginate($perPage);
