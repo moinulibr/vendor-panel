@@ -12,19 +12,22 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductRepository implements ProductRepositoryInterface
 {
+    protected $variableStatus = 3;
+    protected $isEnableForMobileApp = 0;
     /**
      * Get optimized products list for POS search.
      * Handles single and variable products seamlessly up to 10M records.
      */
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
-        $variableStatus = 3;
+        $variableStatus = $this->variableStatus;
         $search = !empty($filters['q']) ? trim($filters['q']) : null;
         $locationId = $filters['location_id'] ?? null;
 
         $query = Product::query()
             ->where('is_new', 0)
-            ->where('status', 1);
+            ->where('status', 1)
+            ->where('is_mobile_app', $this->isEnableForMobileApp);
 
         // 1. Base Filters
         if (!empty($filters['category_ids'])) {
@@ -149,28 +152,20 @@ class ProductRepository implements ProductRepositoryInterface
     /**
      * Fetch Product Details by Identifier
      */
-    public function findBySlugOrId(string|int $identifier, ?int $locationId = null, ?string $type = null): ?Product
+    public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
     {
+        //$identifier always variation id [vriation_id is focused for product details]
         $selectedVariationId = null;
         $product = null;
 
-        if ($type === 'variable') {
-            $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-        } elseif ($type === 'single') {
-            $product = $this->fetchByProductIdentifier($identifier);
-        } else {
-            $product = $this->fetchByProductIdentifier($identifier);
-            if (!$product) {
-                $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
-            }
-        }
+        $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
 
         if ($product) {
             $product->load([
                 'category:id,name,slug,image',
                 'brand:id,name,image',
                 'unit:id,name',
-                'images:id,product_id,image',
+                'images:id,product_id,variation_id,image',
                 'variations' => function ($q) use ($locationId) {
                     $q->select([
                         'id',
@@ -179,6 +174,12 @@ class ProductRepository implements ProductRepositoryInterface
                         'sub_sku',
                         'purchase_price',
                         'sell_price',
+                        'wholesale_price',
+                        'dealer_price',
+                        'mrp',
+                        'image',
+                        'barcode',
+                        'custom_code',
                         'created_at'
                     ]);
 
@@ -199,6 +200,32 @@ class ProductRepository implements ProductRepositoryInterface
         return $product;
     }
 
+    private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
+    {
+        $variation = Variation::select('id', 'product_id', 'sub_sku','mrp','wholesale_price','dealer_price','retail_price','sell_price')
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('sub_sku', $identifier);
+                }
+            })
+            ->first();
+
+        if ($variation) {
+            $selectedVariationId = $variation->id;
+
+            return Product::query()
+                ->where('status', 1)
+                ->where('is_mobile_app', $this->isEnableForMobileApp)
+                ->where('id', $variation->product_id)
+                ->first();
+        }
+
+        return null;
+    }
+
+
     private function fetchByProductIdentifier(string|int $identifier): ?Product
     {
         return Product::query()
@@ -215,30 +242,7 @@ class ProductRepository implements ProductRepositoryInterface
             ->first();
     }
 
-    private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
-    {
-        $variation = Variation::select('id', 'product_id', 'sub_sku')
-            ->where(function ($q) use ($identifier) {
-                if (is_numeric($identifier)) {
-                    $q->where('id', $identifier);
-                } else {
-                    $q->where('sub_sku', $identifier);
-                }
-            })
-            ->first();
 
-        if ($variation) {
-            $selectedVariationId = $variation->id;
-
-            return Product::query()
-                ->where('status', 1)
-                ->where('is_ecom', 1)
-                ->where('id', $variation->product_id)
-                ->first();
-        }
-
-        return null;
-    }
 
     public function getCategories()
     {

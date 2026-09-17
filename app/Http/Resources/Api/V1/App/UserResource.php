@@ -44,6 +44,19 @@ class UserResource extends JsonResource
                 return [
                     'retailer_id'   => $this->retailer->id,
                     'retailer_user_id' => $this->retailer->user_id,
+                    'user_detail_id' => $this->retailer->user_id,
+                    'shop_name'     => $this->retailer->shop_name,
+                    'trade_license' => $this->retailer->trade_license,
+                    'license_image' => $this->retailer->license_image
+                        ? asset(Storage::url($this->retailer->license_image)) : null,
+                    'address'       => $this->retailer->address,
+                    'status'        => $this->retailer->status == 1 || $this->retailer->status == "active" ? "active" : "inactive",
+                ];
+            }),
+            'user_detail' => $this->whenLoaded('retailer', function () {
+                return [
+                    'user_detail_id'   => $this->retailer->id,
+                    'user_base_id' => $this->retailer->user_id,
                     'shop_name'     => $this->retailer->shop_name,
                     'trade_license' => $this->retailer->trade_license,
                     'license_image' => $this->retailer->license_image

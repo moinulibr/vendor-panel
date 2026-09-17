@@ -6,11 +6,16 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Api\V1\App\ProductVariationResource;
 use App\Http\Resources\Api\V1\App\ProductImageResource;
+use App\Utils\UserType;
+use Illuminate\Support\Facades\Session;
 
 class ProductDetailsResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $userType = Session::get('userTypeForProductDetailFromSession', UserType::GENERAL_APP_CUSTOMER); // 5 = Dealer, 9 = Regular Customer (default)
+        Session::put('userTypeForProductDetailFromSession', null);
+
         $selectedVariationObj = null;
         $formattedAttributes = "";
 
@@ -23,27 +28,26 @@ class ProductDetailsResource extends JsonResource
             }
         }
 
-        $finalSellPrice = $selectedVariationObj ? ($selectedVariationObj->sell_price ?? $this->sell_price) : $this->sell_price;
-        $finalPurchasePrice = $selectedVariationObj ? ($selectedVariationObj->purchase_price ?? $this->purchase_price) : $this->purchase_price;
         $finalSku = $selectedVariationObj ? $selectedVariationObj->sub_sku : $this->sku;
-        $finalName = $selectedVariationObj ? $this->name . ' - ' . $selectedVariationObj->name : $this->name;
+
+        // FIX 1: Pass $selectedVariationObj to calculate exact variation prices based on userType
+        $prices = self::userTypeWisePriceSetup($this->resource, $selectedVariationObj, $userType);
 
         return [
             'id'                    => $this->id,
             'variation_id'          => $this->selected_variation_id ?? null,
-            'name'                  => $this->name,// ." - ". $formattedAttributes,
+            'name'                  => $this->name,
             'name_bangla'           => $this->name_bangla,
             'slug'                  => $this->slug,
             'sku'                   => $finalSku,
             'parent_sku'            => $this->sku,
             'image_url'             => $this->image ? getImage('products', $this->image) : null,
-            'sell_price'            => (float) $finalSellPrice,
-            'mrp_price'             => (float) ($finalSellPrice + 20),
-            'purchase_price'        => (float) $finalPurchasePrice,
+            'sell_price'            => (float) $prices['sell_price'],
+            'mrp_price'             => (float) $prices['mrp_price'],
             'type'                  => $this->type,
             'stock_manage'          => (bool) $this->stock_manage,
 
-            // Variant Attributes Logic (e.g. Color: Red, Size: S, Material: Gold)
+            // Variant Attributes Logic (e.g. Color: Red, Size: S)
             'variant_attributes'    => $formattedAttributes,
 
             // Selected Variation Payload
@@ -80,6 +84,40 @@ class ProductDetailsResource extends JsonResource
     }
 
     /**
+     * Helper to calculate dynamic sell_price & mrp_price based on User Type.
+     * 
+     * User Type 5 = Dealer Price (Fallback to Sell Price if empty)
+     * User Type 9 = Regular / Wholesale Price (Fallback to Sell Price if empty)
+     */
+    private static function userTypeWisePriceSetup($product, $variant = null, int $userType = UserType::GENERAL_APP_CUSTOMER): array
+    {
+        // FIX 2: Correct Logging using ->toArray() on model
+        // \Log::info('Product Model:', $product ? $product->toArray() : []);
+
+        // Priority 1: Check Variant prices if available, else fallback to Main Product prices
+        $baseSellPrice = $variant?->sell_price ?? $product?->sell_price ?? 0;
+        $baseMrp       = $variant?->mrp ?? $product?->mrp ?? ($baseSellPrice + 20);
+
+        if ($userType == UserType::DEALER) {
+            // Dealer User (5)
+            $dealerPrice = $variant?->dealer_price ?? $product?->dealer_price;
+            $finalSellPrice = !empty($dealerPrice) ? (float) $dealerPrice : (float) $baseSellPrice;
+        } elseif ($userType == UserType::GENERAL_APP_CUSTOMER) {
+            // Regular / Wholesale Customer (9)
+            $wholesalePrice = $variant?->wholesale_price ?? $product?->wholesale_price;
+            $finalSellPrice = !empty($wholesalePrice) ? (float) $wholesalePrice : (float) $baseSellPrice;
+        } else {
+            // Default Customer Price
+            $finalSellPrice = (float) $baseSellPrice;
+        }
+
+        return [
+            'sell_price' => $finalSellPrice,
+            'mrp_price'  => (float) $baseMrp,
+        ];
+    }
+
+    /**
      * Helper Method: Variant Attributes Matcher
      */
     private static function formatVariantAttributes(array $rawAttributes, ?string $variantName): string
@@ -88,7 +126,6 @@ class ProductDetailsResource extends JsonResource
             return "";
         }
 
-        // Variant name (e.g. "Black-S-gold" -> ["Black", "S", "gold"])
         $variantValues = array_map('trim', explode('-', $variantName));
         $matchedPairs = [];
 

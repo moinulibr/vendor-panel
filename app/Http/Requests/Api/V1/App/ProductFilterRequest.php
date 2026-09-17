@@ -27,7 +27,7 @@ class ProductFilterRequest extends FormRequest
             //'max_price'       => 'nullable|numeric|gte:min_price',
             'sort_by'         => 'nullable|string|in:latest,price_low,price_high,name_asc,name_desc',
             'per_page'        => 'nullable|integer|min:1|max:100',
-            'user_type'          => [
+            'user_base_id'          => [
                 $isSrUser ? 'required' : 'nullable',
                 'integer'
             ],

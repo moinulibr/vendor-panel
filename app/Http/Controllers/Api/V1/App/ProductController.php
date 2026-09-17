@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\ImageSearchRequest;
+use App\Http\Requests\Api\V1\App\ProductDetailRequest;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use App\Http\Resources\Api\V1\App\BrandResource;
 use App\Http\Resources\Api\V1\App\CategoryResource;
 use App\Http\Resources\Api\V1\App\ProductDetailsResource;
 use App\Http\Resources\Api\V1\App\ProductResource;
 use App\Http\Swagger\ProductApiDocInterface;
+use App\Models\User;
 use App\Services\ProductService;
 use App\Utils\UserType;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -29,9 +31,14 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         try {
             $userType = auth()->user()->user_type;
             if(auth()->user()->user_type == UserType::SR) {
-                $userType = (int) $request->query('user_type', UserType::GENERAL_APP_CUSTOMER); // Default to regular customer (9)
+                $userDetailId = (int) $request->query('user_base_id');
+                $user = User::find($userDetailId);
+                if(!$user) {
+                    throw new Exception("User detail not found।", 404);
+                }
+                $userType = $user?->user_type ?? UserType::GENERAL_APP_CUSTOMER; // Default to regular customer (9)
             }
-            Session::put('userTypeForProductListFormSession', $userType);
+            Session::put('userTypeForProductListFromSession', $userType);
 
             $products = $this->productService->getProductList($request->validated());
 
@@ -53,13 +60,23 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         }
     }
 
-    public function show(Request $request, string|int $identifier): JsonResponse
+    public function show(ProductDetailRequest $request, string|int $identifier): JsonResponse
     {
+        $userType = auth()->user()->user_type;
+        if (auth()->user()->user_type == UserType::SR) {
+            $userDetailId = (int) $request->query('user_base_id');
+            $user = User::find($userDetailId);
+            if (!$user) {
+                throw new Exception("User detail not found।", 404);
+            }
+            $userType = $user?->user_type ?? UserType::GENERAL_APP_CUSTOMER; // // Default to regular customer (9)
+        }
+        Session::put('userTypeForProductDetailFromSession', $userType);
+
         $locationId = $request->input('location_id');
-        $type       = $request->input('type'); // 'single' or 'variable'
 
         try {
-            $product = $this->productService->getProductDetails($identifier, $locationId, $type);
+            $product = $this->productService->getProductDetails($identifier, $locationId);
 
             if (!$product) {
                 return response()->json([

@@ -3,6 +3,7 @@
 namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\ImageSearchRequest;
+use App\Http\Requests\Api\V1\App\ProductDetailRequest;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -21,7 +22,7 @@ interface ProductApiDocInterface
             //new OA\Parameter(name: "sub_category_ids", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Comma-separated sub-category IDs"),
             new OA\Parameter(name: "brand_id", in: "query", required: false, schema: new OA\Schema(type: "integer")),
             new OA\Parameter(name: "user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Vendor User ID"),
-            new OA\Parameter(name: "user_type", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user type."),
+            new OA\Parameter(name: "user_detail_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user_detail_id."),
             //new OA\Parameter(name: "min_price", in: "query", required: false, schema: new OA\Schema(type: "number", format: "float")),
             //new OA\Parameter(name: "max_price", in: "query", required: false, schema: new OA\Schema(type: "number", format: "float")),
             new OA\Parameter(name: "sort_by", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["latest", "name_asc", "name_desc"])),
@@ -36,21 +37,21 @@ interface ProductApiDocInterface
     public function index(ProductFilterRequest $request);
 
     #[OA\Get(
-        path: "/api/v1/app/products/{identifier}?type={p_details_type}",
+        path: "/api/v1/app/products/{identifier}",
         summary: "Get Single Product Details",
         description: "Fetch product details by Product ID.",
         tags: ["Product"],
         security: [["sanctum" => []]],
         parameters: [
             new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID"),
-            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "single or variable")
+            new OA\Parameter(name: "user_detail_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user_detail_id."),
         ],
         responses: [
             new OA\Response(response: 200, description: "Product details retrieved"),
             new OA\Response(response: 404, description: "Product not found")
         ]
     )]
-    public function show(Request $request, string|int $identifier);
+    public function show(ProductDetailRequest $request, string|int $identifier);
 
     #[OA\Get(
         path: "/api/v1/app/check-stock-quantity/{identifier}?type={p_details_type}",
@@ -60,7 +61,7 @@ interface ProductApiDocInterface
         security: [["sanctum" => []]],
         parameters: [
             new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID"),
-            new OA\Parameter(name: "type", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "single or variable")
+            new OA\Parameter(name: "user_detail_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user_detail_id."),
         ],
         responses: [
             new OA\Response(response: 200, description: "Product stock quantity retrieved"),
@@ -84,6 +85,7 @@ interface ProductApiDocInterface
                     properties: [
                         new OA\Property(property: "image", description: "Product Image File (jpg, png, webp)", type: "string", format: "binary"),
                         new OA\Property(property: "location_id", description: "Location/Store ID for Stock Filtering", type: "integer", example: 1),
+                        new OA\Parameter(name: "user_detail_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user_detail_id."),
                         new OA\Property(property: "per_page", description: "Items per page", type: "integer", default: 20)
                     ]
                 )

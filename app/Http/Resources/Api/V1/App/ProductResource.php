@@ -15,8 +15,8 @@ class ProductResource extends JsonResource
      */
     public static function collection($resource)
     {
-        $userType = Session::get('userTypeForProductListFormSession', UserType::GENERAL_APP_CUSTOMER); // 5 = Dealer, 9 = Regular Customer (default)
-        Session::put('userTypeForProductListFormSession', null);
+        $userType = Session::get('userTypeForProductListFromSession', UserType::GENERAL_APP_CUSTOMER); // 5 = Dealer, 9 = Regular Customer (default)
+        Session::put('userTypeForProductListFromSession', null);
 
         $collection = $resource->getCollection()->flatMap(function ($product) use ($userType) {
 
@@ -29,13 +29,14 @@ class ProductResource extends JsonResource
 
                     $singleVariantAttributes = self::formatVariantAttributes($rawAttributes, $variant->name);
 
-                    // Dynamic Price Calculation
-                    $prices = self::calculatePrices($product, $variant, $userType);
+                    // Dynamic Price
+                    $prices = self::userTypeWisePriceSetup($product, $variant, $userType);
 
                     return [
                         'id'           => $product->id,
                         'parent_id'    => $product->id,
                         'variation_id' => $variant->id,
+                        'product_base_id' => $variant->id,
                         'p_details' => [
                             'id'   => $variant->id,
                             'type' => "variable"
@@ -63,14 +64,16 @@ class ProductResource extends JsonResource
             }
 
             // Dynamic Price Calculation for Single Product
-            $prices = self::calculatePrices($product, null, $userType);
-
+            $prices = self::userTypeWisePriceSetup($product, null, $userType);
+            $pv = $product->variations->first();
             return [[
                 'id'           => $product->id,
                 'parent_id'    => $product->id,
-                'variation_id' => null,
+                'variation_id' =>  $pv?->id ?? $product->id,
+                'product_base_id' =>  $pv?->id ??  $product->id,
                 'p_details' => [
-                    'id'   => $product->id,
+                    //'id'   => $product->id,
+                    'id'   => $pv?->id ??  $product->id,
                     'type' => "single"
                 ],
                 'is_variant'   => false,
@@ -105,7 +108,7 @@ class ProductResource extends JsonResource
      * User Type 5 = Dealer Price (Fallback to Sell Price if empty)
      * User Type 9 = Regular / Wholesale Price (Fallback to Sell Price if empty)
      */
-    private static function calculatePrices($product, $variant = null, int $userType = 9): array
+    private static function userTypeWisePriceSetup($product, $variant = null, int $userType = UserType::GENERAL_APP_CUSTOMER): array
     {
         $baseSellPrice = $variant?->sell_price ?? $product->sell_price ?? 0;
         $baseMrp = $variant?->mrp ?? $product->mrp ?? ($baseSellPrice + 20);
