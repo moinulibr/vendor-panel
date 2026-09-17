@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\App;
 
+use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImageSearchRequest extends FormRequest
@@ -13,10 +14,16 @@ class ImageSearchRequest extends FormRequest
 
     public function rules(): array
     {
+        $isSrUser = auth()->check() && auth()->user()->user_type == UserType::SR;
+
         return [
             'image'       => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'], // Max 5MB
             'location_id' => ['nullable', 'integer', 'exists:locations,id'],
             'per_page'    => ['nullable', 'integer', 'min:1', 'max:100'],
+            'user_base_id' => [
+                $isSrUser ? 'required' : 'nullable',
+                'integer'
+            ],
         ];
     }
 

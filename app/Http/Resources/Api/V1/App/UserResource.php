@@ -45,6 +45,7 @@ class UserResource extends JsonResource
                     'retailer_id'   => $this->retailer->id,
                     'retailer_user_id' => $this->retailer->user_id,
                     'user_detail_id' => $this->retailer->user_id,
+                    'user_base_id' => $this->retailer->user_id,
                     'shop_name'     => $this->retailer->shop_name,
                     'trade_license' => $this->retailer->trade_license,
                     'license_image' => $this->retailer->license_image

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Http\Requests\Api\V1\App\ImageSearchRequest;
 use App\Http\Requests\Api\V1\App\ProductDetailRequest;
 use App\Http\Requests\Api\V1\App\ProductFilterRequest;
+use App\Http\Requests\Api\V1\App\ProductStockCheckRequest;
 use App\Http\Resources\Api\V1\App\BrandResource;
 use App\Http\Resources\Api\V1\App\CategoryResource;
 use App\Http\Resources\Api\V1\App\ProductDetailsResource;
@@ -34,7 +35,7 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
                 $userDetailId = (int) $request->query('user_base_id');
                 $user = User::find($userDetailId);
                 if(!$user) {
-                    throw new Exception("User detail not found।", 404);
+                    throw new Exception("Base User not found।", 404);
                 }
                 $userType = $user?->user_type ?? UserType::GENERAL_APP_CUSTOMER; // Default to regular customer (9)
             }
@@ -103,10 +104,21 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
         }
     }
 
-    public function checkStockQuantity(Request $request, string|int $identifier): JsonResponse
+    public function checkStockQuantity(ProductStockCheckRequest $request, string|int $identifier): JsonResponse
     {
+        $userType = auth()->user()->user_type;
+        if (auth()->user()->user_type == UserType::SR) {
+            $userDetailId = (int) $request->query('user_base_id');
+            $user = User::find($userDetailId);
+            if (!$user) {
+                throw new Exception("User detail not found।", 404);
+            }
+            $userType = $user?->user_type ?? UserType::GENERAL_APP_CUSTOMER; // // Default to regular customer (9)
+        }
+        Session::put('userTypeForProductStockCheckFromSession', $userType);
+
         $locationId = $request->input('location_id');
-        $type       = $request->input('type'); // 'single' or 'variable'
+        
         return response()->json([
             'success' => true,
             'data'    => [
@@ -119,6 +131,17 @@ class ProductController extends BaseApiController implements ProductApiDocInterf
     public function searchByImage(ImageSearchRequest $request): JsonResponse
     {
         try {
+            $userType = auth()->user()->user_type;
+            if (auth()->user()->user_type == UserType::SR) {
+                $userDetailId = (int) $request->input('user_base_id');
+                $user = User::find($userDetailId);
+                if (!$user) {
+                    throw new Exception("User detail not found।", 404);
+                }
+                $userType = $user?->user_type ?? UserType::GENERAL_APP_CUSTOMER; // // Default to regular customer (9)
+            }
+            Session::put('userTypeForProductListFromSession', $userType);
+
             // TODO: Future Microservice Integration
             // $image = $request->file('image');
             // $matchedProductIds = $this->visionService->getMatchedProductIds($image);
