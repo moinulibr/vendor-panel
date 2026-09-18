@@ -163,12 +163,12 @@ class CartController extends BaseApiController implements CartApiDocInterface
     public function clear(AddToCartAllClearRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
+            $userId = auth()->id();
             if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+                $userId = $request->user_base_id;
             }
 
-            $this->cartService->clearCart($retailerId);
+            $this->cartService->clearCart($userId);
 
             return $this->jsonResponse(
                 success: true,

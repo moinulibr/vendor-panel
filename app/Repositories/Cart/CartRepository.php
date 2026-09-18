@@ -62,9 +62,14 @@ class CartRepository implements CartRepositoryInterface
         return CartItem::where('id', $cartItemId)->delete();
     }
 
-    public function clearCart(int $cartId): bool
+    public function clearAllItemFromCart(int $cartId): bool
     {
         return CartItem::where('cart_id', $cartId)->delete();
+    }
+
+    public function clearCart(int $cartId): bool
+    {
+        return Cart::where('id', $cartId)->delete();
     }
 
     public function updateCoupon(int $cartId, array $couponData): bool

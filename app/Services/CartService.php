@@ -158,6 +158,7 @@ class CartService
         $cart = $this->cartRepository->getOrCreateCart($userId);
         // Clean coupon along with cart items
         $this->cartRepository->clearCoupon($cart->id);
+        $this->cartRepository->clearAllItemFromCart($cart->id);
         return $this->cartRepository->clearCart($cart->id);
     }
 }

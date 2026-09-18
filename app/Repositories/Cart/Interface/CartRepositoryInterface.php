@@ -13,6 +13,7 @@ interface CartRepositoryInterface
     public function addOrUpdateItem(Cart $cart, array $data): CartItem;
     public function updateQuantity(int $cartItemId, int $quantity): bool;
     public function removeItem(int $cartItemId): bool;
+    public function clearAllItemFromCart(int $cartId): bool;
     public function clearCart(int $cartId): bool;
 
     // Coupon related DB methods

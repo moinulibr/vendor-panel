@@ -17,7 +17,7 @@ class AddToCartAllClearRequest extends FormRequest
         $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
         
         return [
-            'retailer_user_id'  => [
+            'user_base_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',
@@ -27,7 +27,7 @@ class AddToCartAllClearRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'retailer_user_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
+            'user_base_id.required' => 'The user base id field is required when you are acting as an SR  user.',
         ];
     }
 }
