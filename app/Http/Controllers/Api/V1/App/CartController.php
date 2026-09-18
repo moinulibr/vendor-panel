@@ -23,12 +23,12 @@ class CartController extends BaseApiController implements CartApiDocInterface
     public function index(AddToCartListRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
+            $userId = auth()->id();
             if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+                $userId = $request->user_base_id;
             }
 
-            $cartData = $this->cartService->getUserCart($retailerId);
+            $cartData = $this->cartService->getUserCart($userId);
 
             return $this->jsonResponse(
                 success: true,
@@ -48,12 +48,12 @@ class CartController extends BaseApiController implements CartApiDocInterface
     public function store(AddToCartRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
+            $userId = auth()->id();
             if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+                $userId = $request->user_base_id;
             }
 
-            $cartItem = $this->cartService->addToCart($retailerId, $request->validated());
+            $cartItem = $this->cartService->addToCart($userId, $request->validated());
 
             return $this->jsonResponse(
                 success: true,

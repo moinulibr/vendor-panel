@@ -17,11 +17,12 @@ class AddToCartRequest extends FormRequest
         $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
         
         return [
-            'product_id'   => 'required|integer|exists:products,id',
-            'type'         => 'required|string|in:single,variable',
-            'variation_id' => 'nullable|integer|exists:variations,id',
-            'quantity'     => 'required|integer|min:1',
-            'retailer_user_id'  => [
+            'product_id'      => 'required|integer|exists:products,id',
+            'product_base_id' => 'required|integer|exists:variations,id',
+            //'type'         => 'required|string|in:single,variable',
+            'variation_id'  => 'nullable|integer|exists:variations,id',
+            'quantity'      => 'required|integer|min:1',
+            'user_base_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',

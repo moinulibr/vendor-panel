@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Variation;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
+use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
 use Exception;
 class CartService
@@ -14,13 +15,15 @@ class CartService
     public function __construct(
         protected CartRepositoryInterface $cartRepository,
         protected CouponRepositoryInterface $couponRepository,
-        protected ProductRepositoryInterface $productRepository
+        protected ProductRepositoryInterface $productRepository,
+        protected UserRepositoryInterface $userRepository,
+        protected PriceService $priceService
         ) {}
 
-    public function getUserCart(int $retailerId): array
+    public function getUserCart(int $userId): array
     {
         //always match with retailer id. 
-        $cart = $this->cartRepository->getOrCreateCart($retailerId);
+        $cart = $this->cartRepository->getOrCreateCart($userId);
         $cartItems = $cart->items()->with(['product', 'variation'])->get();
 
         $itemSubtotal = 0;
@@ -49,6 +52,13 @@ class CartService
         $finalAmount = max(0, $grossTotal - $cartDiscount);
 
         return [
+            'user' => [
+                'logged in user id' => auth()->user()->id,
+                'logged in user type' => auth()->user()->user_type,
+                'user id' => $userId,
+                'type' => $this->userRepository->findById($userId)->user_type,
+                'name' => $this->userRepository->findById($userId)->name
+            ],
             'items'   => $cartItems,
             'summary' => [
                 'sub_total'           => $itemSubtotal,
@@ -62,15 +72,17 @@ class CartService
         ];
     }
 
-    public function addToCart(int $retailerUserId, array $data): mixed
+    public function addToCart(int $userId, array $data): mixed
     {
-        $productId = $data['type'] == "single" ? $data['product_id'] : $data['variation_id'];
+        $productId = $data['product_base_id'];
 
-        $product = $this->productRepository->findBySlugOrId($productId, null, $data['type']);
+        //$product = $this->productRepository->findBySlugOrId($productId, $location = null);
+        $product = $this->productRepository->findVariationBySlugOrId($productId, $location = null);
 
-        $cart = $this->cartRepository->getOrCreateCart($retailerUserId, auth()->user()->id ?? null);
-        
-        $unitPrice = $product->sell_price;
+        $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->id ?? null);
+
+        $unitPrice = $this->priceService->getUserTypeWisePrice($userId, $product);
+        //$unitPrice = $product->sell_price;
         $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);
 
         $newQuantity = $existingItem ? ($existingItem->quantity + $data['quantity']) : $data['quantity'];
@@ -79,10 +91,25 @@ class CartService
             'product_id'   => $data['product_id'],
             'variation_id' => $data['variation_id'] ?? null,
             'quantity'     => $newQuantity,
-            'type'         => $data['type'],
+            //'type'         => $data['type'],
             'unit_price'   => $unitPrice,
         ]);
     }
+    
+    private function userTypeWisePrice(int $userId, Object $productVariation)
+    {
+       $user =  $this->userRepository->findById($userId);
+       $price = [];
+       if($user->user_type == UserType::DEALER){
+        return $productVariation->dealer_price;
+       }
+       else if($user->user_type == UserType::GENERAL_APP_CUSTOMER){
+        return $productVariation->wholesale_price;
+       }else{
+        return $productVariation->sell_price;
+       }
+    }
+
 
     public function updateQuantity(int $cartItemId, int $quantity): bool
     {

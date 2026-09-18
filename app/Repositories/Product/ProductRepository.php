@@ -199,6 +199,23 @@ class ProductRepository implements ProductRepositoryInterface
 
         return $product;
     }
+    /**
+     * Fetch Variation Details by Identifier
+     */
+    public function findVariationBySlugOrId(string|int $identifier, ?int $locationId = null): ?Variation
+    {
+        //$identifier always variation id [vriation_id is focused for product details]
+        $variation = Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price')
+            ->where(function ($q) use ($identifier) {
+                if (is_numeric($identifier)) {
+                    $q->where('id', $identifier);
+                } else {
+                    $q->where('sub_sku', $identifier);
+                }
+            })
+            ->first();
+        return $variation;
+    }
 
     private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
     {
