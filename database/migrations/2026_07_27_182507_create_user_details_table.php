@@ -12,7 +12,7 @@ return new class extends Migration
             Schema::create('user_details', function (Blueprint $table) {
                 $table->id();
                 $table->bigInteger('user_id')->nullable();
-                $table->tinyInteger('type')->nullable()->default(1)->comment('like purpose- 1 = web app user, 2 = mobile app user, 3 = other');
+                $table->tinyInteger('type')->nullable()->default(1)->comment('1 = web app admin (pos) user, 2 = dealer mobile app user, 3 = SR Panel Web user, 4 = ecommerce user, 5 = other');
                 $table->string('shop_name')->nullable();
                 $table->string('trade_license')->nullable();
                 $table->text('address')->nullable();

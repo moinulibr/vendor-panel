@@ -4,6 +4,7 @@ namespace App\Repositories\User;
 
 use App\Models\Retailer;
 use App\Models\RetailerShippingAddress;
+use App\Models\ShippingAddress;
 use App\Models\User;
 use App\Models\UserDetail;
 use App\Repositories\User\Interface\UserRepositoryInterface;
@@ -66,28 +67,28 @@ class UserRepository implements UserRepositoryInterface
                 array_key_exists('trade_license', $data) ||
                 array_key_exists('license_image', $data)
             ) {
-                $retailerData = [];
+                $userDetailData = [];
 
                 if (array_key_exists('shop_name', $data)) {
-                    $retailerData['shop_name'] = $data['shop_name'];
+                    $userDetailData['shop_name'] = $data['shop_name'];
                 }
                 if (array_key_exists('address', $data)) {
-                    $retailerData['address'] = $data['address'];
+                    $userDetailData['address'] = $data['address'];
                 }
                 if (array_key_exists('trade_license', $data)) {
-                    $retailerData['trade_license'] = $data['trade_license'];
+                    $userDetailData['trade_license'] = $data['trade_license'];
                 }
                 if (array_key_exists('license_image', $data)) {
-                    $retailerData['license_image'] = $data['license_image'];
+                    $userDetailData['license_image'] = $data['license_image'];
                 }
 
-                $user->retailer()->updateOrCreate(
+                $user->userDetail()->updateOrCreate(
                     ['user_id' => $user->id],
-                    $retailerData
+                    $userDetailData
                 );
             }
 
-            return $user->load('retailer');
+            return $user->load('userDetail');
         });
 
         /*
@@ -144,9 +145,9 @@ class UserRepository implements UserRepositoryInterface
 
     public function deleteAccount(User $user): bool
     {
-        // Delete related retailer data if exists
-        if ($user->retailer) {
-            $user->retailer()->update(['status' => 'deleted']);
+        // Delete related user detail data if exists
+        if ($user->userDetail()->exists()) {
+            $user->userDetail()->update(['status' => 'deleted']);
         }
 
         $mobile = "d_" . $user->mobile;
@@ -173,6 +174,11 @@ class UserRepository implements UserRepositoryInterface
         return RetailerShippingAddress::create($data);
     }
 
+    public function findUserDetailById(int $userDetailId)
+    {
+        return UserDetail::where('id', $userDetailId)->where('status','!=','deleted')->first();
+    }
+
     public function findRetailerById(int $retailerId)
     {
         return Retailer::where('id', $retailerId)->where('status','!=','deleted')->first();
@@ -181,9 +187,9 @@ class UserRepository implements UserRepositoryInterface
     {
         return RetailerShippingAddress::where('id', $shippingAddressId)->whereNull('deleted_at')->first();
     }
-    public function getRetailerShippingAddresses(int $retailerId)
+    public function getShippingAddresses(int $userDetailId)
     {
-        return RetailerShippingAddress::where('retailer_id', $retailerId)->whereNull('deleted_at')->get();
+        return ShippingAddress::where('user_detail_id', $userDetailId)->whereNull('deleted_at')->get();
     }
 
     public function updateRetailerShippingAddress(RetailerShippingAddress $retailerShippingAddress, array $data): RetailerShippingAddress
@@ -206,20 +212,20 @@ class UserRepository implements UserRepositoryInterface
 
     public function getVendors(array $filters, int $perPage = 20): Paginator
     {
-        $query = User::where('user_type', UserType::VENDOR)
+        $query = User::with('userDetail')->where('user_type', UserType::VENDOR)
             ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
             ->whereNull('deleted_at');
 
         return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
     }
 
-    public function getRetailers(array $filters, int $perPage = 20): Paginator
+    public function getUsers(array $filters, array $userTypes = [UserType::DEALER, UserType::GENERAL_APP_CUSTOMER], int $perPage = 20): Paginator
     {
-        $query = User::where('user_type', UserType::DEALER)
+        $query = User::whereIn('user_type', $userTypes)
             ->where('access_type', UserType::EXTERNAL_ACCESS_TYPE)
             ->where('status', 1)
             ->whereNull('deleted_at')
-            ->with('retailer');
+            ->with('userDetail');
 
         return $this->applyUserFiltersAndPaginate($query, $filters, $perPage);
     }
@@ -253,12 +259,14 @@ class UserRepository implements UserRepositoryInterface
     //Create or Update User Detail
     public function createOrUpdateUserDetail(array $data): UserDetail
     {
-        return Retailer::updateOrCreate(
+        return UserDetail::updateOrCreate(
             ['id' => $data['user_detail_id'],'user_id' => $data['user_id']],
             [
                 'shop_name'     => $data['shop_name'] ?? null,
+                'type'          => $data['type'] ?? UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL,
                 'trade_license' => $data['trade_license'] ?? null,
                 'license_image' => $data['license_image'] ?? null,
+                'address'       => $data['address'],
                 'status'        => $data['status'] ?? 'active',
             ]
         );

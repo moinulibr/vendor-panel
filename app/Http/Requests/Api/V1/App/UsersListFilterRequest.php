@@ -5,7 +5,7 @@ namespace App\Http\Requests\Api\V1\App;
 use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UserFilterRequest extends FormRequest
+class UsersListFilterRequest extends FormRequest
 {
     public function authorize(): bool
     {

@@ -13,15 +13,14 @@ class SwitchUserTypeRequest extends FormRequest
 
     public function rules(): array
     {
-        //retailer_id
-        //retailer_user_id
         return [
             'user_id'           => ['required', 'integer', 'exists:users,id'],
-            'user_detail_id'   => ['required', 'integer', 'exists:retailers,id'],
+            'user_detail_id'   => ['required', 'integer', 'exists:user_details,id'],
             'from_user_type_id' => ['required', 'integer'],
             'to_user_type_id'   => ['required', 'integer'],
             'shop_name'         => ['required', 'string', 'max:255'],
             'trade_license'     => ['nullable', 'string', 'max:100'],
+            'address'           => ['required', 'string'],
             'license_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ];
     }

@@ -46,11 +46,11 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/update-profile-picture', [AuthController::class, 'profilePictureUpdate']);
 
         // Vendors & Retailers (For SR Shop selection & Filters)
-        Route::get('/vendors', [AuthController::class, 'vendors']);
-        Route::get('/retailers', [AuthController::class, 'retailers']);
+        Route::get('/vendors', [AuthController::class, 'getVendors']);
+        Route::get('/users-list', [AuthController::class, 'getUsersList']);
         //shipping address
-        Route::post('/create-retailer-shipping-address', [AuthController::class, 'createRetailerShippingAddress']);
-        Route::post('/update-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'updateRetailerShippingAddress']);
+        Route::post('/create-shipping-address', [AuthController::class, 'createShippingAddress']);
+        Route::post('/update-shipping-address/{shippingAddressId}', [AuthController::class, 'updateShippingAddress']);
         Route::post('/switch-user-type', [AuthController::class, 'switchingUserType']);
 
         //fcm token api
@@ -74,11 +74,11 @@ Route::prefix('v1/app')->group(function () {
             // SR / Staff specific APIs
         });
 
-        // External / Retailer Routes (access_type = 2) = Retailer only
+        // External / Dealer or Exclusive Client (user) Routes (access_type = 2)
         Route::middleware(['access.type:2'])->group(function () {
-            // Retailer specific APIs
-            Route::get('/get-retailer-shipping-addresses/{retailer_id}', [AuthController::class, 'getRetailerShippingAddresses']);
-            Route::delete('/delete-retailer-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteRetailerShippingAddress']);
+            // specific APIs
+            Route::get('/get-shipping-addresses/{userDetailId}', [AuthController::class, 'getShippingAddresses']);
+            Route::delete('/delete-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteShippingAddress']);
         });
 
         // Product Routes

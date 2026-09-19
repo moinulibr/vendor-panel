@@ -234,12 +234,12 @@ class AuthService
         return $this->userRepo->createRetailerShippingAddress($data);
     }
 
-    public function getRetailerShippingAddress(int $retailerId)
+    public function getShippingAddress(int $userDetailId)
     {
-        if(!$this->userRepo->findRetailerById($retailerId)) {
-            throw new Exception("Retailer not found", 404);
+        if(!$this->userRepo->findUserDetailById($userDetailId)) {
+            throw new Exception("User Detail not found", 404);
         }
-        return $this->userRepo->getRetailerShippingAddresses($retailerId);
+        return $this->userRepo->getShippingAddresses($userDetailId);
     }
 
     public function updateRetailerShippingAddress(int $retailerId, int $shippingAddressId, array $data): RetailerShippingAddress
@@ -263,10 +263,10 @@ class AuthService
         return $this->userRepo->getVendors($filters, $perPage);
     }
 
-    public function getRetailerList(array $filters)
+    public function getUsersList(array $filters, $userTypes = [UserType::DEALER, UserType::GENERAL_APP_CUSTOMER])
     {
         $perPage = $filters['per_page'] ?? 20;
-        return $this->userRepo->getRetailers($filters, $perPage);
+        return $this->userRepo->getUsers($filters, $userTypes, $perPage);
     }
 
     /**
@@ -289,7 +289,9 @@ class AuthService
             $this->userRepo->createOrUpdateUserDetail([
                 'user_id'       => $data['user_id'],
                 'user_detail_id'=> $data['user_detail_id'],
+                'type'          => UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL,
                 'shop_name'     => $data['shop_name'],
+                'address'       => $data['address'],
                 'trade_license' => $data['trade_license'] ?? null,
                 'license_image' => $data['license_image'] ?? null,
                 'status'        => $data['status'] ?? null,

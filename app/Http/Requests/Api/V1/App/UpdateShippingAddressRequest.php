@@ -3,7 +3,7 @@ namespace App\Http\Requests\Api\V1\App;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateRetailerShippingAddressRequest extends FormRequest
+class UpdateShippingAddressRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -13,7 +13,7 @@ class UpdateRetailerShippingAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'retailer_id'    => ['nullable'], // If SR passes it
+            'user_detail_id' => ['nullable'], // If SR passes it
             'title'          => ['required', 'string', 'max:50'],
             'contact_person' => ['nullable', 'string', 'max:100'],
             'contact_mobile' => ['nullable', 'string'],

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Requests\Api\V1\App\AddRetailerShippingAddressRequest;
+use App\Http\Requests\Api\V1\App\AddShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
@@ -17,7 +17,8 @@ use App\Http\Requests\Api\V1\App\SendOtpRequest;
 use App\Http\Requests\Api\V1\App\SwitchUserTypeRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfilePictureRequest;
 use App\Http\Requests\Api\V1\App\UpdateProfileRequest;
-use App\Http\Requests\Api\V1\App\UpdateRetailerShippingAddressRequest;
+use App\Http\Requests\Api\V1\App\UpdateShippingAddressRequest;
+use App\Http\Requests\Api\V1\App\UsersListFilterRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
 use App\Utils\UserType;
@@ -154,7 +155,7 @@ class AuthController extends BaseApiController implements AuthSwagger
             success: true,
             message: 'Profile fetched successfully.',
             data: [
-                'user' => new UserResource($request->user()->load('retailer')),
+                'user' => new UserResource($request->user()->load('userDetail')),
             ],
             statusCode: 200
         );
@@ -232,18 +233,19 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
-    // Get Retailer shipping address
-    public function getRetailerShippingAddresses($retailer_id){
+
+    // Get User shipping address
+    public function getShippingAddresses(int $userDetailId){
         try {
-            if (!$retailer_id) {
-                throw new Exception("Retailer id is required।", 422);
+            if (!$userDetailId) {
+                throw new Exception("User Detail id is required।", 422);
             }
 
-            $address = $this->authService->getRetailerShippingAddress($retailer_id);
+            $address = $this->authService->getShippingAddress($userDetailId);
 
             return $this->jsonResponse(
                 success: true,
-                message: 'Retailer Shipping Addresses fetched successfully.',
+                message: 'Shipping Addresses fetched successfully.',
                 data: [
                     'shipping_addresses' => RetailerShippingAddressResource::collection($address),
                 ],
@@ -255,7 +257,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     }
 
     // Add Retailer shipping address
-    public function createRetailerShippingAddress(AddRetailerShippingAddressRequest $request)
+    public function createShippingAddress(AddShippingAddressRequest $request)
     {
         try {
             $user = $request->user();
@@ -285,7 +287,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     }
 
     // Update Retailer shipping address
-    public function updateRetailerShippingAddress(string|int $shippingAddressId, UpdateRetailerShippingAddressRequest $request)
+    public function updateShippingAddress(string|int $shippingAddressId, UpdateShippingAddressRequest $request)
     {
         try {
             $user = $request->user();
@@ -311,7 +313,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     }
 
     // Delete Retailer shipping address
-    public function deleteRetailerShippingAddress(int $shippingAddressId,Request $request)
+    public function deleteShippingAddress(int $shippingAddressId,Request $request)
     {
         $this->authService->deleteRetailerShippingAddress($shippingAddressId, $request->user()->id);
 
@@ -319,7 +321,7 @@ class AuthController extends BaseApiController implements AuthSwagger
     }
 
     // vendors
-    public function vendors(UserFilterRequest $request): JsonResponse
+    public function getVendors(UserFilterRequest $request): JsonResponse
     {
         try {
             $vendors = $this->authService->getVendorList($request->validated());
@@ -337,11 +339,12 @@ class AuthController extends BaseApiController implements AuthSwagger
         }
     }
 
-    // retailers filter
-    public function retailers(UserFilterRequest $request): JsonResponse
+    // All User filter
+    public function getUsersList(UsersListFilterRequest $request): JsonResponse
     {
         try {
-            $retailers = $this->authService->getRetailerList($request->validated());
+            $userTypes = $request->query('user_types') ?? $request->user_type ?? [UserType::DEALER, UserType::GENERAL_APP_CUSTOMER];
+            $retailers = $this->authService->getUsersList($request->validated(), $userTypes);
             return response()->json([
                 'success' => true,
                 'data' => UserResource::collection($retailers),
