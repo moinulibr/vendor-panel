@@ -18,11 +18,11 @@ class FavoriteController extends BaseApiController implements FavoriteApiDocInte
     public function index(ToggleFavoriteListRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::SR) {
-                $retailerId = $request->retailer_user_id;
+            $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR) {
+                $userId = $request->user_base_id;
             }
-            $favorites = $this->favoriteService->getFavorites($retailerId);
+            $favorites = $this->favoriteService->getFavorites($userId);
 
             return $this->jsonResponse(
                 success: true,
@@ -42,11 +42,11 @@ class FavoriteController extends BaseApiController implements FavoriteApiDocInte
     public function toggle(ToggleFavoriteRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+            $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR) {
+                $userId = $request->user_base_id;
             }
-            $result = $this->favoriteService->toggleFavorite($retailerId, $request->validated());
+            $result = $this->favoriteService->toggleFavorite($userId, $request->validated());
 
             return $this->jsonResponse(
                 success: true,

@@ -14,13 +14,14 @@ class ToggleFavoriteRequest extends FormRequest
 
     public function rules(): array
     {
-        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type == UserType::SR;
 
         return [
             'product_id'    => 'required|integer|exists:products,id',
-            'type'          => 'required|string|in:single,variable',
-            'variation_id'  => 'nullable|integer|exists:variations,id',
-            'retailer_user_id'  => [
+            //'type'          => 'required|string|in:single,variable',
+            'variation_id'  => 'required|integer|exists:variations,id',
+            'product_base_id'  => 'required|integer|exists:variations,id',
+            'user_base_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',
@@ -30,7 +31,7 @@ class ToggleFavoriteRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'retailer_user_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
+            'user_base_id.required' => 'The user base id field is required when you are acting as an SR user.',
         ];
     }
 }

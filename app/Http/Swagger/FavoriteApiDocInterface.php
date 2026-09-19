@@ -15,7 +15,7 @@ interface FavoriteApiDocInterface
         tags: ["Favorite"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+            new OA\Parameter(name: "user_base_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by user base id. [when user is not Dealer or Exclusive client]"),
         ],
         responses: [
             new OA\Response(response: 200, description: "Favorites retrieved successfully"),
@@ -32,21 +32,21 @@ interface FavoriteApiDocInterface
         security: [["sanctum" => []]],
         parameters: [
             new OA\Parameter(
-                name: "retailer_user_id",
+                name: "user_base_id",
                 in: "query",
                 required: false,
-                description: "Get cart details by retailer user id. [when user is not retailer]",
+                description: "Get cart details by user base id. [when user is not Dealer or Exclusive client]",
                 schema: new OA\Schema(type: "integer")
             )
         ],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["product_id"],
+                required: ["product_id", "product_base_id", "variation_id"],
                 properties: [
                     new OA\Property(property: "product_id", type: "integer", example: 10),
-                    new OA\Property(property: "type", type: "string", example: 'variable or single'),
                     new OA\Property(property: "variation_id", type: "integer", example: 5, nullable: true),
+                    new OA\Property(property: "product_base_id", type: "integer", example: 5),
                 ]
             )
         ),

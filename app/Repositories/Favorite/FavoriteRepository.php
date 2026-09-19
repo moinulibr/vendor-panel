@@ -15,14 +15,10 @@ class FavoriteRepository implements FavoriteRepositoryInterface
 
     public function toggleFavorite(int $userId, array $data): array
     {
-        if($data['type'] == "single"){
-            $data['variation_id'] = null;
-        }else{
-            $data['variation_id'] = $data['variation_id'] ?? null;
-        }
+        $data['variation_id'] = $data['product_base_id'] ?? null;
+
         $favorite = Favorite::where('user_id', $userId)->where('product_id', $data['product_id'])
         ->where('variation_id', $data['variation_id'])
-        ->where('type', $data['type'])
         ->first();
 
         if ($favorite) {
@@ -31,10 +27,9 @@ class FavoriteRepository implements FavoriteRepositoryInterface
         }
 
         Favorite::create([
-            'type' => $data['type'], 
             'variation_id' => $data['variation_id'],
             'product_id' =>  $data['product_id'],
-            'user_id' => $userId, //retailer id
+            'user_id' => $userId,
             'created_by' => auth()->user()->id,
             'favorite_from' => $data['favorite_from'] ?? 'moible_app'
             ]);
