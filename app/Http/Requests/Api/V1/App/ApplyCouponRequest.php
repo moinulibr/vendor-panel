@@ -18,7 +18,7 @@ class ApplyCouponRequest extends FormRequest
         
         return [
             'coupon_code' => 'required|string|max:50',
-            'retailer_user_id'  => [
+            'user_base_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',
@@ -28,7 +28,7 @@ class ApplyCouponRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'retailer_user_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
+            'user_base_id.required' => 'The User base id field is required when you are acting as an SR user.',
         ];
     }
 }

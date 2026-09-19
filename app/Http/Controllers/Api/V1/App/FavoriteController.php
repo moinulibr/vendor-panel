@@ -19,7 +19,7 @@ class FavoriteController extends BaseApiController implements FavoriteApiDocInte
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
+            if (auth()->user()->user_type != UserType::SR) {
                 $retailerId = $request->retailer_user_id;
             }
             $favorites = $this->favoriteService->getFavorites($retailerId);

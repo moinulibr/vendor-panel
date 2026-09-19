@@ -14,7 +14,7 @@ class AddToCartListRequest extends FormRequest
 
     public function rules(): array
     {
-        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type == UserType::SR;
         
         return [
             'user_base_id'  => [

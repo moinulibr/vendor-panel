@@ -14,7 +14,7 @@ class AddToCartRequest extends FormRequest
 
     public function rules(): array
     {
-        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type == UserType::SR;
         
         return [
             'product_id'      => 'required|integer|exists:products,id',
@@ -32,7 +32,7 @@ class AddToCartRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'retailer_user_id.required' => 'The retailer id field is required when you are acting as an SR or non-retailer user.',
+            'user_base_id.required' => 'The User base id field is required when you are acting as an SR user.',
         ];
     }
 }

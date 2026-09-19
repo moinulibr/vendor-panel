@@ -14,7 +14,7 @@ class ToggleFavoriteListRequest extends FormRequest
 
     public function rules(): array
     {
-        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::SR;
 
         return [
             'retailer_user_id'  => [

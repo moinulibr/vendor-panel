@@ -20,7 +20,7 @@ interface CartApiDocInterface
         tags: ["Cart"],
         security: [["sanctum" => []]],
             parameters: [
-                new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+                new OA\Parameter(name: "user_base_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by base user id. [when user is not dealer or exclusive client]"),
             ],
         responses: [
             new OA\Response(response: 200, description: "Cart fetched successfully"),
@@ -38,10 +38,11 @@ interface CartApiDocInterface
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["product_id", "quantity"],
+                required: ["product_id","product_base_id", "quantity"],
                 properties: [
+                    new OA\Property(property: "user_base_id", type: "integer", example: 2, nullable: true, description: "Get cart details by base user id. [when user is not dealer or exclusive client]"),
                     new OA\Property(property: "product_id", type: "integer", example: 10),
-                    new OA\Property(property: "type", type: "string", example: 'variable or single'),
+                    new OA\Property(property: "product_base_id", type: "integer", example: 4, nullable: false),
                     new OA\Property(property: "variation_id", type: "integer", example: 5, nullable: true),
                     new OA\Property(property: "quantity", type: "integer", example: 1)
                 ]
@@ -102,7 +103,7 @@ interface CartApiDocInterface
         tags: ["Cart"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+            new OA\Parameter(name: "user_base_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by base user id. [when user is not dealer or exclusive client]"),
         ],
         responses: [
             new OA\Response(response: 200, description: "Cart cleared successfully")
@@ -118,10 +119,10 @@ interface CartApiDocInterface
         security: [["sanctum" => []]],
         parameters: [
             new OA\Parameter(
-                name: "retailer_user_id",
+                name: "user_base_id",
                 in: "query",
                 required: false,
-                description: "Get cart details by retailer user id. [when user is not retailer]",
+                description: "Get cart details by base user id. [when user is not dealer or exclusive client]",
                 schema: new OA\Schema(type: "integer")
             )
         ],
@@ -149,7 +150,7 @@ interface CartApiDocInterface
         tags: ["Cart"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "retailer_user_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by retailer user id. [when user is not retailer]"),
+            new OA\Parameter(name: "user_base_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "Get cart details by base user id. [when user is not dealer or exclusive client]"),
         ],
         responses: [
             new OA\Response(response: 200, description: "Coupon removed successfully"),

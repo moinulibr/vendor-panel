@@ -29,6 +29,8 @@ class ProductResource extends JsonResource
 
                     $singleVariantAttributes = self::formatVariantAttributes($rawAttributes, $variant->name);
 
+                    $variantImage = $variant->image ? getImage('products', $variant->image) : getImage('products', $product->image);
+
                     // Dynamic Price
                     $prices = self::userTypeWisePriceSetup($product, $variant, $userType);
 
@@ -48,7 +50,7 @@ class ProductResource extends JsonResource
                         'slug'         => $product->slug,
                         'sku'          => $variant->sub_sku,
                         'parent_sku'   => $product->sku,
-                        'image_url'    => $product->image ? getImage('products', $product->image) : null,
+                        'image_url'    => $variantImage,
                         'sell_price'   => $prices['sell_price'],
                         'mrp_price'    => $prices['mrp_price'],
                         'category_id'  => $product->category_id,

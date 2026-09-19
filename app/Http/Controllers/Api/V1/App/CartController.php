@@ -24,7 +24,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $userId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
+            if (auth()->user()->user_type == UserType::SR) {
                 $userId = $request->user_base_id;
             }
 
@@ -49,7 +49,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $userId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
+            if (auth()->user()->user_type == UserType::SR) {
                 $userId = $request->user_base_id;
             }
 
@@ -94,12 +94,12 @@ class CartController extends BaseApiController implements CartApiDocInterface
     public function applyCoupon(ApplyCouponRequest $request): JsonResponse
     {
         try {
-            $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+            $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR) {
+                $userId = $request->user_base_id;
             }
 
-            $this->cartService->applyCoupon($retailerId, $request->coupon_code);
+            $this->cartService->applyCoupon($userId, $request->coupon_code);
 
             return $this->jsonResponse(
                 success: true,
@@ -120,8 +120,8 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $retailerId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
-                $retailerId = $request->retailer_user_id;
+            if (auth()->user()->user_type == UserType::SR) {
+                $retailerId = $request->user_base_id;
             }
             $this->cartService->removeCoupon($retailerId);
 
@@ -164,7 +164,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     {
         try {
             $userId = auth()->id();
-            if (auth()->user()->user_type != UserType::DEALER) {
+            if (auth()->user()->user_type == UserType::SR) {
                 $userId = $request->user_base_id;
             }
 

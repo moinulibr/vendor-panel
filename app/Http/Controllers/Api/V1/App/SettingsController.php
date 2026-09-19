@@ -69,10 +69,10 @@ class SettingsController extends BaseApiController implements SettingsSwagger
             'success' => true,
             'data'    => [
                 "loged_in_user_type_id" => auth()->user()->user_type,
-                "applicable_user_type_id" => UserType::DEALER,
-                "user_type_id_" => UserType::DEALER,
-                "user_type_label" => UserType::getLabel(UserType::DEALER),
-                "user_type_id_".UserType::DEALER => [
+                "applicable_user_type_id" => UserType::SR,
+                "user_type_id_" => UserType::SR,
+                "user_type_label" => UserType::getLabel(UserType::SR),
+                "user_type_id_".UserType::SR => [
                     'auth' => [
                         'can_register'        => true,
                         'can_login'           => true,
