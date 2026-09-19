@@ -54,16 +54,16 @@ class UserResource extends JsonResource
                     'status'        => $this->retailer->status == 1 || $this->retailer->status == "active" ? "active" : "inactive",
                 ];
             }),
-            'user_detail' => $this->whenLoaded('retailer', function () {
+            'user_detail' => $this->whenLoaded('userDetail', function () {
                 return [
-                    'user_detail_id'   => $this->retailer->id,
-                    'user_base_id' => $this->retailer->user_id,
-                    'shop_name'     => $this->retailer->shop_name,
-                    'trade_license' => $this->retailer->trade_license,
-                    'license_image' => $this->retailer->license_image
-                        ? asset(Storage::url($this->retailer->license_image)) : null,
-                    'address'       => $this->retailer->address,
-                    'status'        => $this->retailer->status == 1 || $this->retailer->status == "active" ? "active" : "inactive",
+                    'user_detail_id'   => $this->userDetail->id,
+                    'user_base_id' => $this->userDetail->user_id,
+                    'shop_name'     => $this->userDetail->shop_name,
+                    'trade_license' => $this->userDetail->trade_license,
+                    'license_image' => $this->userDetail->license_image
+                        ? asset(Storage::url($this->userDetail->license_image)) : null,
+                    'address'       => $this->userDetail->address,
+                    'status'        => $this->userDetail->status == 1 || $this->userDetail->status == "active" ? "active" : "inactive",
                 ];
             }),
             'created_at'  => $this->created_at?->toIso8601String(),

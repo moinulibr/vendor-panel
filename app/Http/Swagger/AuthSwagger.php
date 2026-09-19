@@ -79,7 +79,7 @@ interface AuthSwagger
                     new OA\Property(property: "password", type: "string", example: "12345678", nullable: true),
                     new OA\Property(property: "access_type", type: "integer", example: "2", enum: ["2"]),
                     new OA\Property(property: "user_type", type: "integer", example: "4 or 5 or 9, 4 = SR; 5 = DEALER; 9 = EXCUSIVE CUSTOMER -  default user 9", enum: ["4,5,9"]),
-                    new OA\Property(property: "shop_name", type: "string", example: "Fresh Store [if user_type = 5]", nullable: true),
+                    //new OA\Property(property: "shop_name", type: "string", example: "Fresh Store [if user_type = 5]", nullable: true),
                     new OA\Property(property: "address", type: "string", example: "Mirpur-10, Dhaka [if user_type = 5]", nullable: true)
                 ]
             )
@@ -155,7 +155,7 @@ interface AuthSwagger
     public function profile(Request $request);
 
     #[OA\Post(
-        path: "/api/v1/app/retailer/switch-user-type",
+        path: "/api/v1/app/switch-user-type",
         summary: "Switch Customer to Dealer Profile",
         security: [["sanctum" => []]],
         tags: ["Authentication"],

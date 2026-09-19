@@ -108,9 +108,10 @@ class AuthService
                 'access_type' => (int) $data['access_type'] ?? UserType::EXTERNAL_ACCESS_TYPE,
             ]);
 
-            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && $data['user_type'] == UserType::DEALER || $data['user_type'] == UserType::GENERAL_APP_CUSTOMER) {
-                $this->userRepo->createRetailer([
+            if ((int)$data['access_type'] === UserType::EXTERNAL_ACCESS_TYPE && ($data['user_type'] == UserType::DEALER || $data['user_type'] == UserType::GENERAL_APP_CUSTOMER)) {
+                $this->userRepo->createUserDetail([
                     'user_id'   => $user->id,
+                    'type' => UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL,
                     'shop_name' => $data['shop_name'] ?? null,
                     'address'   => $data['address'] ?? null,
                     'trade_license'   => $data['trade_license'] ?? null,
@@ -120,7 +121,7 @@ class AuthService
             $token = $user->createToken('app-mobile-access-token')->plainTextToken;
 
             return [
-                'user'  => $user->load('retailer'),
+                'user'  => $user->load('userDetail'),
                 'token' => $token,
             ];
         });
@@ -285,9 +286,9 @@ class AuthService
             }
 
             // 1. Create or Update Retailer Table
-            $this->userRepo->createOrUpdateRetailer([
+            $this->userRepo->createOrUpdateUserDetail([
                 'user_id'       => $data['user_id'],
-                'retailer_id'   => $data['retailer_id'],
+                'user_detail_id'=> $data['user_detail_id'],
                 'shop_name'     => $data['shop_name'],
                 'trade_license' => $data['trade_license'] ?? null,
                 'license_image' => $data['license_image'] ?? null,
@@ -300,7 +301,7 @@ class AuthService
             DB::commit();
 
             return [
-                'user' => $this->userRepo->findById($data['user_id'])?->load('retailer')
+                'user' => $this->userRepo->findById($data['user_id'])?->load('userDetail')
             ];
         } catch (Exception $e) {
             DB::rollBack();

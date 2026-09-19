@@ -6,6 +6,9 @@ use InvalidArgumentException;
 
 class UserType
 {
+    // User Detail  
+    public const WEB_APP_TYPE_FOR_USER_DETAIL = 1;
+    public const MOBILE_APP_TYPE_FOR_USER_DETAIL = 2;
     /*
     |--------------------------------------------------------------------------
     | Access Type

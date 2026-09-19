@@ -5,6 +5,7 @@ namespace App\Repositories\User;
 use App\Models\Retailer;
 use App\Models\RetailerShippingAddress;
 use App\Models\User;
+use App\Models\UserDetail;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +112,18 @@ class UserRepository implements UserRepositoryInterface
                 return $user->load('retailer');
             });
         */
+    }
+
+    public function createUserDetail(array $data)
+    {
+        return UserDetail::create([
+            'user_id'   => $data['user_id'],
+            'type' => $data['type'] ?? UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL,
+            'shop_name' => $data['shop_name'] ?? null,
+            'address'   => $data['address'] ?? null,
+            'trade_license' => $data['trade_license'] ?? null,
+            //and others fields will be added here
+        ]);
     }
 
     public function createRetailer(array $data)
@@ -235,6 +248,20 @@ class UserRepository implements UserRepositoryInterface
         }
 
         return $query->simplePaginate($perPage);
+    }
+
+    //Create or Update User Detail
+    public function createOrUpdateUserDetail(array $data): UserDetail
+    {
+        return Retailer::updateOrCreate(
+            ['id' => $data['user_detail_id'],'user_id' => $data['user_id']],
+            [
+                'shop_name'     => $data['shop_name'] ?? null,
+                'trade_license' => $data['trade_license'] ?? null,
+                'license_image' => $data['license_image'] ?? null,
+                'status'        => $data['status'] ?? 'active',
+            ]
+        );
     }
 
     public function createOrUpdateRetailer(array $data): Retailer

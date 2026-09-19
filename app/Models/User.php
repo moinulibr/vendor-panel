@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasOne(VendorAddress::class, 'user_id');
     }
 
+    public function userDetail()
+    {
+        return $this->hasOne(UserDetail::class);
+    }
+
     public function retailer()
     {
         return $this->hasOne(Retailer::class);

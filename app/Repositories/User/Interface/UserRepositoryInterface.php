@@ -6,6 +6,7 @@ use App\Models\Retailer;
 use Illuminate\Contracts\Pagination\Paginator;
 use App\Models\RetailerShippingAddress;
 use App\Models\User;
+use App\Models\UserDetail;
 
 interface UserRepositoryInterface
 {
@@ -13,6 +14,7 @@ interface UserRepositoryInterface
     public function findByMobileNumber(string $loginCredential);
     public function findById(int $id);
     public function createUser(array $data): User;
+    public function createUserDetail(array $data);
     public function createRetailer(array $data);
     public function updatePassword(User $user, string $newPassword): bool;
     public function deleteAccount(User $user): bool;
@@ -30,6 +32,7 @@ interface UserRepositoryInterface
     public function getVendors(array $filters, int $perPage = 20): Paginator;
     public function getRetailers(array $filters, int $perPage = 20): Paginator;
 
+    public function createOrUpdateUserDetail(array $data): UserDetail;
     public function createOrUpdateRetailer(array $data): Retailer;
     public function updateUserType(int $userId, int $toUserTypeId): bool;
 }
