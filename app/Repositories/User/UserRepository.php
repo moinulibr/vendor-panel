@@ -190,9 +190,14 @@ class UserRepository implements UserRepositoryInterface
         return RetailerShippingAddress::where('id', $shippingAddressId)->whereNull('deleted_at')->first();
     }
     //have to modify
-    public function getShippingAddresses(int $userDetailId)
+    public function getShippingAddresses(int $userId, int $userDetailId)
     {
-        return ShippingAddress::where('user_detail_id', $userDetailId)->whereNull('deleted_at')->get();
+        return ShippingAddress::where('user_id', $userId)
+            ->where('user_detail_id', $userDetailId)
+            ->where('type', UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL)
+            ->where('status', 'active')
+            ->whereNull('deleted_at')
+            ->get();
     }
 
     //have to modify

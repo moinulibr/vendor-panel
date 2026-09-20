@@ -49,9 +49,11 @@ Route::prefix('v1/app')->group(function () {
         Route::get('/vendors', [AuthController::class, 'getVendors']);
         Route::get('/users-list', [AuthController::class, 'getUsersList']);
         //shipping address
+        Route::get('/get-shipping-addresses', [AuthController::class, 'getShippingAddresses']);
         Route::post('/create-shipping-address', [AuthController::class, 'createShippingAddress']);
         Route::post('/update-shipping-address/{shippingAddressId}', [AuthController::class, 'updateShippingAddress']);
         Route::post('/switch-user-type', [AuthController::class, 'switchingUserType']);
+        Route::delete('/delete-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteShippingAddress']);
 
         //fcm token api
         //Route::post('store-fcm-toke', [FcmNotificationController::class, 'storeFcmToken']);
@@ -77,8 +79,6 @@ Route::prefix('v1/app')->group(function () {
         // External / Dealer or Exclusive Client (user) Routes (access_type = 2)
         Route::middleware(['access.type:2'])->group(function () {
             // specific APIs
-            Route::get('/get-shipping-addresses/{userDetailId}', [AuthController::class, 'getShippingAddresses']);
-            Route::delete('/delete-shipping-address/{shippingAddressId}', [AuthController::class, 'deleteShippingAddress']);
         });
 
         // Product Routes

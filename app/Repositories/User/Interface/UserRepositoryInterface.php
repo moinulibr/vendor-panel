@@ -28,7 +28,7 @@ interface UserRepositoryInterface
     // Address management
     public function createShippingAddress(array $data): ShippingAddress;
     public function updateRetailerShippingAddress(RetailerShippingAddress $shippingAddressId, array $data): RetailerShippingAddress;
-    public function getShippingAddresses(int $retailerId);
+    public function getShippingAddresses(int $userId, int $retailerId);
     public function getRetailerSingleShippingAddress(int $shippingAddressId);
     public function deleteRetailerShippingAddress(int $shippingAddressId, int $retailerId): bool;
 

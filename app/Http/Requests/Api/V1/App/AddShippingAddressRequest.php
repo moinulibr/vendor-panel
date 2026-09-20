@@ -33,11 +33,18 @@ class AddShippingAddressRequest extends FormRequest
                 'integer',
                 'exists:user_details,id',
             ],
-            'user_id'  => [
+            'user_base_id'  => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',
                 'exists:users,id',
             ],
+        ];
+    }
+    public function messages(): array
+    {
+        return [
+            'user_base_id.required' => 'The user base id field is required when you are acting as an SR  user.',
+            'user_detail_id.required' => 'The user detail id field is required when you are acting as an SR  user.',
         ];
     }
 }

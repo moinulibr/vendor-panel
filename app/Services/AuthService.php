@@ -227,7 +227,16 @@ class AuthService
         }
     }
 
+    
     //have to modify
+    public function getShippingAddress(int $userId, int $userDetailId)
+    {
+        if(!$this->userRepo->findUserDetailById($userDetailId)) {
+            throw new Exception("User Detail not found", 404);
+        }
+        return $this->userRepo->getShippingAddresses($userId, $userDetailId);
+    }
+
     public function addShippingAddress(int $userId, int $userDetailId, array $data)
     {
         $data['user_detail_id'] = $userDetailId;
@@ -236,14 +245,7 @@ class AuthService
         $data['created_by'] = auth()->user()->id;
         return $this->userRepo->createShippingAddress($data);
     }
-    //have to modify
-    public function getShippingAddress(int $userDetailId)
-    {
-        if(!$this->userRepo->findUserDetailById($userDetailId)) {
-            throw new Exception("User Detail not found", 404);
-        }
-        return $this->userRepo->getShippingAddresses($userDetailId);
-    }
+
     //have to modify
     public function updateRetailerShippingAddress(int $retailerId, int $shippingAddressId, array $data): RetailerShippingAddress
     {

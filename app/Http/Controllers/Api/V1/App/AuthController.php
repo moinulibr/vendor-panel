@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\AddShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
+use App\Http\Requests\Api\V1\App\GetShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
 use App\Http\Requests\Api\V1\App\UserFilterRequest;
@@ -236,19 +237,28 @@ class AuthController extends BaseApiController implements AuthSwagger
 
 
     // Get User shipping address
-    public function getShippingAddresses(int $userDetailId){
+    public function getShippingAddresses(GetShippingAddressRequest $request){
         try {
-            if (!$userDetailId) {
-                throw new Exception("User Detail id is required।", 422);
+            $user = $request->user();
+            if ($user->user_type == UserType::SR) {
+                $userId = $request->user_base_id;
+                $userDetailId = $request->user_detail_id;
+            } else {
+                $userId = $user->id;
+                $userDetailId = $request->user_detail_id ?? $user?->userDetail?->id;
             }
 
-            $address = $this->authService->getShippingAddress($userDetailId);
+            if (!$userId) {
+                throw new Exception("User id is required।", 422);
+            }
+
+            $address = $this->authService->getShippingAddress($userId, $userDetailId);
 
             return $this->jsonResponse(
                 success: true,
                 message: 'Shipping Addresses fetched successfully.',
                 data: [
-                    'shipping_addresses' => RetailerShippingAddressResource::collection($address),
+                    'shipping_addresses' => ShippingAddressResource::collection($address),
                 ],
                 statusCode: 200
             );
@@ -263,7 +273,7 @@ class AuthController extends BaseApiController implements AuthSwagger
         try {
             $user = $request->user();
             if($user->user_type == UserType::SR){
-                $userId = $request->user_id;
+                $userId = $request->user_base_id;
                 $userDetailId = $request->user_detail_id;
             }else{
                 $userId = $user->id;
