@@ -60,7 +60,7 @@ class AuthService
         $token = $user->createToken('app-mobile-access-token')->plainTextToken;
 
         return [
-            'user'  => $user,
+            'user'  => $user->load('userDetail'),
             'token' => $token
         ];
     }
@@ -227,13 +227,16 @@ class AuthService
         }
     }
 
-    public function addRetailerShippingAddress(int $retailerId, array $data)
+    //have to modify
+    public function addShippingAddress(int $userId, int $userDetailId, array $data)
     {
-        $data['retailer_id'] = $retailerId;
+        $data['user_detail_id'] = $userDetailId;
+        $data['user_id'] = $userId;
+        $data['type'] = UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL;
         $data['created_by'] = auth()->user()->id;
-        return $this->userRepo->createRetailerShippingAddress($data);
+        return $this->userRepo->createShippingAddress($data);
     }
-
+    //have to modify
     public function getShippingAddress(int $userDetailId)
     {
         if(!$this->userRepo->findUserDetailById($userDetailId)) {
@@ -241,7 +244,7 @@ class AuthService
         }
         return $this->userRepo->getShippingAddresses($userDetailId);
     }
-
+    //have to modify
     public function updateRetailerShippingAddress(int $retailerId, int $shippingAddressId, array $data): RetailerShippingAddress
     {
         $retailerShippingAddress = $this->userRepo->getRetailerSingleShippingAddress($shippingAddressId);
@@ -251,7 +254,7 @@ class AuthService
         $data['retailer_id'] = $retailerId;
         return $this->userRepo->updateRetailerShippingAddress($retailerShippingAddress, $data);
     }
-
+    //have to modify
     public function deleteRetailerShippingAddress(int $shippingAddressId, int $retailerId)
     {
         return $this->userRepo->deleteRetailerShippingAddress($shippingAddressId, $retailerId);

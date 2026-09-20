@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Requests\Api\V1\App;
 
+use App\Utils\UserType;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AddShippingAddressRequest extends FormRequest
@@ -12,8 +13,9 @@ class AddShippingAddressRequest extends FormRequest
 
     public function rules(): array
     {
+        $isNotRetailer = auth()->check() && (int) auth()->user()->user_type == UserType::SR;
+        
         return [
-            'user_detail_id' => ['nullable', 'exists:user_details,id'], // If SR passes it
             'title'          => ['required', 'string', 'max:50'],
             'contact_person' => ['nullable', 'string', 'max:100'],
             'contact_mobile' => ['nullable', 'string'],
@@ -26,6 +28,16 @@ class AddShippingAddressRequest extends FormRequest
             'district_id'    => ['nullable', 'integer'],
             'upazila_id'     => ['nullable', 'integer'],
             'is_default'     => ['nullable', 'boolean'],
+            'user_detail_id'  => [
+                $isNotRetailer ? 'required' : 'nullable',
+                'integer',
+                'exists:user_details,id',
+            ],
+            'user_id'  => [
+                $isNotRetailer ? 'required' : 'nullable',
+                'integer',
+                'exists:users,id',
+            ],
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Repositories\User\Interface;
 use App\Models\Retailer;
 use Illuminate\Contracts\Pagination\Paginator;
 use App\Models\RetailerShippingAddress;
+use App\Models\ShippingAddress;
 use App\Models\User;
 use App\Models\UserDetail;
 use App\Utils\UserType;
@@ -25,7 +26,7 @@ interface UserRepositoryInterface
     public function findUserDetailById(int $userDetailId);
     public function findRetailerById(int $retailerId);
     // Address management
-    public function createRetailerShippingAddress(array $data): RetailerShippingAddress;
+    public function createShippingAddress(array $data): ShippingAddress;
     public function updateRetailerShippingAddress(RetailerShippingAddress $shippingAddressId, array $data): RetailerShippingAddress;
     public function getShippingAddresses(int $retailerId);
     public function getRetailerSingleShippingAddress(int $shippingAddressId);

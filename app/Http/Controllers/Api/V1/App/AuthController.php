@@ -21,6 +21,7 @@ use App\Http\Requests\Api\V1\App\UpdateShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\UsersListFilterRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
+use App\Http\Resources\Api\V1\App\ShippingAddressResource;
 use App\Utils\UserType;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -261,23 +262,24 @@ class AuthController extends BaseApiController implements AuthSwagger
     {
         try {
             $user = $request->user();
-            // Check if Retailer or SR
-            if($user->user_type == UserType::DEALER){
-                $retailerId = $user->id;
+            if($user->user_type == UserType::SR){
+                $userId = $request->user_id;
+                $userDetailId = $request->user_detail_id;
             }else{
-                $retailerId = $request->retailer_id;
+                $userId = $user->id;
+                $userDetailId = $request->user_detail_id ?? $user?->userDetail?->id;
             }
 
-            if (!$retailerId) {
-                throw new Exception("Retailer id is required।", 422);
+            if (!$userId) {
+                throw new Exception("User id is required।", 422);
             }
 
-            $address = $this->authService->addRetailerShippingAddress($retailerId, $request->validated());
+            $address = $this->authService->addShippingAddress($userId, $userDetailId, $request->validated());
             return $this->jsonResponse(
                 success: true,
                 message: 'Shipping Address added successfully।',
                 data: [
-                    'shipping_address' => new RetailerShippingAddressResource($address),
+                    'shipping_address' => new ShippingAddressResource($address),
                 ],
                 statusCode: 201
             );

@@ -165,33 +165,37 @@ class UserRepository implements UserRepositoryInterface
         return $user->update(['image' => $avatarPath]);
     }
 
-    public function createRetailerShippingAddress(array $data): RetailerShippingAddress
-    {
-        if (!empty($data['is_default']) && $data['is_default']) {
-            RetailerShippingAddress::where('retailer_id', $data['retailer_id'])->update(['is_default' => false]);
-        }
-
-        return RetailerShippingAddress::create($data);
-    }
-
     public function findUserDetailById(int $userDetailId)
     {
-        return UserDetail::where('id', $userDetailId)->where('status','!=','deleted')->first();
+        return UserDetail::where('id', $userDetailId)->where('status', '!=', 'deleted')->first();
+    }
+
+
+    public function createShippingAddress(array $data): ShippingAddress
+    {
+        if (!empty($data['is_default']) && $data['is_default']) {
+            ShippingAddress::where('user_detail_id', $data['user_detail_id'])->where('user_id', $data['user_id'])->where('type',UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL)->update(['is_default' => false]);
+        }
+
+        return ShippingAddress::create($data);
     }
 
     public function findRetailerById(int $retailerId)
     {
         return Retailer::where('id', $retailerId)->where('status','!=','deleted')->first();
     }
+    //have to modify
     public function getRetailerSingleShippingAddress(int $shippingAddressId)
     {
         return RetailerShippingAddress::where('id', $shippingAddressId)->whereNull('deleted_at')->first();
     }
+    //have to modify
     public function getShippingAddresses(int $userDetailId)
     {
         return ShippingAddress::where('user_detail_id', $userDetailId)->whereNull('deleted_at')->get();
     }
 
+    //have to modify
     public function updateRetailerShippingAddress(RetailerShippingAddress $retailerShippingAddress, array $data): RetailerShippingAddress
     {
         $isDefault = $retailerShippingAddress->is_default;
