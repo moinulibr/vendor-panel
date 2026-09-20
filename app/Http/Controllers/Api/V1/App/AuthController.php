@@ -303,19 +303,24 @@ class AuthController extends BaseApiController implements AuthSwagger
     {
         try {
             $user = $request->user();
-            // Check if Retailer or SR
-            if ($user->user_type == UserType::DEALER) {
-                $retailerId = $user->id;
+            if ($user->user_type == UserType::SR) {
+                $userId = $request->user_base_id;
+                $userDetailId = $request->user_detail_id;
             } else {
-                $retailerId = $request->retailer_id;
+                $userId = $user->id;
+                $userDetailId = $request->user_detail_id ?? $user?->userDetail?->id;
+            }
+
+            if (!$userId) {
+                throw new Exception("User id is required।", 422);
             }
     
-            $address = $this->authService->updateRetailerShippingAddress($retailerId, $shippingAddressId, $request->validated());
+            $address = $this->authService->updateShippingAddress($userId, $userDetailId, $shippingAddressId, $request->validated());
             return $this->jsonResponse(
                 success: true,
                 message: 'Shipping Address updated successfully.',
                 data: [
-                    'shipping_address' => new RetailerShippingAddressResource($address),
+                    'shipping_address' => new ShippingAddressResource($address),
                 ],
                 statusCode: 201
             );

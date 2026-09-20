@@ -185,9 +185,9 @@ class UserRepository implements UserRepositoryInterface
         return Retailer::where('id', $retailerId)->where('status','!=','deleted')->first();
     }
     //have to modify
-    public function getRetailerSingleShippingAddress(int $shippingAddressId)
+    public function getSingleShippingAddress(int $shippingAddressId)
     {
-        return RetailerShippingAddress::where('id', $shippingAddressId)->whereNull('deleted_at')->first();
+        return ShippingAddress::find($shippingAddressId);
     }
     //have to modify
     public function getShippingAddresses(int $userId, int $userDetailId)
@@ -201,21 +201,22 @@ class UserRepository implements UserRepositoryInterface
     }
 
     //have to modify
-    public function updateRetailerShippingAddress(RetailerShippingAddress $retailerShippingAddress, array $data): RetailerShippingAddress
+    public function updateShippingAddress(ShippingAddress $shippingAddress, array $data): ShippingAddress
     {
-        $isDefault = $retailerShippingAddress->is_default;
+        $isDefault = $shippingAddress->is_default;
         if (!empty($data['is_default']) && $data['is_default'] && $isDefault == false) {
-            RetailerShippingAddress::where('retailer_id', $data['retailer_id'])->update(['is_default' => false]);
+            ShippingAddress::where('user_detail_id', $data['user_detail_id'])->where('user_id', $data['user_id'])->where('type', UserType::MOBILE_APP_TYPE_FOR_USER_DETAIL)->update(['is_default' => false]);
         }
+
         $data['is_default'] = empty($data['is_default']) ? false : true;
 
-        $retailerShippingAddress->update($data);
-        return $retailerShippingAddress;
+        $shippingAddress->update($data);
+        return $shippingAddress;
     }
     
-    public function deleteRetailerShippingAddress(int $addressId, int $retailerId): bool
+    public function deleteShippingAddress(int $addressId, int $retailerId): bool
     {
-        return RetailerShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->update(['deleted_at' => now()]);
+        return ShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->update(['deleted_at' => now(), 'status' => 'deleted']);
     }
 
 
