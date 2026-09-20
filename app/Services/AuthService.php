@@ -259,9 +259,13 @@ class AuthService
         return $this->userRepo->updateShippingAddress($shippingAddress, $data);
     }
     //have to modify
-    public function deleteRetailerShippingAddress(int $shippingAddressId, int $retailerId)
+    public function deleteShippingAddress(int $shippingAddressId, int $userId, int $userDetailId)
     {
-        return $this->userRepo->deleteShippingAddress($shippingAddressId, $retailerId);
+        $result =  $this->userRepo->deleteShippingAddress($shippingAddressId, $userId, $userDetailId);
+        if (!$result) {
+            throw new Exception("Shipping Address not found।", 404);
+        }
+        return $result;
     }
 
     public function getVendorList(array $filters)

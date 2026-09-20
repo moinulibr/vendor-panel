@@ -3,6 +3,7 @@ namespace App\Http\Swagger;
 
 use App\Http\Requests\Api\V1\App\AddShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
+use App\Http\Requests\Api\V1\App\DeleteShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\GetShippingAddressRequest;
 use Illuminate\Http\Request;
 use App\Http\Requests\Api\V1\App\LoginRequest;
@@ -368,6 +369,7 @@ interface AuthSwagger
                 required: ["title", "address"],
                 properties: [
                     new OA\Property(property: "user_detail_id", type: "integer", example: 1, nullable: true),
+                    new OA\Property(property: "user_base_id", type: "integer", example: 1, nullable: true),
                     new OA\Property(property: "title", type: "string", example: "Main Shop"),
                     new OA\Property(property: "contact_person", type: "string", example: "Mr. Rahim"),
                     new OA\Property(property: "contact_mobile", type: "string", example: "01700000000"),
@@ -403,7 +405,21 @@ interface AuthSwagger
                 required: true,
                 description: "ID of the shipping address to delete",
                 schema: new OA\Schema(type: "integer", example: 1)
-            )
+            ),
+            new OA\Parameter(
+                name: "user_base_id",
+                in: "path",
+                required: false,
+                description: "Target User base ID",
+                schema: new OA\Schema(type: "integer", example: 3)
+            ),
+            new OA\Parameter(
+                name: "user_detail_id",
+                in: "path",
+                required: false,
+                description: "Target User Detail ID",
+                schema: new OA\Schema(type: "integer", example: 5)
+            ),
         ],
         responses: [
             new OA\Response(response: 200, description: "Shipping Address Deleted Successfully"),
@@ -411,7 +427,7 @@ interface AuthSwagger
             new OA\Response(response: 404, description: "Shipping Address Not Found")
         ]
     )]
-    public function deleteShippingAddress(int $shippingAddressId, Request $request);
+    public function deleteShippingAddress(DeleteShippingAddressRequest $request, int $shippingAddressId);
 
 
     #[OA\Get(

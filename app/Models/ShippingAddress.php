@@ -24,6 +24,7 @@ class ShippingAddress extends Model
         "deleted_at",
         'is_default',
         'created_by',
+        'status'
     ];
 
     protected $casts = [

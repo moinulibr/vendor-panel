@@ -3,12 +3,12 @@
 namespace App\Repositories\User;
 
 use App\Models\Retailer;
-use App\Models\RetailerShippingAddress;
 use App\Models\ShippingAddress;
 use App\Models\User;
 use App\Models\UserDetail;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Pagination\Paginator;
 
@@ -214,9 +214,14 @@ class UserRepository implements UserRepositoryInterface
         return $shippingAddress;
     }
     
-    public function deleteShippingAddress(int $addressId, int $retailerId): bool
+    public function deleteShippingAddress(int $addressId, int $userId, int $userDetailId): bool
     {
-        return ShippingAddress::where('id', $addressId)->where('retailer_id', $retailerId)->update(['deleted_at' => now(), 'status' => 'deleted']);
+        $result = ShippingAddress::where('id', $addressId)->where('user_id', $userId)->where('user_detail_id', $userDetailId)->first();
+        if (!$result) {
+            return false;
+        }
+        $result->update(['deleted_at' => now(), 'status' => 'deleted', 'is_default' => false]);
+        return true;
     }
 
 

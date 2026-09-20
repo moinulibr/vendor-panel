@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\AddShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\ChangePasswordRequest;
+use App\Http\Requests\Api\V1\App\DeleteShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\GetShippingAddressRequest;
 use App\Http\Requests\Api\V1\App\LoginRequest;
 use App\Http\Resources\Api\V1\App\UserResource;
@@ -23,9 +24,11 @@ use App\Http\Requests\Api\V1\App\UsersListFilterRequest;
 use App\Http\Requests\Api\V1\App\VerifyOtpRequest;
 use App\Http\Resources\Api\V1\App\RetailerShippingAddressResource;
 use App\Http\Resources\Api\V1\App\ShippingAddressResource;
+use App\Models\ShippingAddress;
 use App\Utils\UserType;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends BaseApiController implements AuthSwagger
 {
@@ -330,11 +333,33 @@ class AuthController extends BaseApiController implements AuthSwagger
     }
 
     // Delete Retailer shipping address
-    public function deleteShippingAddress(int $shippingAddressId,Request $request)
+    public function deleteShippingAddress(DeleteShippingAddressRequest $request, int $shippingAddressId)
     {
-        $this->authService->deleteRetailerShippingAddress($shippingAddressId, $request->user()->id);
+        try{
+            $user = $request->user();
+            if ($user->user_type == UserType::SR) {
+                $userId = $request->query('user_base_id');
+                $userDetailId = $request->query('user_detail_id');
+            } else {
+                $userId = $user->id;
+                $userDetailId = $request->query('user_detail_id') ?? $user?->userDetail?->id;
+            }
 
-        return response()->json(['status' => true, 'message' => 'Shipping Address Deleted Successfully!']);
+            if (!$userId) {
+                throw new Exception("User id is required।", 422);
+            }
+            
+            $this->authService->deleteShippingAddress($shippingAddressId, $userId, $userDetailId);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Shipping Addresses deleted successfully.',
+                data: null,
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), null, 500);
+        }
     }
 
     // vendors
