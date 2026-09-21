@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\App\AuthController;
 use App\Http\Controllers\Api\V1\App\CartController;
+use App\Http\Controllers\Api\V1\App\OrderController;
 use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\NotificationController;
@@ -109,6 +110,16 @@ Route::prefix('v1/app')->group(function () {
         // Favorites Routes
         Route::get('/favorites', [FavoriteController::class, 'index']);
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+
+        // Order & Quotation Routes
+        Route::prefix('orders')->group(function () {
+            Route::get('/', [OrderController::class, 'index']);
+            Route::post('/quotation', [OrderController::class, 'storeQuotation']);
+            Route::get('/{id}', [OrderController::class, 'show']);
+            Route::put('/{id}', [OrderController::class, 'update']);
+            Route::post('/{id}/confirm', [OrderController::class, 'confirmOrder']);
+            Route::post('/{id}/payment', [OrderController::class, 'submitPayment']);
+        });
 
         //setting static data [temporary]
         Route::get('/feature/delivery',[SettingsController::class, 'featureDelivery']);
