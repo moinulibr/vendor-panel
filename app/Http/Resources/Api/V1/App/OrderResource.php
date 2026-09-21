@@ -25,8 +25,8 @@ class OrderResource extends JsonResource
                 'due_amount'       => max(0, (float) $this->final_amount - (float) $this->payments->sum('amount')),
             ],
             'note'              => $this->note,
-            'vendor_orders'     => $this->whenLoaded('vendorOrders', function () {
-                return $this->vendorOrders->map(fn($vOrder) => [
+            'vendor_orders'     => $this->whenLoaded('vendor_orders', function () {
+                return $this->vendor_orders->map(fn($vOrder) => [
                     'id'              => $vOrder->id,
                     'vendor_id'       => $vOrder->vendor_id,
                     'invoice_no'      => $vOrder->invoice_no,
@@ -35,7 +35,7 @@ class OrderResource extends JsonResource
                     'final_amount'    => (float) $vOrder->final_amount,
                 ]);
             }),
-            'items'             => $this->whenLoaded('lines', function () {
+            'items' => $this->whenLoaded('lines', function () {
                 return $this->lines->map(fn($line) => [
                     'id'           => $line->id,
                     'product_id'   => $line->product_id,
@@ -45,7 +45,7 @@ class OrderResource extends JsonResource
                     'subtotal'     => (float) ($line->quantity * $line->price),
                 ]);
             }),
-            'payments'          => $this->whenLoaded('payments', function () {
+            'payments' => $this->whenLoaded('payments', function () {
                 return $this->payments->map(fn($pay) => [
                     'id'             => $pay->id,
                     'method'         => $pay->method,

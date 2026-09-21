@@ -15,7 +15,7 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $query = Transaction::where('user_id', $userId)
             ->where('type', 'sell')
-            ->with(['lines', 'vendorOrders', 'payments']);
+            ->with(['lines', 'vendor_orders', 'payments']);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -40,7 +40,7 @@ class OrderRepository implements OrderRepositoryInterface
     {
         return Transaction::where('id', $orderId)
             ->where('user_id', $userId)
-            ->with(['lines.product', 'vendorOrders', 'payments'])
+            ->with(['lines.product', 'vendor_orders', 'payments'])
             ->first();
     }
 
