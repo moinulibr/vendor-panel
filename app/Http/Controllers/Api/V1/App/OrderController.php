@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Requests\Api\V1\App\CreateQuotationRequest;
-use App\Http\Requests\Api\V1\App\OrderListRequest;
-use App\Http\Requests\Api\V1\App\SubmitPaymentRequest;
-use App\Http\Requests\Api\V1\App\UpdateQuotationRequest;
+use App\Http\Requests\Api\V1\App\Order\CreateQuotationRequest;
+use App\Http\Requests\Api\V1\App\Order\OrderListRequest;
+use App\Http\Requests\Api\V1\App\Order\SubmitPaymentRequest;
+use App\Http\Requests\Api\V1\App\Order\UpdateQuotationRequest;
 use App\Http\Resources\Api\V1\App\OrderResource;
 use App\Http\Swagger\OrderApiDocInterface;
 use App\Services\OrderService;

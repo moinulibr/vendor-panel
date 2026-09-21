@@ -56,11 +56,11 @@ class OrderService
                 'contact_id'       => $requestData['contact_id'] ?? null,
                 'location_id'      => 2, // Default Location/Outlet ID
                 'type'             => 'sell',
-                'status'           => 'pending',
-                'is_new'           => 1,
+                //'status'           => 'pending',
+                'is_new'           => 0,
                 'is_pos'           => 0,
                 'quotation'        => 1, // Marked as Quotation
-                'invoice_no'       => $this->productUtil->generateInvoiceNumber(),
+                'invoice_no'       => $this->productUtil->generateInvoiceNumber(),//it's for only type = sell, and is_pos = 1
                 'transaction_date' => now(),
                 'sub_total'        => $subTotal,
                 'discount_amount'  => $discountAmount,
