@@ -42,7 +42,7 @@ class OrderController extends BaseApiController implements OrderApiDocInterface
         }
     }
 
-    public function storeQuotation(CreateQuotationRequest $request): JsonResponse
+    public function storeQuotation(CreateQuotationRequest $request)
     {
         try {
             $userId = auth()->id();

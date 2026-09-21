@@ -21,8 +21,8 @@ class CreateQuotationRequest extends FormRequest
                 'integer',
                 'exists:users,id',
             ],
-            'contact_id'   => 'nullable|integer|exists:contacts,id',
-            'note'         => 'nullable|string|max:500',
+            'cart_id'   => 'required|integer|exists:carts,id',
+            'note'      => 'nullable|string|max:500',
         ];
     }
 }

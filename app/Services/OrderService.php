@@ -34,7 +34,10 @@ class OrderService
 
     public function createQuotationFromCart(int $userId, array $requestData): Transaction
     {
-        $cart = $this->cartRepository->getSingleCart($userId);
+        $cart = $this->cartRepository->getSingleCartByCartAndUserId($requestData['cart_id'], $userId);
+        if (!$cart) {
+            throw new Exception("Cart not found.");
+        }
         $cartItems = $cart->items()->with('product')->get();
 
         if ($cartItems->isEmpty()) {

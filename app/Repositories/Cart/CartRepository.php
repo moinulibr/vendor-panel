@@ -25,6 +25,10 @@ class CartRepository implements CartRepositoryInterface
             ['user_id' => $userId] //dealer/client user id
         );
     }
+    public function getSingleCartByCartAndUserId(int $cartId,int $userId) : ?Cart
+    {
+        return Cart::where(['id' => $cartId, 'user_id' => $userId])->first();
+    }
 
     public function findItem(int $cartId, int $productId, ?int $variationId): ?CartItem
     {
