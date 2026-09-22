@@ -38,7 +38,7 @@ class OrderService
         if (!$cart) {
             throw new Exception("Cart not found.");
         }
-        if ($cart->expires_at && now()->greaterThan($cart->expires_at)) {
+        if ($cart->expire_at && now()->greaterThan($cart->expire_at)) {
             // Option: Clear Cart if expired
             $this->cartRepository->clearCart($cart->id);
             throw new Exception("Your cart session has expired. Please add items to cart again.");

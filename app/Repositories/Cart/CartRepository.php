@@ -14,7 +14,8 @@ class CartRepository implements CartRepositoryInterface
             ['user_id' => $userId], //dealer/client user id
             [
                 'created_by' => $created_by,
-                'cart_from' => $data['cart_from'] ?? 'moible_app'
+                'cart_from' => $data['cart_from'] ?? 'moible_app',
+                'expire_at' => now()->addDays(1),
             ]
         );
     }

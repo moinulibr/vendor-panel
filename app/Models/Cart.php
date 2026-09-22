@@ -23,7 +23,7 @@ class Cart extends Model
         "shipping_charge",
         "tax_amount",
         "final_amount",
-        "expires_at",
+        "expire_at",
     ];
 
     public function items()

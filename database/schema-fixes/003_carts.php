@@ -30,8 +30,8 @@ if (Schema::hasTable('carts')) {
             $table->decimal('final_amount', 15, 2)->default(0.00)->nullable()->after('tax_amount')->comment('Calculated Net Total Amount');
         }
 
-        if (!Schema::hasColumn('carts', 'expires_at')) {
-            $table->timestamp('expires_at')->nullable()->after('cart_from')->comment('Cart Expiration Timestamp');
+        if (!Schema::hasColumn('carts', 'expire_at')) {
+            $table->timestamp('expire_at')->nullable()->after('cart_from')->comment('Cart Expiration Timestamp');
         }
     });
 }
