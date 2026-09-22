@@ -18,7 +18,9 @@ class CartItem extends Model
         'unit_price',
         'discount_amount',
         'discount_type',
-        'discount_id'
+        'discount_id',
+        "sub_total",
+        "net_total"
     ];
 
     public function cart()

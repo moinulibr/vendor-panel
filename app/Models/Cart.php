@@ -17,6 +17,13 @@ class Cart extends Model
         'discount_type',
         'cart_from',
         'created_by',
+        "session_id",
+        "guest_token",
+        "sub_total",
+        "shipping_charge",
+        "tax_amount",
+        "final_amount",
+        "expires_at",
     ];
 
     public function items()

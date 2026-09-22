@@ -22,12 +22,12 @@ class CartRepository implements CartRepositoryInterface
     public function getSingleCart(int $userId ): Cart
     {
         return Cart::firstOrCreate(
-            ['user_id' => $userId] //dealer/client user id
+            ['user_id' => $userId, 'cart_from' => 'moible_app'] //dealer/client user id
         );
     }
     public function getSingleCartByCartAndUserId(int $cartId,int $userId) : ?Cart
     {
-        return Cart::where(['id' => $cartId, 'user_id' => $userId])->first();
+        return Cart::where(['id' => $cartId, 'user_id' => $userId, 'cart_from' => 'moible_app'])->first();
     }
 
     public function findItem(int $cartId, int $productId, ?int $variationId): ?CartItem
