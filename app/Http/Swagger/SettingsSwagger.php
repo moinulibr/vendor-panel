@@ -28,7 +28,7 @@ interface SettingsSwagger
                                     properties: [
                                         new OA\Property(property: "type", type: "string", example: "string"),
                                         new OA\Property(property: "value", type: "string", example: "আলোচনা সাপেক্ষ"),
-                                        new OA\Property(property: "note", type: "string", example: "if type is string, then value will be string. if type is integer, then value will be also integer.")
+                                        new OA\Property(property: "note", type: "string", example: "If type is string, value is descriptive. If integer, it represents direct currency amount.")
                                     ]
                                 )
                             ]
@@ -100,14 +100,14 @@ interface SettingsSwagger
 
     #[OA\Get(
         path: "/api/v1/app/features/status",
-        summary: "Get features permission status based on user type",
-        description: "Returns feature capabilities, active user type flags, and UI labels.",
+        summary: "Get features permission status and expiry rules based on user type",
+        description: "Returns feature capabilities, active user type flags, UI labels, alongside Cart and Quotation expiration rules.",
         security: [["sanctum" => []]],
         tags: ["Settings"],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Features status fetched successfully",
+                description: "Features status and expiry configurations fetched successfully",
                 content: new OA\JsonContent(
                     properties: [
                         new OA\Property(property: "success", type: "boolean", example: true),
@@ -115,12 +115,12 @@ interface SettingsSwagger
                             property: "data",
                             type: "object",
                             properties: [
-                                new OA\Property(property: "loged_in_user_type_id", type: "integer", example: 5),
-                                new OA\Property(property: "applicable_user_type_id", type: "integer", example: 5),
-                                new OA\Property(property: "user_type_id_", type: "integer", example: 5),
-                                new OA\Property(property: "user_type_label", type: "string", example: "Dealer"),
+                                new OA\Property(property: "loged_in_user_type_id", type: "integer", example: 4),
+                                new OA\Property(property: "applicable_user_type_id", type: "integer", example: 4),
+                                new OA\Property(property: "user_type_id_", type: "integer", example: 4),
+                                new OA\Property(property: "user_type_label", type: "string", example: "SR"),
                                 new OA\Property(
-                                    property: "user_type_id_5",
+                                    property: "user_type_id_4",
                                     type: "object",
                                     properties: [
                                         new OA\Property(
@@ -153,7 +153,24 @@ interface SettingsSwagger
                                                 new OA\Property(property: "can_edit", type: "boolean", example: true),
                                                 new OA\Property(property: "can_delete", type: "boolean", example: true),
                                                 new OA\Property(property: "can_list", type: "boolean", example: true),
-                                                new OA\Property(property: "can_checkout", type: "boolean", example: true)
+                                                new OA\Property(property: "can_checkout", type: "boolean", example: true),
+                                                new OA\Property(property: "expire_in_minutes", type: "integer", example: 1440),
+                                                new OA\Property(property: "auto_clear_expired", type: "boolean", example: true),
+                                                new OA\Property(property: "expiry_note", type: "string", example: "Cart items will automatically expire after 24 hours of inactivity.")
+                                            ]
+                                        ),
+                                        new OA\Property(
+                                            property: "quotation",
+                                            type: "object",
+                                            properties: [
+                                                new OA\Property(property: "can_create", type: "boolean", example: true),
+                                                new OA\Property(property: "can_view", type: "boolean", example: true),
+                                                new OA\Property(property: "can_list", type: "boolean", example: true),
+                                                new OA\Property(property: "can_accept", type: "boolean", example: true),
+                                                new OA\Property(property: "can_reject", type: "boolean", example: true),
+                                                new OA\Property(property: "expire_in_days", type: "integer", example: 7),
+                                                new OA\Property(property: "auto_cancel", type: "boolean", example: true),
+                                                new OA\Property(property: "expiry_note", type: "string", example: "Quotations will automatically expire after 7 days from generation.")
                                             ]
                                         ),
                                         new OA\Property(
