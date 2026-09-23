@@ -9,6 +9,7 @@ interface CartRepositoryInterface
 {
     public function getOrCreateCart(int $userId, ?int $created_by = null): Cart;
     public function getSingleCart(int $userId): Cart;
+    public function getAllCartsByUserId(int $userId): ?Cart;
     public function getSingleCartByCartAndUserId(int $cartId, int $userId) : ?Cart;
     public function findItem(int $cartId, int $productId, ?int $variationId): ?CartItem;
     public function addOrUpdateItem(Cart $cart, array $data): CartItem;

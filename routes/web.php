@@ -33,7 +33,23 @@ Route::get('/clear', function(){
 
   
 Auth::routes();
-  
+
+//user delete and privacy policy url for mobile app
+Route::get('/privacy-policy', function () {
+    return view('mobileAppWebPages.privacy-policy');
+});
+Route::get('/privacy-policy1', function () {
+    return view('mobileAppWebPages.privacy-policy1');
+});
+Route::get('/privacy-policy2', function () {
+    return view('mobileAppWebPages.privacy-policy2');
+});
+Route::get('/delete-account', function () {
+    return view('mobileAppWebPages.delete-account');
+});
+
+
+
 Route::get('/home', [CN\HomeController::class, 'index'])->name('home');
 Route::get('/dashboard-data', [CN\HomeController::class, 'dashboardData'])->name('dashboardData');
   

@@ -20,12 +20,37 @@ class CartRepository implements CartRepositoryInterface
         );
     }
 
+    /**
+     * getAllCartsByUserId function
+     * To get all carts for a specific user's by user id
+     * @param integer $userId
+     * @return Cart
+     */
+    public function getAllCartsByUserId(int $userId): ?Cart
+    {
+        return Cart::where(
+            ['user_id' => $userId, 'cart_from' => 'moible_app']
+        )->get();
+    }
+
+    /**
+     * getSingleCart function
+     * To get a specific user's cart by user id
+     * @param integer $userId
+     * @return Cart
+     */
     public function getSingleCart(int $userId ): Cart
     {
         return Cart::firstOrCreate(
             ['user_id' => $userId, 'cart_from' => 'moible_app'] //dealer/client user id
         );
     }
+    /**
+     * getSingleCartByCartAndUserId function
+     * To get a specific user's cart by cart id and user id
+     * @param integer $userId
+     * @return Cart
+     */
     public function getSingleCartByCartAndUserId(int $cartId,int $userId) : ?Cart
     {
         return Cart::where(['id' => $cartId, 'user_id' => $userId, 'cart_from' => 'moible_app'])->first();
