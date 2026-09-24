@@ -5,11 +5,64 @@ namespace App\Repositories\Cart;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
+use App\Services\SettingService;
 
 class CartRepository implements CartRepositoryInterface
 {
+    public function __construct(
+        protected SettingService $settingService
+    ) {}
+    
     public function getOrCreateCart(int $userId, ?int $created_by = null): Cart
     {
+        // ১. SettingService থেকে এক্সপায়ারি ও Grace Period কনফিগ আনা
+        $config       = $this->settingService->getCartExpiryConfig();
+        $expiresAt    = $this->settingService->getCartExpiresAt();
+
+        $thresholdMin = $config['grace_threshold'] ?? 10; // শেষ 10 মিনিট
+        $extendMin    = $config['extend_minutes'] ?? 25;  // 25 মিনিট এক্সটেন্ড
+
+        // ২. কার্ট খুঁজে বের করা অথবা তৈরি করা
+        $cart = Cart::firstOrCreate(
+            ['user_id' => $userId],
+            [
+                'created_by' => $created_by,
+                'cart_from'  => $data['cart_from'] ?? 'mobile_app',
+                'expire_at'  => $expiresAt,
+            ]
+        );
+
+        // ৩. পুরনো কার্ট হলে (wasRecentlyCreated == false)
+        if (! $cart->wasRecentlyCreated) {
+
+            // চেক ১: কার্টের নির্ধারিত সময় শেষ হয়েছে কিনা?
+            //sExpired = $cart->expire_at && $cart->expire_at <= now();
+            $isExpired = $cart->expire_at && now()->greaterThanOrEqualTo($cart->expire_at);
+            if ($isExpired) {
+
+            /*
+             * চেক ২: ইউজার কি গত $thresholdMin (যেমন: 10) মিনিটের মধ্যে অ্যাক্টিভ ছিল?
+             * (CartItem মডেলে $touches = ['cart'] থাকায় updated_at কারেন্ট অ্যাক্টিভিটি নির্দেশ করবে)
+             */
+                //$isRecentlyActive = $cart->updated_at >= now()->subMinutes($thresholdMin);
+                $isRecentlyActive   = $cart->updated_at && $cart->updated_at->gte(now()->subMinutes($thresholdMin));
+                if ($isRecentlyActive) {
+                    // ক) ইউজার অ্যাক্টিভ ছিল! তাই কার্ট ক্লিয়ার না করে মেয়াদ 25 মিনিট বাড়িয়ে দেওয়া হলো
+                    $cart->update([
+                        'expire_at' => now()->addMinutes($extendMin),
+                    ]);
+                } else {
+                    // খ) সত্যি সত্যিই ইনঅ্যাক্টিভ ছিল! তাই কার্ট আইটেম ডিলিট এবং এক্সপায়ারি টাইম নতুন করে রিসেট
+                    $cart->items()->delete();
+
+                    $cart->update([
+                        'expire_at' => $expiresAt,
+                    ]);
+                }
+            }
+        }
+
+        return $cart;
         return Cart::firstOrCreate(
             ['user_id' => $userId], //dealer/client user id
             [

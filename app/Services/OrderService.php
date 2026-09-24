@@ -34,15 +34,29 @@ class OrderService
 
     public function createQuotationFromCart(int $userId, array $requestData): Transaction
     {
+
         $cart = $this->cartRepository->getSingleCartByCartAndUserId($requestData['cart_id'], $userId);
         if (!$cart) {
             throw new Exception("Cart not found.");
+        }
+
+        if ($cart->expire_at && now()->greaterThanOrEqualTo($cart->expire_at)) {
+            // অর্ডার সাবমিটের সময়েও Grace Check
+            if ($cart->updated_at && $cart->updated_at->gte(now()->subMinutes(10))) {
+                // টাইম বাড়িয়ে দিয়ে অর্ডার সাবমিট প্রসেস হতে দাও
+                $cart->update(['expire_at' => now()->addMinutes(10)]);
+            } else {
+                // কার্ট আসল অর্থেই মেয়াদী পার হয়ে গেছে
+                $cart->items()->delete();
+                throw new Exception("Your cart has expired. Please add items to cart again.");
+            }
         }
         if ($cart->expire_at && now()->greaterThan($cart->expire_at)) {
             // Option: Clear Cart if expired
             $this->cartRepository->clearCart($cart->id);
             throw new Exception("Your cart session has expired. Please add items to cart again.");
         }
+
         $cartItems = $cart->items()->with('product')->get();
 
         if ($cartItems->isEmpty()) {

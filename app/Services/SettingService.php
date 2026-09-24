@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use App\Utils\UserType;
 
 class SettingService
@@ -28,8 +29,8 @@ class SettingService
         return [
             'coupon' => [
                 'isApplicable'          => true,
-                'minOrderAmount'        => 500,
-                'maxDiscountAmount'     => 2000,
+                'minOrderAmount'        => 1000,
+                'maxDiscountAmount'     => 1000,
                 'allowOnDiscountedItem' => false,
                 'warningMessage'        => 'Coupon cannot be applied if cart contains discounted items.',
                 'alertMessage'          => 'Minimum order amount for using coupon is ৳500.',
@@ -37,6 +38,8 @@ class SettingService
             'discount' => [
                 'isApplicable'       => true,
                 'allowWithCoupon'    => false,
+                'minOrderAmount'     => 1000,
+                'maxDiscountAmount'  => 1000,
                 'maxDiscountPercent' => 50,
                 'warningMessage'     => 'Product discount is not combinable with promotional coupons.',
                 'alertMessage'       => null,
@@ -48,6 +51,69 @@ class SettingService
             ]
         ];
     }
+
+    /**
+     * Convert Expiry Value & Unit into a Future Carbon Timestamp
+     * Supports: 'minutes', 'hours', 'days'
+     */
+    public function getExpiryTimestamp(int $value, string $unit = 'days'): Carbon
+    {
+        return match (strtolower($unit)) {
+            'minute', 'minutes' => now()->addMinutes($value),
+            'hour', 'hours'     => now()->addHours($value),
+            'day', 'days'       => now()->addDays($value),
+            default             => now()->addDays($value),
+        };
+    }
+
+    /**
+     * Global Cart Expiry Rules
+     */
+    public function getCartExpiryConfig(): array
+    {
+        return [
+            'value'              => 60,          // মূল মেয়াদ (৬০ মিনিট)
+            'unit'               => 'minutes',
+            'grace_threshold'    => 10,          // শেষ 10 মিনিটের মধ্যে অ্যাক্টিভ থাকলে
+            'extend_minutes'     => 25,          // আরও ১৫ মিনিট মেয়াদ বেড়ে যাবে
+            'expire_in_minutes'  => 60,
+            'auto_clear_expired' => true,
+            'expiry_note'        => 'Cart items will expire after 60 minutes of inactivity.'
+        ];
+    }
+
+    /**
+     * Global Quotation Expiry Rules
+     */
+    public function getQuotationExpiryConfig(): array
+    {
+        return [
+            'value'          => 7,
+            'unit'           => 'days',         // Options: 'minutes', 'hours', 'days'
+            'expire_in_days' => 7,
+            'auto_cancel'    => true,
+            'expiry_note'    => 'Quotations will automatically expire after 7 days from generation.'
+        ];
+    }
+
+    /**
+     * Helper to get Calculated Cart Expiry Timestamp directly
+     */
+    public function getCartExpiresAt(): Carbon
+    {
+        $config = $this->getCartExpiryConfig();
+        return $this->getExpiryTimestamp($config['value'], $config['unit']);
+    }
+
+    /**
+     * Helper to get Calculated Quotation Expiry Timestamp directly
+     */
+    public function getQuotationExpiresAt(): Carbon
+    {
+        $config = $this->getQuotationExpiryConfig();
+        return $this->getExpiryTimestamp($config['value'], $config['unit']);
+    }
+    
 
     /**
      * Get Feature Status, Cart & Quotation Expiry Rules

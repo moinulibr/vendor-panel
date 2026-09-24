@@ -23,6 +23,8 @@ class CartItem extends Model
         "net_total"
     ];
 
+    protected $touches = ['cart']; // this will update the updated_at field on the parent model - carts table
+    
     public function cart()
     {
         return $this->belongsTo(Cart::class);
