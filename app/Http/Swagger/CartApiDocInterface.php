@@ -7,6 +7,8 @@ use App\Http\Requests\Api\V1\App\AddToCartListRequest;
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRemoveRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
+use App\Http\Requests\Api\V1\App\Discount\ApplyDiscountRequest;
+use App\Http\Requests\Api\V1\App\Discount\RemoveDiscountRequest;
 use App\Http\Requests\Api\V1\App\UpdateToCartRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
@@ -158,4 +160,57 @@ interface CartApiDocInterface
         ]
     )]
     public function removeCoupon(ApplyCouponRemoveRequest $request);
+
+    #[OA\Post(
+        path: "/api/v1/app/cart/apply-discount",
+        summary: "Apply Discount to Cart",
+        description: "Apply general/campaign discount to active user cart.",
+        tags: ["Cart"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "user_base_id",
+                in: "query",
+                required: false,
+                description: "Get cart details by base user id. [when user is not dealer or exclusive client]",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["discount_id"],
+                properties: [
+                    new OA\Property(property: "discount_id", type: "integer", example: 5)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: "Discount applied successfully"),
+            new OA\Response(response: 422, description: "Invalid Discount")
+        ]
+    )]
+    public function applyDiscount(ApplyDiscountRequest $request);
+
+    #[OA\Delete(
+        path: "/api/v1/app/cart/remove-discount",
+        summary: "Remove Cart Discount",
+        description: "Remove general cart discount.",
+        tags: ["Cart"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "user_base_id",
+                in: "query",
+                required: false,
+                schema: new OA\Schema(type: "integer"),
+                description: "Get cart details by base user id. [when user is not dealer or exclusive client]"
+            ),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Discount removed successfully"),
+            new OA\Response(response: 401, description: "Unauthenticated")
+        ]
+    )]
+    public function removeDiscount(RemoveDiscountRequest $request);
 }

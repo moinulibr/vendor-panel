@@ -18,8 +18,16 @@ if (Schema::hasTable('carts')) {
             $table->decimal('sub_total', 15, 2)->default(0.00)->nullable()->after('discount_type')->comment('Sum of all cart items subtotal');
         }
 
+        if (!Schema::hasColumn('carts', 'coupon_discount_amount')) {
+            $table->decimal('coupon_discount_amount', 15, 2)->default(0.00)->nullable()->after('coupon_id')->comment('coupon discount amount, from coupons table');
+        }
+
+        if (!Schema::hasColumn('carts', 'coupon_discount_type')) {
+            $table->string('coupon_discount_type', 15)->default(0.00)->nullable()->after('coupon_discount_amount')->comment('coupon discount type, from coupons table. type: fixed or percentage');
+        }
+
         if (!Schema::hasColumn('carts', 'shipping_charge')) {
-            $table->decimal('shipping_charge', 15, 2)->default(0.00)->nullable()->after('sub_total')->comment('Negotiable or Fixed Shipping Fee');
+            $table->decimal('shipping_charge', 15, 2)->default(0.00)->nullable()->after('coupon_discount_type')->comment('Negotiable or Fixed Shipping Fee');
         }
 
         if (!Schema::hasColumn('carts', 'tax_amount')) {

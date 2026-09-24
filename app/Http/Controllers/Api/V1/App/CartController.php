@@ -7,6 +7,8 @@ use App\Http\Requests\Api\V1\App\AddToCartListRequest;
 use App\Http\Requests\Api\V1\App\AddToCartRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRemoveRequest;
 use App\Http\Requests\Api\V1\App\ApplyCouponRequest;
+use App\Http\Requests\Api\V1\App\Discount\ApplyDiscountRequest;
+use App\Http\Requests\Api\V1\App\Discount\RemoveDiscountRequest;
 use App\Http\Requests\Api\V1\App\UpdateToCartRequest;
 use App\Http\Resources\Api\V1\App\CartItemResource;
 use App\Http\Resources\Api\V1\App\CartResource;
@@ -136,6 +138,56 @@ class CartController extends BaseApiController implements CartApiDocInterface
                 success: false,
                 message: $e->getMessage(),
                 statusCode: 500
+            );
+        }
+    }
+
+    public function applyDiscount(ApplyDiscountRequest $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            if ((int) auth()->user()->user_type === UserType::SR) {
+                $userId = $request->user_base_id;
+            }
+
+            $this->cartService->applyCartDiscount($userId, $request->discount_id);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Discount applied successfully.',
+                data: null,
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 422
+            );
+        }
+    }
+
+    public function removeDiscount(RemoveDiscountRequest $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            if ((int) auth()->user()->user_type === UserType::SR) {
+                $userId = $request->user_base_id;
+            }
+
+            $this->cartService->removeCartDiscount($userId);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Discount removed successfully.',
+                data: null,
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 422
             );
         }
     }

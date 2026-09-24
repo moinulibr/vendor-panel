@@ -174,4 +174,28 @@ class CartRepository implements CartRepositoryInterface
             'discount_type'   => null,
         ]);
     }
+
+    public function updateCartDiscount(int $cartId, array $discountData): bool
+    {
+        return Cart::where('id', $cartId)->update([
+            'discount_amount' => $discountData['discount_amount'] ?? 0,
+            'discount_type'   => $discountData['discount_type'] ?? 'fixed',
+        ]);
+    }
+
+    public function clearCartDiscount(int $cartId): bool
+    {
+        return Cart::where('id', $cartId)->update([
+            'discount_amount' => 0.00,
+            'discount_type'   => null,
+        ]);
+    }
+
+    public function updateCartTotals(int $cartId, array $totals): bool
+    {
+        return Cart::where('id', $cartId)->update([
+            'sub_total'    => $totals['sub_total'] ?? 0,
+            'final_amount' => $totals['final_amount'] ?? 0,
+        ]);
+    }
 }

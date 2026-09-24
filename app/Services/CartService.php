@@ -6,6 +6,7 @@ use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Models\Product;
 use App\Models\Variation;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
+use App\Repositories\Discount\Interface\DiscountRepositoryInterface;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Utils\UserType;
@@ -17,7 +18,8 @@ class CartService
         protected CouponRepositoryInterface $couponRepository,
         protected ProductRepositoryInterface $productRepository,
         protected UserRepositoryInterface $userRepository,
-        protected PriceService $priceService
+        protected PriceService $priceService,
+        protected DiscountRepositoryInterface $discountRepository,
         ) {}
 
     public function getUserCart(int $userId): array
@@ -65,7 +67,9 @@ class CartService
                 'item_total_discount' => $itemTotalDiscount,
                 'gross_total'         => $grossTotal,
                 'coupon_code'         => $cart->coupon_code,
+                //ekhane ki coupon discount amount o to dewa dorker nki bolo?
                 'cart_discount'       => $cartDiscount,
+                //ekhane ki total cart discount amount o to dewa dorker nki bolo? [item total discount + cart discount + coupon discount]
                 'final_amount'        => $finalAmount,
                 'total_items'         => $cartItems->sum('quantity')
             ]
@@ -137,8 +141,8 @@ class CartService
         return $this->cartRepository->updateCoupon($cart->id, [
             'coupon_code'     => $coupon->code,
             'coupon_id'       => $coupon->id,
-            'discount_amount' => $coupon->amount,
-            'discount_type'   => $coupon->discount_type ?? 'fixed',
+            'coupon_discount_amount' => $coupon->amount,
+            'coupon_discount_type'   => $coupon->discount_type ?? 'fixed',
         ]);
     }
 
@@ -146,6 +150,38 @@ class CartService
     {
         $cart = $this->cartRepository->getSingleCart($userId);
         return $this->cartRepository->clearCoupon($cart->id);
+    }
+
+    /**
+     * applyCartDiscount function
+     *
+     * @param integer $userId
+     * @param integer $discountId
+     * @return boolean
+     */
+    public function applyCartDiscount(int $userId, int $discountId): bool
+    {
+        $cartData = $this->getUserCart($userId);
+        $grossTotal = $cartData['summary']['gross_total'];
+
+        $discount = $this->discountRepository->findValidDiscount($userId, $grossTotal);
+
+        if (!$discount) {
+            throw new Exception('Invalid or non-applicable discount offer!');
+        }
+
+        $cart = $this->cartRepository->getOrCreateCart($userId);
+
+        return $this->cartRepository->updateCartDiscount($cart->id, [
+            'discount_amount' => $discount->amount,
+            'discount_type'   => $discount->discount_type ?? 'fixed',
+        ]);
+    }
+
+    public function removeCartDiscount(int $userId): bool
+    {
+        $cart = $this->cartRepository->getOrCreateCart($userId);
+        return $this->cartRepository->clearCartDiscount($cart->id);
     }
 
     public function removeItem(int $cartItemId): bool

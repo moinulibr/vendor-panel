@@ -12,6 +12,8 @@ use App\Repositories\Coupon\CouponRepository;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
 use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
+use App\Repositories\Discount\DiscountRepository;
+use App\Repositories\Discount\Interface\DiscountRepositoryInterface;
 use App\Repositories\Favorite\FavoriteRepository;
 use App\Repositories\Favorite\Interface\FavoriteRepositoryInterface;
 use App\Repositories\Notification\Interface\NotificationRepositoryInterface;
@@ -61,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(FavoriteRepositoryInterface::class, FavoriteRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
+        $this->app->bind(DiscountRepositoryInterface::class, DiscountRepository::class);
         
     }
 
