@@ -76,6 +76,8 @@ class SettingService
             'unit'               => 'minutes',
             'grace_threshold'    => 10,          // শেষ 10 মিনিটের মধ্যে অ্যাক্টিভ থাকলে
             'extend_minutes'     => 25,          // আরও ১৫ মিনিট মেয়াদ বেড়ে যাবে
+            'extend_days'        => 1,          // আরও ১৫ মিনিট মেয়াদ বেড়ে যাবে
+            'expire_in_days'     => 7,
             'expire_in_minutes'  => 60,
             'auto_clear_expired' => true,
             'expiry_note'        => 'Cart items will expire after 60 minutes of inactivity.'
