@@ -7,6 +7,8 @@ use App\Utils\UserType;
 
 class SettingService
 {
+    public $bufferThresholdDefaultValue = 10;
+    public $extendDurationDefaultValue = 5;
     /**
      * Get Delivery Charge Configurations
      */
@@ -82,7 +84,7 @@ class SettingService
             'unit'               => $unit, // day
             'value'              => $unitValue,
             'buffer_grace_unit'  => $this->durationUnit('hours'), // hour
-            'buffer_threshold'   => 5, // 5 $this->durationUnit('hours') - If the user becomes active within 5 hours before the expiry time. //থ্রেশহোল্ড
+            'buffer_threshold'   => 5, // 5 $this->durationUnit('hours') - If the user becomes active within 5 hours before the expiry time. //থ্রেশহোল্ড - // থ্রেশহোল্ড /দোরগোড়া", "সীমানা" বা "সূচনা বিন্দু" বর্ডার লাইন বা ভ্যালু
             'extend_unit'        => $this->durationUnit('hours'),
             'extend_duration'    => 3, // 3 $this->durationUnit('hours')
             'auto_clear_expired' => true,

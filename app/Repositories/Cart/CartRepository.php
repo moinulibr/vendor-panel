@@ -15,14 +15,12 @@ class CartRepository implements CartRepositoryInterface
     
     public function getOrCreateCart(int $userId, ?int $created_by = null): Cart
     {
-        // ১. SettingService থেকে এক্সপায়ারি ও Grace Period কনফিগ আনা
         $config       = $this->settingService->getCartExpiryConfig();
         $expiresAt    = $this->settingService->getCartExpiresAt();
 
-        $bufferThreshold = $config['buffer_threshold'] ?? 10; // থ্রেশহোল্ড /দোরগোড়া", "সীমানা" বা "সূচনা বিন্দু" বর্ডার লাইন বা ভ্যালু
-        $extendDuration    = $config['extend_duration'] ?? 5; // 
+        $bufferThreshold = $config['buffer_threshold'] ?? $this->settingService->bufferThresholdDefaultValue;
+        $extendDuration  = $config['extend_duration'] ?? $this->settingService->extendDurationDefaultValue;
 
-        // ২. কার্ট খুঁজে বের করা অথবা তৈরি করা
         $cart = Cart::firstOrCreate(
             ['user_id' => $userId],
             [
@@ -32,27 +30,25 @@ class CartRepository implements CartRepositoryInterface
             ]
         );
 
-        // ৩. পুরনো কার্ট হলে (wasRecentlyCreated == false)
+        // 3. if card is not recently created (wasRecentlyCreated == false)
         if (! $cart->wasRecentlyCreated) {
-
-            // চেক ১: কার্টের নির্ধারিত সময় শেষ হয়েছে কিনা?
-            //sExpired = $cart->expire_at && $cart->expire_at <= now();
+            //Expired = $cart->expire_at && $cart->expire_at <= now();
             $isExpired = $cart->expire_at && now()->greaterThanOrEqualTo($cart->expire_at);
             if ($isExpired) {
 
             /*
-             * চেক ২: ইউজার কি গত $bufferThreshold (যেমন: 10) মিনিটের মধ্যে অ্যাক্টিভ ছিল?
-             * (CartItem মডেলে $touches = ['cart'] থাকায় updated_at কারেন্ট অ্যাক্টিভিটি নির্দেশ করবে)
+             * 2. check - is user active recently. 
+             * (CartItem -> $touches = ['cart'] - updated_at)
              */
                 //$isRecentlyActive = $cart->updated_at >= now()->subMinutes($bufferThreshold);
                 $isRecentlyActive   = $cart->updated_at && $cart->updated_at->gte(now()->subMinutes($bufferThreshold));
                 if ($isRecentlyActive) {
-                    // ক) ইউজার অ্যাক্টিভ ছিল! তাই কার্ট ক্লিয়ার না করে মেয়াদ 25 মিনিট বাড়িয়ে দেওয়া হলো
+                    //if user is active recently, extend the cart expiry
                     $cart->update([
                         'expire_at' => now()->addMinutes($extendDuration),
                     ]);
                 } else {
-                    // খ) সত্যি সত্যিই ইনঅ্যাক্টিভ ছিল! তাই কার্ট আইটেম ডিলিট এবং এক্সপায়ারি টাইম নতুন করে রিসেট
+                    // if user is not active recently, clear the cart
                     $cart->items()->delete();
                     $cart->update([
                         'expire_at'               => $expiresAt,
