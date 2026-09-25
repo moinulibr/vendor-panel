@@ -17,7 +17,7 @@ class ApplyDiscountRequest extends FormRequest
         $isNotRetailer = auth()->check() && (int) auth()->user()->user_type !== UserType::DEALER;
 
         return [
-            'discount_id'  => 'required|integer|exists:discounts,id',
+            'discount_title'  => 'required|string|exists:discounts,title',
             'user_base_id' => [
                 $isNotRetailer ? 'required' : 'nullable',
                 'integer',

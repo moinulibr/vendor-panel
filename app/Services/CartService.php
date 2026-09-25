@@ -178,15 +178,15 @@ class CartService
      * applyCartDiscount function
      *
      * @param integer $userId
-     * @param integer $discountId
+     * @param string $discountTitle
      * @return boolean
      */
-    public function applyCartDiscount(int $userId, int $discountId): bool
+    public function applyCartDiscount(int $userId, string $discountTitle): bool
     {
         $cartData = $this->getUserCart($userId);
         $grossTotal = $cartData['summary']['gross_total'];
 
-        $discount = $this->discountRepository->findValidDiscount($userId, $grossTotal);
+        $discount = $this->discountRepository->findValidDiscount($discountTitle, $userId, $grossTotal);
 
         if (!$discount) {
             throw new Exception('Invalid or non-applicable discount offer!');

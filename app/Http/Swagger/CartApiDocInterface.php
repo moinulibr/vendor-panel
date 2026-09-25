@@ -179,9 +179,9 @@ interface CartApiDocInterface
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ["discount_id"],
+                required: ["discount_title"],
                 properties: [
-                    new OA\Property(property: "discount_id", type: "integer", example: 5)
+                    new OA\Property(property: "discount_title", type: "string", example: 'mega-discount'),
                 ]
             )
         ),

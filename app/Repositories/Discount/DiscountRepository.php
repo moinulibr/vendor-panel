@@ -7,16 +7,14 @@ use App\Repositories\Discount\Interface\DiscountRepositoryInterface;
 
 class DiscountRepository implements DiscountRepositoryInterface
 {
-    public function findValidDiscount(int $userId, float $amount): ?Discount
+    public function findValidDiscount(string $title, int $userId, float $amount): ?Discount
     {
-        return Discount::where('status', 1)
+        return Discount::where('title',$title)
+            ->where('status', 1)
             ->where('start', '<=', now()->toDateString())
             ->where('end', '>=', now()->toDateString())
-            ->where(function ($query) use ($userId) {
-                $query->whereNull('user_id')
-                    ->orWhere('user_id', $userId);
-            })
-            ->orderBy('priority', 'desc')
+            ->where('is_mobile_app', 1)
+            //->orderBy('priority', 'desc')
             ->first();
     }
 

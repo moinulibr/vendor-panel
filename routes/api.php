@@ -107,8 +107,8 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/cart/apply-coupon', [CartController::class, 'applyCoupon']);
         Route::delete('/cart/remove-coupon', [CartController::class, 'removeCoupon']);
         // discount
-        Route::post('/apply-discount', [CartController::class, 'applyDiscount']);
-        Route::post('/remove-discount', [CartController::class, 'removeDiscount']);
+        Route::post('cart/apply-discount', [CartController::class, 'applyDiscount']);
+        Route::post('cart/remove-discount', [CartController::class, 'removeDiscount']);
 
         // Favorites Routes
         Route::get('/favorites', [FavoriteController::class, 'index']);

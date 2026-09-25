@@ -154,7 +154,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
                 $userId = $request->user_base_id;
             }
 
-            $this->cartService->applyCartDiscount($userId, $request->discount_id);
+            $this->cartService->applyCartDiscount($userId, $request->discount_title);
 
             return $this->jsonResponse(
                 success: true,
