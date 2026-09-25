@@ -54,9 +54,18 @@ class CartRepository implements CartRepositoryInterface
                 } else {
                     // খ) সত্যি সত্যিই ইনঅ্যাক্টিভ ছিল! তাই কার্ট আইটেম ডিলিট এবং এক্সপায়ারি টাইম নতুন করে রিসেট
                     $cart->items()->delete();
-
                     $cart->update([
-                        'expire_at' => $expiresAt,
+                        'expire_at'               => $expiresAt,
+                        'coupon_code'             => null,
+                        'coupon_id'               => null,
+                        'coupon_discount_amount'  => 0.00,
+                        'coupon_discount_type'    => null,
+                        'discount_amount'         => 0.00,
+                        'discount_type'           => null,
+                        'sub_total'               => 0.00,
+                        'final_amount'            => 0.00,
+                        'shipping_charge'         => 0.00,
+                        'tax_amount'              => 0.00,
                     ]);
                 }
             }
@@ -119,24 +128,45 @@ class CartRepository implements CartRepositoryInterface
 
     public function addOrUpdateItem(Cart $cart, array $data): CartItem
     {
+        $quantity = $data['quantity'];
+        $unitPrice = $data['unit_price'];
+        $subTotal = $quantity * $unitPrice;
+        $discountAmount = $data['discount_amount'] ?? 0;
+        $final_amount = max(0, $subTotal - $discountAmount);
+
         return CartItem::updateOrCreate(
             [
                 'cart_id'      => $cart->id,
                 'product_id'   => $data['product_id'],
                 'variation_id' => $data['variation_id'] ?? null,
-                //'type'         => $data['type'],
-                'unit_price'   => $data['unit_price'],
+                //'unit_price'   => $data['unit_price'],
             ],
             [
-                'quantity'        => $data['quantity'],
-                'unit_price'      => $data['unit_price'],
-                'discount_amount' => $data['discount_amount'] ?? 0,
+                'quantity'        => $quantity,
+                'unit_price'      => $unitPrice,
+                'sub_total'       => $subTotal,
+                'discount_amount' => $discountAmount,
+                'discount_type'   => $data['discount_type'] ?? 'fixed',
+                'discount_id'     => $data['discount_id'] ?? null,
+                'final_amount'    => $final_amount,
             ]
         );
     }
 
     public function updateQuantity(int $cartItemId, int $quantity): bool
     {
+        $item = CartItem::find($cartItemId);
+        if (!$item) return false;
+
+        $subTotal = $quantity * $item->unit_price;
+        $final_amount = max(0, $subTotal - $item->discount_amount);
+
+        return $item->update([
+            'quantity'  => $quantity,
+            'sub_total' => $subTotal,
+            'final_amount' => $final_amount,
+        ]);
+
         return CartItem::where('id', $cartItemId)->update(['quantity' => $quantity]);
     }
 
@@ -158,20 +188,20 @@ class CartRepository implements CartRepositoryInterface
     public function updateCoupon(int $cartId, array $couponData): bool
     {
         return Cart::where('id', $cartId)->update([
-            'coupon_code'     => $couponData['coupon_code'],
-            'coupon_id'       => $couponData['coupon_id'] ?? null,
-            'discount_amount' => $couponData['discount_amount'],
-            'discount_type'   => $couponData['discount_type'] ?? 'fixed',
+            'coupon_code'            => $couponData['coupon_code'],
+            'coupon_id'              => $couponData['coupon_id'] ?? null,
+            'coupon_discount_amount' => $couponData['coupon_discount_amount'] ?? 0,
+            'coupon_discount_type'   => $couponData['coupon_discount_type'] ?? 'fixed',
         ]);
     }
 
     public function clearCoupon(int $cartId): bool
     {
         return Cart::where('id', $cartId)->update([
-            'coupon_code'     => null,
-            'coupon_id'       => null,
-            'discount_amount' => 0,
-            'discount_type'   => null,
+            'coupon_code'            => null,
+            'coupon_id'              => null,
+            'coupon_discount_amount' => 0.00,
+            'coupon_discount_type'   => null,
         ]);
     }
 

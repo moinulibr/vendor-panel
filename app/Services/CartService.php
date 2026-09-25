@@ -24,7 +24,6 @@ class CartService
 
     public function getUserCart(int $userId): array
     {
-        //always match with retailer id. 
         $cart = $this->cartRepository->getOrCreateCart($userId);
         $cartItems = $cart->items()->with(['product', 'variation'])->get();
 
@@ -41,9 +40,9 @@ class CartService
             $itemTotalDiscount += $discount;
         }
 
-        $grossTotal = $itemSubtotal - $itemTotalDiscount;
+        $grossTotal = max(0, $itemSubtotal - $itemTotalDiscount);
 
-        // Overall Cart Level Discount / Coupon Calculation
+        // General Cart Level Discount
         $cartDiscount = 0;
         if ($cart->discount_amount > 0) {
             $cartDiscount = $cart->discount_type === 'percentage'
@@ -51,27 +50,46 @@ class CartService
                 : $cart->discount_amount;
         }
 
-        $finalAmount = max(0, $grossTotal - $cartDiscount);
+        $totalAfterDiscount = max(0, $grossTotal - $cartDiscount);
+
+        // Coupon Discount Calculation
+        $couponDiscount = 0;
+        if ($cart->coupon_code && $cart->coupon_discount_amount > 0) {
+            $couponDiscount = $cart->coupon_discount_type === 'percentage'
+                ? ($totalAfterDiscount * ($cart->coupon_discount_amount / 100))
+                : $cart->coupon_discount_amount;
+        }
+
+        $grandTotalDiscount = $itemTotalDiscount + $cartDiscount + $couponDiscount;
+        $finalAmount = max(0, $itemSubtotal - $grandTotalDiscount);
+
+        // Sync Calculated Values into Cart Schema
+        $this->cartRepository->updateCartTotals($cart->id, [
+            'sub_total'    => $itemSubtotal,
+            'final_amount' => $finalAmount,
+        ]);
+
+        $userModel = $this->userRepository->findById($userId);
 
         return [
             'user' => [
-                'logged in user id' => auth()->user()->id,
-                'logged in user type' => auth()->user()->user_type,
-                'user id' => $userId,
-                'type' => $this->userRepository->findById($userId)->user_type,
-                'name' => $this->userRepository->findById($userId)->name
+                'logged_in_user_id'   => auth()->id(),
+                'logged_in_user_type' => auth()->user()?->user_type,
+                'user_id'             => $userId,
+                'type'                => $userModel?->user_type,
+                'name'                => $userModel?->name,
             ],
             'items'   => $cartItems,
             'summary' => [
-                'sub_total'           => $itemSubtotal,
-                'item_total_discount' => $itemTotalDiscount,
-                'gross_total'         => $grossTotal,
-                'coupon_code'         => $cart->coupon_code,
-                //ekhane ki coupon discount amount o to dewa dorker nki bolo?
-                'cart_discount'       => $cartDiscount,
-                //ekhane ki total cart discount amount o to dewa dorker nki bolo? [item total discount + cart discount + coupon discount]
-                'final_amount'        => $finalAmount,
-                'total_items'         => $cartItems->sum('quantity')
+                'sub_total'             => round($itemSubtotal, 2),
+                'item_total_discount'   => round($itemTotalDiscount, 2),
+                'gross_total'           => round($grossTotal, 2),
+                'cart_discount'         => round($cartDiscount, 2),
+                'coupon_code'           => $cart->coupon_code,
+                'coupon_discount'       => round($couponDiscount, 2),
+                'total_cart_discount'   => round($grandTotalDiscount, 2),
+                'final_amount'          => round($finalAmount, 2),
+                'total_items'           => $cartItems->sum('quantity'),
             ]
         ];
     }
@@ -129,7 +147,6 @@ class CartService
             throw new Exception('Cart total must be greater than zero to apply coupon.');
         }
 
-        // Validate coupon from CouponRepository using actual logic
         $coupon = $this->couponRepository->findValidCoupon($couponCode, $grossTotal);
 
         if (!$coupon) {
@@ -139,8 +156,8 @@ class CartService
         $cart = $this->cartRepository->getOrCreateCart($userId);
 
         return $this->cartRepository->updateCoupon($cart->id, [
-            'coupon_code'     => $coupon->code,
-            'coupon_id'       => $coupon->id,
+            'coupon_code'            => $coupon->code,
+            'coupon_id'              => $coupon->id,
             'coupon_discount_amount' => $coupon->amount,
             'coupon_discount_type'   => $coupon->discount_type ?? 'fixed',
         ]);

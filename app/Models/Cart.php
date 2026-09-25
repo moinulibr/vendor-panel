@@ -14,6 +14,8 @@ class Cart extends Model
         'coupon_code',
         'coupon_id',
         'discount_amount',
+        'coupon_discount_amount',
+        'coupon_discount_type',
         'discount_type',
         'cart_from',
         'created_by',
