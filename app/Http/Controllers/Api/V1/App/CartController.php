@@ -14,13 +14,17 @@ use App\Http\Resources\Api\V1\App\CartItemResource;
 use App\Http\Resources\Api\V1\App\CartResource;
 use App\Http\Swagger\CartApiDocInterface;
 use App\Services\CartService;
+use App\Services\SettingService;
 use App\Utils\UserType;
 use Illuminate\Http\JsonResponse;
 use Exception;
 
 class CartController extends BaseApiController implements CartApiDocInterface
 {
-    public function __construct(protected CartService $cartService) {}
+    public function __construct(
+        protected CartService $cartService,
+        protected SettingService $settingService
+        ) {}
 
     public function index(AddToCartListRequest $request): JsonResponse
     {
@@ -56,10 +60,10 @@ class CartController extends BaseApiController implements CartApiDocInterface
             }
 
             $cartItem = $this->cartService->addToCart($userId, $request->validated());
-
+            $systemSetting = $this->settingService->getCartExpiryConfig();
             return $this->jsonResponse(
                 success: true,
-                message: 'Item added to cart successfully.',
+                message: 'Item added to cart successfully. ', //. $systemSetting['expiry_note']
                 data: new CartItemResource($cartItem),
                 statusCode: 201
             );

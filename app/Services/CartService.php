@@ -20,6 +20,7 @@ class CartService
         protected UserRepositoryInterface $userRepository,
         protected PriceService $priceService,
         protected DiscountRepositoryInterface $discountRepository,
+        protected SettingService $settingService
         ) {}
 
     public function getUserCart(int $userId): array
@@ -71,15 +72,11 @@ class CartService
 
         $userModel = $this->userRepository->findById($userId);
 
+        $deliveryCharge  = $this->settingService->getDeliverySettings();
+        $offers  = $this->settingService->getCouponAndDiscountSettings();
         return [
-            'user' => [
-                'logged_in_user_id'   => auth()->id(),
-                'logged_in_user_type' => auth()->user()?->user_type,
-                'user_id'             => $userId,
-                'type'                => $userModel?->user_type,
-                'name'                => $userModel?->name,
-            ],
-            'items'   => $cartItems,
+            'delivery_system' => $deliveryCharge,
+            'offers'   => $offers,
             'summary' => [
                 'sub_total'             => round($itemSubtotal, 2),
                 'item_total_discount'   => round($itemTotalDiscount, 2),
@@ -90,7 +87,16 @@ class CartService
                 'total_cart_discount'   => round($grandTotalDiscount, 2),
                 'final_amount'          => round($finalAmount, 2),
                 'total_items'           => $cartItems->sum('quantity'),
-            ]
+                'expire_at'             => $cart->expire_at,
+            ],
+            'items'   => $cartItems,
+            'user' => [
+                'logged_in_user_id'   => auth()->id(),
+                'logged_in_user_type' => auth()->user()?->user_type,
+                'user_id'             => $userId,
+                'type'                => $userModel?->user_type,
+                'name'                => $userModel?->name,
+            ],
         ];
     }
 
@@ -113,7 +119,6 @@ class CartService
             'product_id'   => $data['product_id'],
             'variation_id' => $data['variation_id'] ?? null,
             'quantity'     => $newQuantity,
-            //'type'         => $data['type'],
             'unit_price'   => $unitPrice,
         ]);
     }

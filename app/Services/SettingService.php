@@ -17,6 +17,11 @@ class SettingService
                 'type'  => 'string',
                 'value' => 'আলোচনা সাপেক্ষ',
                 'note'  => 'If type is string, value is descriptive. If integer, it represents direct currency amount.'
+            ],
+            "delivery_duration" => [
+                "isPartial" => true,
+                "min_days" => 3,
+                "max_days" => 7
             ]
         ];
     }
@@ -46,7 +51,7 @@ class SettingService
             ],
             'globalRules' => [
                 'allowBothInSingleOrder' => true,
-                'stackDiscountAndCoupon' => false,
+                'stackDiscountAndCoupon' => true,
                 'conflictPolicyMessage'  => 'You can only apply coupon on non-discounted products in your cart.',
             ]
         ];
@@ -71,18 +76,29 @@ class SettingService
      */
     public function getCartExpiryConfig(): array
     {
+        $unit = $this->durationUnit('days');
+        $unitValue = 2;
         return [
-            'value'              => 60,          // মূল মেয়াদ (৬০ মিনিট)
-            'unit'               => 'minutes',
-            'grace_threshold'    => 10,          // শেষ 10 মিনিটের মধ্যে অ্যাক্টিভ থাকলে
-            'extend_minutes'     => 25,          // আরও ১৫ মিনিট মেয়াদ বেড়ে যাবে
-            'extend_days'        => 1,          // আরও ১৫ মিনিট মেয়াদ বেড়ে যাবে
-            'expire_in_days'     => 7,
-            'expire_in_minutes'  => 60,
+            'unit'               => $unit, // day
+            'value'              => $unitValue,
+            'buffer_grace_unit'  => $this->durationUnit('hours'), // hour
+            'buffer_threshold'   => 5, // 5 $this->durationUnit('hours') - If the user becomes active within 5 hours before the expiry time. //থ্রেশহোল্ড
+            'extend_unit'        => $this->durationUnit('hours'),
+            'extend_duration'    => 3, // 3 $this->durationUnit('hours')
             'auto_clear_expired' => true,
-            'expiry_note'        => 'Cart items will expire after 60 minutes of inactivity.'
+            'expiry_note'        => 'Cart items will expire after '. $unitValue . ' ' . $unit . '.',
         ];
     }
+
+    public function durationUnit(string $unit) : string
+    {
+        return match (strtolower($unit)) {
+            'minute', 'minutes' => 'minutes',
+            'hour', 'hours'     => 'hours',
+            'day', 'days'       => 'days',
+            default             => 'days',
+        };
+    } 
 
     /**
      * Global Quotation Expiry Rules
