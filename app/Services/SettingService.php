@@ -9,6 +9,7 @@ class SettingService
 {
     public $bufferThresholdDefaultValue = 10;
     public $extendDurationDefaultValue = 5;
+    public $cartFromDefaultValue = "mobile_app";
     /**
      * Get Delivery Charge Configurations
      */

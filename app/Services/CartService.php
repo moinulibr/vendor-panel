@@ -125,21 +125,6 @@ class CartService
             'unit_price'   => $unitPrice,
         ]);
     }
-    
-    private function userTypeWisePrice(int $userId, Object $productVariation)
-    {
-       $user =  $this->userRepository->findById($userId);
-       $price = [];
-       if($user->user_type == UserType::DEALER){
-        return $productVariation->dealer_price;
-       }
-       else if($user->user_type == UserType::GENERAL_APP_CUSTOMER){
-        return $productVariation->wholesale_price;
-       }else{
-        return $productVariation->sell_price;
-       }
-    }
-
 
     public function updateQuantity(int $cartItemId, int $quantity): bool
     {
@@ -223,3 +208,21 @@ class CartService
         return $this->cartRepository->clearCart($cart->id);
     }
 }
+
+
+
+
+/*    private function userTypeWisePrice(int $userId, Object $productVariation)
+    {
+       $user =  $this->userRepository->findById($userId);
+       $price = [];
+       if($user->user_type == UserType::DEALER){
+        return $productVariation->dealer_price;
+       }
+       else if($user->user_type == UserType::GENERAL_APP_CUSTOMER){
+        return $productVariation->wholesale_price;
+       }else{
+        return $productVariation->sell_price;
+       }
+    }
+*/

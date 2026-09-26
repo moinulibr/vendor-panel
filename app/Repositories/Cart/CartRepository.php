@@ -20,12 +20,12 @@ class CartRepository implements CartRepositoryInterface
 
         $bufferThreshold = $config['buffer_threshold'] ?? $this->settingService->bufferThresholdDefaultValue;
         $extendDuration  = $config['extend_duration'] ?? $this->settingService->extendDurationDefaultValue;
-
+        $cartFrom        = $this->settingService->cartFromDefaultValue;
         $cart = Cart::firstOrCreate(
             ['user_id' => $userId],
             [
                 'created_by' => $created_by,
-                'cart_from'  => $data['cart_from'] ?? 'mobile_app',
+                'cart_from'  => $cartFrom  ?? 'mobile_app',
                 'expire_at'  => $expiresAt,
             ]
         );

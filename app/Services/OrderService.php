@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Transaction;
+use App\Utils\ProductUtil;
+use App\Services\CartService;
+use App\Services\SettingService;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Order\Interface\OrderRepositoryInterface;
-use App\Utils\ProductUtil;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +17,9 @@ class OrderService
     public function __construct(
         protected OrderRepositoryInterface $orderRepository,
         protected CartRepositoryInterface $cartRepository,
-        protected ProductUtil $productUtil
+        protected CartService $cartService,
+        protected ProductUtil $productUtil,
+        protected SettingService $settingService
     ) {}
 
     public function getUserOrders(int $userId, array $filters)
@@ -32,110 +36,166 @@ class OrderService
         return $order;
     }
 
+    /**
+     * Create Quotation/Sell Order from Cart
+     */
     public function createQuotationFromCart(int $userId, array $requestData): Transaction
     {
         $cart = $this->cartRepository->getSingleCartByCartAndUserId($requestData['cart_id'], $userId);
+
         if (!$cart) {
-            throw new Exception("Cart not found.");
+            throw new Exception("Cart not found or does not belong to the user.");
         }
 
+        $config       = $this->settingService->getCartExpiryConfig();
+        $expiresAt    = $this->settingService->getCartExpiresAt();
+
+        $bufferThreshold = $config['buffer_threshold'] ?? $this->settingService->bufferThresholdDefaultValue;
+        $extendDuration  = $config['extend_duration'] ?? $this->settingService->extendDurationDefaultValue;
+        $cartFrom        = $this->settingService->cartFromDefaultValue;
+
+        // Cart Expiry Validation
         if ($cart->expire_at && now()->greaterThanOrEqualTo($cart->expire_at)) {
-            // অর্ডার সাবমিটের সময়েও Grace Check
-            if ($cart->updated_at && $cart->updated_at->gte(now()->subMinutes(10))) {
-                // টাইম বাড়িয়ে দিয়ে অর্ডার সাবমিট প্রসেস হতে দাও
-                $cart->update(['expire_at' => now()->addMinutes(10)]);
+            $isRecentlyActive = $cart->updated_at && $cart->updated_at->gte(now()->subMinutes($bufferThreshold));
+
+            if ($isRecentlyActive) {
+                $cart->update(['expire_at' => now()->addMinutes($extendDuration)]);
             } else {
-                // কার্ট আসল অর্থেই মেয়াদী পার হয়ে গেছে
                 $cart->items()->delete();
-                throw new Exception("Your cart has expired. Please add items to cart again.");
+                $this->cartRepository->clearCoupon($cart->id);
+                $this->cartRepository->clearCartDiscount($cart->id);
+                throw new Exception("Your cart session has expired. Please add items to cart again.");
             }
         }
-        if ($cart->expire_at && now()->greaterThan($cart->expire_at)) {
-            // Option: Clear Cart if expired
-            $this->cartRepository->clearCart($cart->id);
-            throw new Exception("Your cart session has expired. Please add items to cart again.");
-        }
 
-        $cartItems = $cart->items()->with('product')->get();
+        // Fetch complete Cart calculation via CartService
+        $cartCalculation = $this->cartService->getUserCart($userId);
+        $summary = $cartCalculation['summary'];
+        $cartItems = $cartCalculation['items'];
 
         if ($cartItems->isEmpty()) {
-            throw new Exception("Cannot create quotation from empty cart.");
+            throw new Exception("Cannot create quotation from an empty cart.");
         }
 
-        return DB::transaction(function () use ($userId, $cart, $cartItems, $requestData) {
-            // Group Cart Items by Vendor (Multi-Vendor Support)
+        return DB::transaction(function () use ($userId, $cart, $cartItems, $summary, $requestData) {
+
+            // 1. Calculate Aggregated Calculations
+            $subTotal          = $summary['sub_total'];
+            $itemTotalDiscount = $summary['item_total_discount'];
+            $cartDiscount      = $summary['cart_discount'];
+            $couponDiscount    = $summary['coupon_discount'];
+            $totalDiscount     = $summary['total_cart_discount'];
+            $shippingCharge    = $summary['shipping_charge'] ?? 0.00;
+            $finalAmount       = $summary['final_amount'];
+
+            // 2. Create Master Transaction
+            $transactionData = [
+                'user_id'                => $userId,
+                'created_by'             => auth()->id(),
+                'location_id'            => 2, // Default Outlet ID
+                'type'                   => 'sell',
+                'status'                 => 'pending',
+                'is_new'                 => 0,
+                'is_pos'                 => 0,
+                'quotation'              => 1,
+                'invoice_no'             => $this->productUtil->generateInvoiceNumber(),
+                'transaction_date'       => now(),
+                'sub_total'              => $subTotal,
+                'discount_type'          => $cart->discount_type,
+                'discount_amount'        => $cartDiscount,
+                'coupon_code'            => $cart->coupon_code,
+                'coupon_id'              => $cart->coupon_id,
+                'coupon_discount_amount' => $couponDiscount,
+                'total_discount_amount'  => $totalDiscount,
+                'shipping_charge'        => $shippingCharge,
+                'final_amount'           => $finalAmount,
+                'note'                   => $requestData['note'] ?? null,
+                'mail_notification'      => 1,
+                'sms_notification'       => 1,
+            ];
+
+            $transaction = $this->orderRepository->createQuotationTransaction($transactionData);
+
+            // 3. Multi-Vendor Grouping & Calculations
             $vendorCart = $cartItems->groupBy(fn($item) => $item->product->user_id ?? 0);
-
-            // Calculate Totals
-            $subTotal = $cartItems->sum(fn($i) => $i->quantity * $i->unit_price);
-            $discountAmount = $cart->discount_amount ?? 0;
-            $finalAmount = max(0, $subTotal - $discountAmount);
-
-            // 1. Create Base Transaction
-            $transaction = $this->orderRepository->createQuotationTransaction([
-                'user_id'          => $userId,
-                'contact_id'       => $requestData['contact_id'] ?? null,
-                'location_id'      => 2, // Default Location/Outlet ID
-                'type'             => 'sell',
-                //'status'           => 'pending',
-                'is_new'           => 0,
-                'is_pos'           => 0,
-                'quotation'        => 1, // Marked as Quotation
-                'invoice_no'       => $this->productUtil->generateInvoiceNumber(),//it's for only type = sell, and is_pos = 1
-                'transaction_date' => now(),
-                'sub_total'        => $subTotal,
-                'discount_amount'  => $discountAmount,
-                'shipping_charge'  => 0.00, // Negotiable, starts at 0
-                'final_amount'     => $finalAmount,
-                'note'             => $requestData['note'] ?? null,
-                'mail_notification' => 1,
-                'sms_notification' => 1
-            ]);
-
             $linesData = [];
 
-            // 2. Loop Vendors and Create Vendor Orders
             foreach ($vendorCart as $vendorId => $items) {
-                $vSubTotal = $items->sum(fn($i) => $i->quantity * $i->unit_price);
+                $vSubTotal = 0;
+                $vItemDiscount = 0;
+
+                foreach ($items as $item) {
+                    $itemSub = $item->quantity * $item->unit_price;
+                    $itemDisc = $item->discount_type === 'percentage'
+                        ? ($itemSub * ($item->discount_amount / 100))
+                        : ($item->discount_amount * $item->quantity);
+
+                    $vSubTotal += $itemSub;
+                    $vItemDiscount += $itemDisc;
+                }
+
+                // Vendor proportional discount ratio
+                $vendorRatio = $subTotal > 0 ? ($vSubTotal / $subTotal) : 0;
+                $vCartDiscount = $cartDiscount * $vendorRatio;
+                $vCouponDiscount = $couponDiscount * $vendorRatio;
+                $vTotalDiscount = $vItemDiscount + $vCartDiscount + $vCouponDiscount;
+                $vFinalAmount = max(0, $vSubTotal - $vTotalDiscount);
 
                 $vendorOrder = $this->orderRepository->createVendorOrder([
                     'transaction_id'  => $transaction->id,
                     'vendor_id'       => $vendorId,
-                    'invoice_no'      => rand(111111, 999999),
+                    'invoice_no'      => 'VND-' . strtoupper(uniqid()),
                     'sub_total'       => $vSubTotal,
+                    'discount_amount' => $vTotalDiscount,
                     'shipping_charge' => 0.00,
-                    'final_amount'    => $vSubTotal,
+                    'final_amount'    => $vFinalAmount,
                 ]);
 
                 foreach ($items as $item) {
+                    $itemSubtotal = $item->quantity * $item->unit_price;
+                    $itemDiscount = $item->discount_type === 'percentage'
+                        ? ($itemSubtotal * ($item->discount_amount / 100))
+                        : ($item->discount_amount * $item->quantity);
+
                     $linesData[] = [
                         'product_id'      => $item->product_id,
                         'variation_id'    => $item->variation_id,
                         'vendor_order_id' => $vendorOrder->id,
                         'quantity'        => $item->quantity,
-                        'price'           => $item->unit_price,
-                        'old_price'       => $item->old_price ?? 0,
-                        'discount'        => $item->discount_amount ?? 0,
+                        'unit_price'      => $item->unit_price,
+                        'sub_total'       => $itemSubtotal,
+                        'discount_type'   => $item->discount_type ?? 'fixed',
+                        'discount_amount' => $itemDiscount,
+                        'net_total'       => max(0, $itemSubtotal - $itemDiscount),
                     ];
                 }
             }
 
-            // 3. Create Lines Bulk Insert
+            // 4. Bulk Insert Transaction Lines
             $this->orderRepository->createTransactionLines($transaction, $linesData);
 
-            // 4. Clear DB Cart
+            // 5. Clear Cart Items and Reset Discounts
             $this->cartRepository->clearCart($cart->id);
+            $this->cartRepository->clearCoupon($cart->id);
+            $this->cartRepository->clearCartDiscount($cart->id);
 
             return $transaction;
         });
     }
 
+    /**
+     * Update Pending Quotation
+     */
     public function updatePendingQuotation(int $orderId, int $userId, array $data): Transaction
     {
-        $transaction = $this->getOrderDetails($orderId, $userId);
+        $transaction = $this->orderRepository->findOrderByIdAndUser($orderId, $userId);
 
-        if ($transaction->status !== 'pending' || $transaction->quotation != 1) {
-            throw new Exception("Only pending quotations can be edited.");
+        if (!$transaction) {
+            throw new Exception("Order not found.");
+        }
+
+        if ($transaction->status !== 'pending' || (int)$transaction->quotation !== 1) {
+            throw new Exception("Only pending quotations can be modified.");
         }
 
         return DB::transaction(function () use ($transaction, $data) {
@@ -151,14 +211,16 @@ class OrderService
                         'product_id'   => $item['product_id'],
                         'variation_id' => $item['variation_id'] ?? null,
                         'quantity'     => $item['quantity'],
-                        'price'        => $item['unit_price'],
+                        'unit_price'   => $item['unit_price'],
+                        'sub_total'    => $lineSubtotal,
+                        'net_total'    => $lineSubtotal,
                     ];
                 }
 
                 $this->orderRepository->syncTransactionLines($transaction, $linesData);
 
                 $data['sub_total'] = $subTotal;
-                $data['final_amount'] = max(0, $subTotal + $transaction->shipping_charge - $transaction->discount_amount);
+                $data['final_amount'] = max(0, $subTotal + $transaction->shipping_charge - $transaction->total_discount_amount);
             }
 
             $this->orderRepository->updateTransaction($transaction, array_filter([
