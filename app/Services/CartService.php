@@ -62,7 +62,7 @@ class CartService
         }
 
         $grandTotalDiscount = $itemTotalDiscount + $cartDiscount + $couponDiscount;
-        $finalAmount = max(0, $itemSubtotal - $grandTotalDiscount);
+        $finalAmount = max(0, $itemSubtotal - $grandTotalDiscount) + $cart->shipping_charge;
 
         // Sync Calculated Values into Cart Schema
         $this->cartRepository->updateCartTotals($cart->id, [
@@ -81,10 +81,13 @@ class CartService
                 'sub_total'             => round($itemSubtotal, 2),
                 'item_total_discount'   => round($itemTotalDiscount, 2),
                 'gross_total'           => round($grossTotal, 2),
+                'discount_amount'       => round($cart->discount_amount, 2),
+                'discount_type'         => $cart->discount_type,
                 'cart_discount'         => round($cartDiscount, 2),
                 'coupon_code'           => $cart->coupon_code,
                 'coupon_discount'       => round($couponDiscount, 2),
                 'total_cart_discount'   => round($grandTotalDiscount, 2),
+                'shipping_charge'       => round($cart->shipping_charge, 2),
                 'final_amount'          => round($finalAmount, 2),
                 'total_items'           => $cartItems->sum('quantity'),
                 'expire_at'             => $cart->expire_at,
@@ -215,7 +218,7 @@ class CartService
     {
         $cart = $this->cartRepository->getOrCreateCart($userId);
         // Clean coupon along with cart items
-        $this->cartRepository->clearCoupon($cart->id);
+        //$this->cartRepository->clearCoupon($cart->id);
         $this->cartRepository->clearAllItemFromCart($cart->id);
         return $this->cartRepository->clearCart($cart->id);
     }

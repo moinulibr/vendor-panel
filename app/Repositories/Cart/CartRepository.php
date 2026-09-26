@@ -68,27 +68,7 @@ class CartRepository implements CartRepositoryInterface
         }
 
         return $cart;
-        return Cart::firstOrCreate(
-            ['user_id' => $userId], //dealer/client user id
-            [
-                'created_by' => $created_by,
-                'cart_from' => $data['cart_from'] ?? 'moible_app',
-                'expire_at' => now()->addDays(1),
-            ]
-        );
-    }
-
-    /**
-     * getAllCartsByUserId function
-     * To get all carts for a specific user's by user id
-     * @param integer $userId
-     * @return Cart
-     */
-    public function getAllCartsByUserId(int $userId): ?Cart
-    {
-        return Cart::where(
-            ['user_id' => $userId, 'cart_from' => 'moible_app']
-        )->get();
+        return Cart::firstOrCreate(['user_id' => $userId],['created_by' => $created_by,'cart_from' => $data['cart_from'] ?? 'moible_app','expire_at' => now()->addDays(1),]);
     }
 
     /**
@@ -97,21 +77,11 @@ class CartRepository implements CartRepositoryInterface
      * @param integer $userId
      * @return Cart
      */
-    public function getSingleCart(int $userId ): Cart
+    public function getSingleCart(int $userId): Cart
     {
         return Cart::firstOrCreate(
             ['user_id' => $userId, 'cart_from' => 'moible_app'] //dealer/client user id
         );
-    }
-    /**
-     * getSingleCartByCartAndUserId function
-     * To get a specific user's cart by cart id and user id
-     * @param integer $userId
-     * @return Cart
-     */
-    public function getSingleCartByCartAndUserId(int $cartId,int $userId) : ?Cart
-    {
-        return Cart::where(['id' => $cartId, 'user_id' => $userId, 'cart_from' => 'moible_app'])->first();
     }
 
     public function findItem(int $cartId, int $productId, ?int $variationId): ?CartItem
@@ -223,5 +193,29 @@ class CartRepository implements CartRepositoryInterface
             'sub_total'    => $totals['sub_total'] ?? 0,
             'final_amount' => $totals['final_amount'] ?? 0,
         ]);
+    }
+
+
+    /** not using this
+     * getAllCartsByUserId function
+     * To get all carts for a specific user's by user id
+     * @param integer $userId
+     * @return Cart
+     */
+    public function getAllCartsByUserId(int $userId): ?Cart
+    {
+        return Cart::where(
+            ['user_id' => $userId, 'cart_from' => 'moible_app']
+        )->get();
+    }
+    /** not using this
+     * getSingleCartByCartAndUserId function
+     * To get a specific user's cart by cart id and user id
+     * @param integer $userId
+     * @return Cart
+     */
+    public function getSingleCartByCartAndUserId(int $cartId, int $userId): ?Cart
+    {
+        return Cart::where(['id' => $cartId, 'user_id' => $userId, 'cart_from' => 'moible_app'])->first();
     }
 }

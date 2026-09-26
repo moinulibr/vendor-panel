@@ -59,6 +59,22 @@ class SettingService
         ];
     }
 
+
+    /**
+     * durationUnit function
+     *
+     * @param string $unit
+     * @return string
+     */
+    public function durationUnit(string $unit): string
+    {
+        return match (strtolower($unit)) {
+            'minute', 'minutes' => 'minutes',
+            'hour', 'hours'     => 'hours',
+            'day', 'days'       => 'days',
+            default             => 'days',
+        };
+    }
     /**
      * Convert Expiry Value & Unit into a Future Carbon Timestamp
      * Supports: 'minutes', 'hours', 'days'
@@ -92,15 +108,14 @@ class SettingService
         ];
     }
 
-    public function durationUnit(string $unit) : string
+    /**
+     * Helper to get Calculated Cart Expiry Timestamp directly
+     */
+    public function getCartExpiresAt(): Carbon
     {
-        return match (strtolower($unit)) {
-            'minute', 'minutes' => 'minutes',
-            'hour', 'hours'     => 'hours',
-            'day', 'days'       => 'days',
-            default             => 'days',
-        };
-    } 
+        $config = $this->getCartExpiryConfig();
+        return $this->getExpiryTimestamp($config['value'], $config['unit']);
+    }
 
     /**
      * Global Quotation Expiry Rules
@@ -114,15 +129,6 @@ class SettingService
             'auto_cancel'    => true,
             'expiry_note'    => 'Quotations will automatically expire after 7 days from generation.'
         ];
-    }
-
-    /**
-     * Helper to get Calculated Cart Expiry Timestamp directly
-     */
-    public function getCartExpiresAt(): Carbon
-    {
-        $config = $this->getCartExpiryConfig();
-        return $this->getExpiryTimestamp($config['value'], $config['unit']);
     }
 
     /**

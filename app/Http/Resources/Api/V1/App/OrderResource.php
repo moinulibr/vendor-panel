@@ -12,6 +12,7 @@ class OrderResource extends JsonResource
         return [
             'id'                => $this->id,
             'invoice_no'        => $this->invoice_no,
+            'is_editable'       => true,
             'transaction_date'  => $this->transaction_date,
             'status'            => $this->status, // e.g. pending, approved, final, cancelled
             'is_quotation'      => (bool) $this->quotation,
