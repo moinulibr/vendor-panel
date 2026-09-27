@@ -1,26 +1,5 @@
+# Laravel & PHP specific
 /.phpunit.cache
-/node_modules
-/public/*
-!/public/assets/
-/public/assets/*
-!/public/assets/js/
-/public/assets/js/*
-!/public/assets/js/ajax.js
-/public/build
-/public/brands
-/public/categories
-/public/contacts
-/public/images
-/public/img
-/public/locations
-/public/products
-/public/settings
-/public/sliders
-/public/users
-/public/storage
-/storage/*.key
-/storage
-/storage/app/firebase/firebase_credentials.json
 /vendor
 /bootstrap/cache/*.php
 .env
@@ -38,3 +17,45 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Node modules
+/node_modules
+
+# Storage
+/storage/*.key
+/storage
+/storage/app/firebase/firebase_credentials.json
+
+# Public folder - Ignore everything by default
+/public/*
+
+# But DO NOT ignore these specific folders
+!/public/assets/
+!/public/assets/css/
+!/public/assets/js/
+!/public/assets/fonts/
+!/public/assets/img/
+!/public/assets/plugins/
+!/public/assets/cdn-cgi/
+
+# Inside assets/css, ignore everything EXCEPT these files
+/public/assets/css/*
+!/public/assets/css/style.css
+!/public/assets/css/pos_style.css
+
+# Inside assets/js, ignore everything EXCEPT this file
+/public/assets/js/*
+!/public/assets/js/ajax.js
+
+# Ignore other public folders (data folders)
+/public/build
+/public/brands
+/public/categories
+/public/contacts
+/public/images
+/public/img
+/public/locations
+/public/products
+/public/settings
+/public/sliders
+/public/users
