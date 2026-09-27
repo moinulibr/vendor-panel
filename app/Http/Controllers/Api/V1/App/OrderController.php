@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Requests\Api\V1\App\GetOrderSummaryReportRequest;
 use App\Http\Requests\Api\V1\App\Order\CreateQuotationRequest;
 use App\Http\Requests\Api\V1\App\Order\OrderListRequest;
 use App\Http\Requests\Api\V1\App\Order\SubmitPaymentRequest;
 use App\Http\Requests\Api\V1\App\Order\UpdateQuotationRequest;
 use App\Http\Resources\Api\V1\App\OrderResource;
+use App\Http\Resources\Api\V1\App\OrderSummaryReportResource;
 use App\Http\Swagger\OrderApiDocInterface;
 use App\Services\OrderService;
 use App\Utils\UserType;
@@ -152,6 +154,31 @@ class OrderController extends BaseApiController implements OrderApiDocInterface
                 success: false,
                 message: $e->getMessage(),
                 statusCode: 400
+            );
+        }
+    }
+
+    public function getOrderSummaryReport(GetOrderSummaryReportRequest $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            if ((int) auth()->user()->user_type === UserType::SR) {
+                $userId = $request->user_base_id;
+            }
+
+            $summaryData = $this->orderService->getOrderSummaryReport((int) $userId);
+
+            return $this->jsonResponse(
+                success: true,
+                message: 'Order summary report retrieved successfully.',
+                data: new OrderSummaryReportResource($summaryData),
+                statusCode: 200
+            );
+        } catch (Exception $e) {
+            return $this->jsonResponse(
+                success: false,
+                message: $e->getMessage(),
+                statusCode: 422
             );
         }
     }

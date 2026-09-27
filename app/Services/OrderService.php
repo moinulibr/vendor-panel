@@ -289,4 +289,106 @@ class OrderService
             'status'         => 'pending', // Requires Admin Approval
         ]);
     }
+
+
+    /**
+     * Get Aggregated Summary Report for User Transactions
+     */
+    public function getOrderSummaryReport(int $userId): array
+    {
+        // Query Sell Transactions for specific user
+        $query = \App\Models\Transaction::where('user_id', $userId)
+            ->where('type', 'sell');
+
+        $transactions = $query->get();
+
+        $totalOrders       = 0;
+        $fullPaidOrders    = 0;
+        $partialPaidOrders = 0;
+        $unpaidOrders      = 0;
+
+        $pendingOrders     = 0;
+        $processingOrders  = 0;
+        $receivedOrders    = 0;
+        $successfulOrders  = 0;
+        $cancelledOrders   = 0;
+        $totalQuotations   = 0;
+
+        $totalOrderAmount  = 0;
+        $totalPaidAmount   = 0;
+        $totalDueAmount    = 0;
+        $totalSavedAmount  = 0;
+
+        foreach ($transactions as $txn) {
+            // Count Quotations vs Real Orders
+            if ((int) $txn->quotation === 1) {
+                $totalQuotations++;
+                continue; // Quotation-কে মেইন অর্ডারের সাথে মেশানো হবে না
+            }
+
+            $totalOrders++;
+            $finalAmt = (float) $txn->final_amount;
+            $totalOrderAmount += $finalAmt;
+
+            // Total Discount / Savings Calculation
+            $saved = (float) ($txn->total_discount_amount ?? ($txn->discount_amount + $txn->coupon_discount_amount));
+            $totalSavedAmount += $saved;
+
+            // Payment Status Aggregation (Assuming relationship or payment_status column)
+            $paymentStatus = strtolower($txn->payment_status ?? 'unpaid');
+            if ($paymentStatus === 'paid') {
+                $fullPaidOrders++;
+                $totalPaidAmount += $finalAmt;
+            } elseif ($paymentStatus === 'partial') {
+                $partialPaidOrders++;
+                $paid = (float) ($txn->total_paid ?? 0);
+                $totalPaidAmount += $paid;
+                $totalDueAmount += max(0, $finalAmt - $paid);
+            } else {
+                $unpaidOrders++;
+                $totalDueAmount += $finalAmt;
+            }
+
+            // Order Delivery / Processing Status Aggregation
+            $status = strtolower($txn->status ?? 'pending');
+            switch ($status) {
+                case 'pending':
+                    $pendingOrders++;
+                    break;
+                case 'processing':
+                case 'ordered':
+                    $processingOrders++;
+                    break;
+                case 'received':
+                case 'delivered':
+                    $receivedOrders++;
+                    break;
+                case 'completed':
+                case 'successful':
+                    $successfulOrders++;
+                    break;
+                case 'cancelled':
+                case 'canceled':
+                    $cancelledOrders++;
+                    break;
+            }
+        }
+
+        return [
+            'total_orders'        => $totalOrders,
+            'full_paid_orders'    => $fullPaidOrders,
+            'partial_paid_orders' => $partialPaidOrders,
+            'unpaid_orders'       => $unpaidOrders,
+            'pending_orders'      => $pendingOrders,
+            'processing_orders'   => $processingOrders,
+            'received_orders'     => $receivedOrders,
+            'successful_orders'   => $successfulOrders,
+            'cancelled_orders'    => $cancelledOrders,
+            'total_quotations'    => $totalQuotations,
+            'total_order_amount'  => $totalOrderAmount,
+            'total_paid_amount'   => $totalPaidAmount,
+            'total_due_amount'    => $totalDueAmount,
+            'total_saved_amount'  => $totalSavedAmount,
+        ];
+    }
 }

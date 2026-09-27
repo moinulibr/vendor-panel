@@ -2,6 +2,7 @@
 
 namespace App\Http\Swagger;
 
+use App\Http\Requests\Api\V1\App\GetOrderSummaryReportRequest;
 use App\Http\Requests\Api\V1\App\Order\CreateQuotationRequest;
 use App\Http\Requests\Api\V1\App\Order\OrderListRequest;
 use App\Http\Requests\Api\V1\App\Order\SubmitPaymentRequest;
@@ -155,4 +156,57 @@ interface OrderApiDocInterface
         ]
     )]
     public function submitPayment(SubmitPaymentRequest $request, int $id);
+
+
+    #[OA\Get(
+        path: "/api/v1/app/orders/summary-report",
+        summary: "Get Customer Order Summary Report",
+        description: "Retrieves complete order and payment summary report for the logged in user or a target user (SR Mode).",
+        tags: ["Orders"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(
+                name: "user_base_id",
+                in: "query",
+                required: false,
+                description: "Target User ID (Required when logged in as SR/Admin)",
+                schema: new OA\Schema(type: "integer", example: 10)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Order summary report fetched successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "success", type: "boolean", example: true),
+                        new OA\Property(property: "message", type: "string", example: "Order summary report retrieved successfully."),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "total_orders", type: "integer", example: 15),
+                                new OA\Property(property: "full_paid_orders", type: "integer", example: 10),
+                                new OA\Property(property: "partial_paid_orders", type: "integer", example: 2),
+                                new OA\Property(property: "unpaid_orders", type: "integer", example: 3),
+                                new OA\Property(property: "pending_orders", type: "integer", example: 2),
+                                new OA\Property(property: "processing_orders", type: "integer", example: 3),
+                                new OA\Property(property: "received_orders", type: "integer", example: 8),
+                                new OA\Property(property: "successful_orders", type: "integer", example: 8),
+                                new OA\Property(property: "cancelled_orders", type: "integer", example: 1),
+                                new OA\Property(property: "total_quotations", type: "integer", example: 4),
+                                new OA\Property(property: "total_order_amount", type: "number", format: "float", example: 15000.50),
+                                new OA\Property(property: "total_paid_amount", type: "number", format: "float", example: 12000.00),
+                                new OA\Property(property: "total_due_amount", type: "number", format: "float", example: 3000.50),
+                                new OA\Property(property: "total_saved_amount", type: "number", format: "float", example: 1250.00)
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: "Unauthenticated"),
+            new OA\Response(response: 422, description: "Validation Error")
+        ]
+    )]
+    public function getOrderSummaryReport(GetOrderSummaryReportRequest $request);
 }

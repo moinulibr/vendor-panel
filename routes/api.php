@@ -122,6 +122,8 @@ Route::prefix('v1/app')->group(function () {
             Route::put('/{id}', [OrderController::class, 'update']);
             Route::post('/{id}/confirm', [OrderController::class, 'confirmOrder']);
             Route::post('/{id}/payment', [OrderController::class, 'submitPayment']);
+
+            Route::get('/summary-report', [OrderController::class, 'getOrderSummaryReport']);
         });
 
         //setting static data [temporary]

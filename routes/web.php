@@ -300,8 +300,9 @@ Route::get('/update-image-sizes', function (Request $request) {
 
 
 
-use App\Http\Controllers\DummyTest\ReportDummyController;
 
+//testing purpose
+use App\Http\Controllers\DummyTest\ReportDummyController;
 Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/dashboard',            [ReportDummyController::class, 'dashboard'])->name('dashboard');
     Route::get('/daily-sales',          [ReportDummyController::class, 'dailySales'])->name('daily-sales');
