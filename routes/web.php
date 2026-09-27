@@ -38,12 +38,6 @@ Auth::routes();
 Route::get('/privacy-policy', function () {
     return view('mobileAppWebPages.privacy-policy');
 });
-Route::get('/privacy-policy1', function () {
-    return view('mobileAppWebPages.privacy-policy1');
-});
-Route::get('/privacy-policy2', function () {
-    return view('mobileAppWebPages.privacy-policy2');
-});
 Route::get('/delete-account', function () {
     return view('mobileAppWebPages.delete-account');
 });
@@ -302,4 +296,30 @@ Route::get('/update-image-sizes', function (Request $request) {
             ? url("/update-image-sizes?limit=50")
             : null
     ]);
+});
+
+
+
+use App\Http\Controllers\DummyTest\ReportDummyController;
+
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/dashboard',            [ReportDummyController::class, 'dashboard'])->name('dashboard');
+    Route::get('/daily-sales',          [ReportDummyController::class, 'dailySales'])->name('daily-sales');
+    Route::get('/sales-by-product',     [ReportDummyController::class, 'salesByProduct'])->name('sales-by-product');
+    Route::get('/sales-by-channel',     [ReportDummyController::class, 'salesByChannel'])->name('sales-by-channel');
+    Route::get('/vendor-payout',        [ReportDummyController::class, 'vendorPayout'])->name('vendor-payout');
+    Route::get('/vendor-performance',   [ReportDummyController::class, 'vendorPerformance'])->name('vendor-performance');
+    Route::get('/commission',           [ReportDummyController::class, 'commission'])->name('commission');
+    Route::get('/inventory-movement',   [ReportDummyController::class, 'inventoryMovement'])->name('inventory-movement');
+    Route::get('/low-stock',            [ReportDummyController::class, 'lowStock'])->name('low-stock');
+    Route::get('/dead-stock',           [ReportDummyController::class, 'deadStock'])->name('dead-stock');
+    Route::get('/stock-valuation',      [ReportDummyController::class, 'stockValuation'])->name('stock-valuation');
+    Route::get('/customers',            [ReportDummyController::class, 'customers'])->name('customers');
+    Route::get('/returns',              [ReportDummyController::class, 'returns'])->name('returns');
+    Route::get('/expenses',             [ReportDummyController::class, 'expenses'])->name('expenses');
+    Route::get('/tax',                  [ReportDummyController::class, 'tax'])->name('tax');
+    Route::get('/profit-loss',          [ReportDummyController::class, 'profitLoss'])->name('profit-loss');
+    Route::get('/user-activity',        [ReportDummyController::class, 'userActivity'])->name('user-activity');
+    Route::get('/audit-log',            [ReportDummyController::class, 'auditLog'])->name('audit-log');
+    Route::get('/ledger',               [ReportDummyController::class, 'ledger'])->name('ledger');
 });
