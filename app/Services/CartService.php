@@ -78,6 +78,8 @@ class CartService
             'delivery_system' => $deliveryCharge,
             'offers'   => $offers,
             'summary' => [
+                'id'                    => $cart->id,
+                'cart_id'               => $cart->id,
                 'sub_total'             => round($itemSubtotal, 2),
                 'item_total_discount'   => round($itemTotalDiscount, 2),
                 'gross_total'           => round($grossTotal, 2),
