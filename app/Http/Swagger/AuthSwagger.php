@@ -31,7 +31,7 @@ interface AuthSwagger
                 required: ["mobile", "purpose"],
                 properties: [
                     new OA\Property(property: "mobile", type: "string", example: "01700000001"),
-                    new OA\Property(property: "purpose", type: "string", example: "login", enum: ["login", "register", "reset_password"]),
+                    new OA\Property(property: "purpose", type: "string", example: "login", enum: ["login", "register", "reset_password,delete_account"]),
                     new OA\Property(property: "check_user", type: "string", example: "exist/new", enum: ["exist", "new"])
                 ]
             )
@@ -262,7 +262,7 @@ interface AuthSwagger
                 properties: [
                     new OA\Property(property: "mobile", type: "string", example: "01700000001"),
                     new OA\Property(property: "otp", type: "string", example: "1234"),
-                    new OA\Property(property: "purpose", type: "string", example: "reset_password / register / login", enum: ["login", "register", "reset_password"])
+                    new OA\Property(property: "purpose", type: "string", example: "reset_password / register / login", enum: ["login", "register", "reset_password,delete_account"])
                 ]
             )
         ),
@@ -459,7 +459,19 @@ interface AuthSwagger
             new OA\Parameter(name: "q", in: "query", required: false, schema: new OA\Schema(type: "string"), description: "Search by dealer name, email or mobile"),
             new OA\Parameter(name: "status", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["1", "0", "active", "inactive"])),
             new OA\Parameter(name: "sort", in: "query", required: false, schema: new OA\Schema(type: "string", enum: ["asc", "desc", "latest"])),
-            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20))
+            new OA\Parameter(name: "per_page", in: "query", required: false, schema: new OA\Schema(type: "integer", default: 20)),
+            new OA\Parameter(
+                name: "user_types",
+                in: "query",
+                description: "Filter by multiple user types (e.g., user_types[]=9&user_types[]=5)",
+                required: false,
+                style: "form",
+                explode: true,
+                schema: new OA\Schema(
+                    type: "array",
+                    items: new OA\Items(type: "integer")
+                )
+            )
         ],
         responses: [
             new OA\Response(response: 200, description: "Dealer list retrieved successfully"),

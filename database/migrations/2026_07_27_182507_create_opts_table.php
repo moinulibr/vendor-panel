@@ -13,7 +13,7 @@ return new class extends Migration
                 $table->id();
                 $table->string('mobile', 15)->index();
                 $table->string('code', 6);
-                $table->string('purpose', 30); // login, register, reset_password
+                $table->string('purpose', 30); // login, register, reset_password,delete_account
                 $table->timestamp('expires_at');
                 $table->boolean('is_used')->default(false);
                 $table->tinyInteger('attempts')->default(0);

@@ -15,7 +15,7 @@ class SendOtpRequest extends FormRequest
     {
         return [
             'mobile'        => ['required', 'string', 'regex:/^(?:\+88|88)?(01[3-9]\d{8})$/'],
-            'purpose'       => ['required', 'string', 'in:login,register,reset_password'],
+            'purpose'       => ['required', 'string', 'in:login,register,reset_password,delete_account'],
             'check_user'    => ['required', 'in:exist,new']
         ];
     }

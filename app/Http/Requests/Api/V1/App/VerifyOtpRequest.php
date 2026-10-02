@@ -16,7 +16,7 @@ class VerifyOtpRequest extends FormRequest
         return [
             'mobile'  => ['required', 'string'],
             'otp'     => ['required', 'string', 'digits:4'],
-            'purpose' => ['required', 'string', 'in:login,register,reset_password'],
+            'purpose' => ['required', 'string', 'in:login,register,reset_password,delete_account'],
         ];
     }
 
