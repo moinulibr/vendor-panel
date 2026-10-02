@@ -44,7 +44,7 @@ interface ProductApiDocInterface
         tags: ["Product"],
         security: [["sanctum" => []]],
         parameters: [
-            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product ID"),
+            new OA\Parameter(name: "identifier", in: "path", required: true, schema: new OA\Schema(type: "string"), description: "Product Base ID (product_base_id"),
             new OA\Parameter(name: "user_base_id", in: "query", required: false, schema: new OA\Schema(type: "integer"), description: "When the logged-in user is a SR, they will act as a Dealer or an Exclusive client by passing their respective user_base_id."),
         ],
         responses: [
