@@ -161,6 +161,7 @@ class AuthService
     }
 
 
+    //not using this. User Profile return from direct controller. 
     public function getProfile(User $user): array
     {
         return [
