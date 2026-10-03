@@ -165,7 +165,7 @@ class AuthService
     public function getProfile(User $user): array
     {
         return [
-            'user' => $user->load('retailer'),
+            'user' => $user->load('userDetail'),
         ];
     }
 

@@ -73,7 +73,7 @@ class UserRepository implements UserRepositoryInterface
                     $userDetailData['shop_name'] = $data['shop_name'];
                 }
                 if (array_key_exists('address', $data)) {
-                    $userDetailData['address'] = $data['address'];
+                    $userDetailData['address'] = $data['address'] ?? $user->userDetail->address;
                 }
                 if (array_key_exists('trade_license', $data)) {
                     $userDetailData['trade_license'] = $data['trade_license'];
