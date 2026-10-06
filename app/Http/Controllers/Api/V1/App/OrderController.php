@@ -32,7 +32,7 @@ class OrderController extends BaseApiController implements OrderApiDocInterface
             return $this->jsonResponse(
                 success: true,
                 message: 'Orders fetched successfully.',
-                data: OrderResource::collection($orders)->response()->getData(true),
+                data: OrderResource::collection($orders), //->response()->getData(true)
                 statusCode: 200
             );
         } catch (Exception $e) {
