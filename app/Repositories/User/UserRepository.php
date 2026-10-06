@@ -45,43 +45,28 @@ class UserRepository implements UserRepositoryInterface
     public function updateProfile(User $user, array $data): User
     {
         return DB::transaction(function () use ($user, $data) {
-            // Update User Base Info
-            $userData = [
-                'name' => $data['name'],
-            ];
 
-            if (isset($data['email'])) {
-                $userData['email'] = $data['email'] ?? $user->email;
+            $userFields = ['name', 'email', 'mobile'];
+            $userData = array_filter(
+                array_intersect_key($data, array_flip($userFields)),
+                fn($value) => !is_null($value)
+            );
+
+            if (!empty($userData)) {
+                $user->update($userData);
             }
 
-            if (isset($data['mobile'])) {
-                $userData['mobile'] = $data['mobile'] ?? $user->mobile;
-            }
+            // only the fields that are present and not null
+            $detailFields = ['shop_name', 'address', 'trade_license', 'license_image'];
 
-            $user->update($userData);
+            // only the fields that are present and not null 
+            $userDetailData = array_filter(
+                array_intersect_key($data, array_flip($detailFields)),
+                fn($value) => !is_null($value)
+            );
 
-            // Update or Create Retailer Info if relevant fields are passed
-            if (
-                array_key_exists('shop_name', $data) ||
-                array_key_exists('address', $data) ||
-                array_key_exists('trade_license', $data) ||
-                array_key_exists('license_image', $data)
-            ) {
-                $userDetailData = [];
-
-                if (array_key_exists('shop_name', $data)) {
-                    $userDetailData['shop_name'] = $data['shop_name'];
-                }
-                if (array_key_exists('address', $data)) {
-                    $userDetailData['address'] = $data['address'] ?? $user->userDetail->address;
-                }
-                if (array_key_exists('trade_license', $data)) {
-                    $userDetailData['trade_license'] = $data['trade_license'];
-                }
-                if (array_key_exists('license_image', $data)) {
-                    $userDetailData['license_image'] = $data['license_image'];
-                }
-
+            //if data is not empty, then update or create user detail
+            if (!empty($userDetailData)) {
                 $user->userDetail()->updateOrCreate(
                     ['user_id' => $user->id],
                     $userDetailData
@@ -91,7 +76,55 @@ class UserRepository implements UserRepositoryInterface
             return $user->load('userDetail');
         });
 
+        
         /*
+            return DB::transaction(function () use ($user, $data) {
+                // Update User Base Info
+                $userData = [
+                    'name' => $data['name'],
+                ];
+
+                if (isset($data['email'])) {
+                    $userData['email'] = $data['email'] ?? $user->email;
+                }
+
+                if (isset($data['mobile'])) {
+                    $userData['mobile'] = $data['mobile'] ?? $user->mobile;
+                }
+
+                $user->update($userData);
+
+                // Update or Create Retailer Info if relevant fields are passed
+                if (
+                    array_key_exists('shop_name', $data) ||
+                    array_key_exists('address', $data) ||
+                    array_key_exists('trade_license', $data) ||
+                    array_key_exists('license_image', $data)
+                ) {
+                    $userDetailData = [];
+
+                    if (array_key_exists('shop_name', $data) && isset($data['shop_name'])) {
+                        $userDetailData['shop_name'] = $data['shop_name'];
+                    }
+                    if (array_key_exists('address', $data) && isset($data['address'])) {
+                        $userDetailData['address'] = $data['address'] ?? $user->userDetail->address;
+                    }
+                    if (array_key_exists('trade_license', $data) && isset($data['trade_license'])) {
+                        $userDetailData['trade_license'] = $data['trade_license'] ?? $user->userDetail->trade_license;
+                    }
+                    if (array_key_exists('license_image', $data) && isset($data['license_image'])) {
+                        $userDetailData['license_image'] = $data['license_image'] ?? $user->userDetail->license_image;
+                    }
+
+                    $user->userDetail()->updateOrCreate(
+                        ['user_id' => $user->id],
+                        $userDetailData
+                    );
+                }
+
+                return $user->load('userDetail');
+            });
+
             return DB::transaction(function () use ($user, $data) {
                 $user->update([
                     'name'   => $data['name'],
