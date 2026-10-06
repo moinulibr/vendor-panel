@@ -25,6 +25,8 @@ class CartService
 
     public function getUserCart(int $userId): array
     {
+        // TODO:  Cart items value (price) will be modify after every night 12 AM or every 5 hours later cart's items price will be updated [price taken form products table or related tables].
+
         $cart = $this->cartRepository->getOrCreateCart($userId);
         $cartItems = $cart->items()->with(['product', 'variation'])->get();
 

@@ -15,6 +15,9 @@ class CartRepository implements CartRepositoryInterface
     
     public function getOrCreateCart(int $userId, ?int $created_by = null): Cart
     {
+        // TODO:  Cart items value (price) will be modify after every night 12 AM or every 5 hours later cart's items price will be updated [price taken form products table or related tables].
+
+
         $config       = $this->settingService->getCartExpiryConfig();
         $expiresAt    = $this->settingService->getCartExpiresAt();
 
