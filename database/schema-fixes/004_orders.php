@@ -25,4 +25,14 @@ if (Schema::hasTable('orders')) {
                 ->comment('Approved User ID');
         });
     }
+    if (!Schema::hasColumn('orders', 'total_discount_amount')) {
+
+        Schema::table('orders', function (Blueprint $table) {
+
+            $table->unsignedBigInteger('total_discount_amount')
+                ->nullable()
+                ->after('status')
+                ->comment('Approved User ID');
+        });
+    }
 }
