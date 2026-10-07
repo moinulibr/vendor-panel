@@ -15,4 +15,14 @@ if (Schema::hasTable('orders')) {
                 ->comment('Approved User ID');
         });
     }
+    if (!Schema::hasColumn('orders', 'created_by')) {
+
+        Schema::table('orders', function (Blueprint $table) {
+
+            $table->unsignedBigInteger('created_by')
+                ->nullable()
+                ->after('status')
+                ->comment('Approved User ID');
+        });
+    }
 }
