@@ -18,12 +18,27 @@ class OrderDetailsResource extends JsonResource
             'is_quotation'      => (bool) $this->quotation,
             'payment_status'    => $this->payment_status,
             'pricing_summary'   => [
-                'sub_total'        => (float) $this->sub_total,
-                'discount_amount'  => (float) $this->discount_amount,
-                'shipping_charge'  => (float) $this->shipping_charge, // Negotiable Amount
-                'final_amount'     => (float) $this->final_amount,
-                'total_paid'       => (float) $this->payments->sum('amount'),
-                'due_amount'       => max(0, (float) $this->final_amount - (float) $this->payments->sum('amount')),
+                'sub_total'           => (float) $this->sub_total,
+                'item_total_discount' => (float) $this->item_total_discount,
+                'gross_total'         => (float) $this->gross_total,
+
+                'discount_type'       => (string) $this->discount_type,
+                'discount_value'     => (float) $this->discount_amount,
+                'discount_amount'      => (float) $this->order_discount,
+
+                'coupon_code'         => (string) $this->coupon_code,
+                'coupon_value'     => (float) $this->coupon_discount,
+                'coupon_discount'     => (float) $this->coupon_discount,
+                'coupon_id'           => (float) $this->coupon_discount,
+
+                'order_total_discount' => (float) $this->total_discount,
+
+                'shipping_charge'     => (float) $this->shipping_charge,
+                'final_amount'        => (float) $this->final_amount,
+
+                'total_items'         => (int) $this->total_items,
+                'total_paid'          => (float) $this->payments->sum('amount'),
+                'due_amount'          => max(0, (float) $this->final_amount - (float) $this->payments->sum('amount')),
             ],
             'note'              => $this->note,
             'vendor_orders'     => $this->whenLoaded('vendor_orders', function () {
