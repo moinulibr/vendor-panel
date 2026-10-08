@@ -419,7 +419,7 @@
 
                 @can('reports.profit_loss')
                 <li class="{{ activeMeny2('profit-loss') }}">
-                    <a href="{{ route('reports.profitLoss') }}">Profit & Loss</a>
+                    <a href="{{ route('reports.profit-loss') }}">Profit & Loss</a>
                 </li>
                 @endcan
 

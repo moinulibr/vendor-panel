@@ -77,7 +77,7 @@
     
         $('.profit_data').html('');
         $.ajax({
-            url: '{{ route("reports.profitLoss")}}?page='+page,
+            url: '{{ route("reports.profit-loss")}}?page='+page,
             type: 'GET',
             data:{q,date},
             dataType: 'html',
