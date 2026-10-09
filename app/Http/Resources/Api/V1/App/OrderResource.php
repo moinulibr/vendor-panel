@@ -20,19 +20,20 @@ class OrderResource extends JsonResource
             'payment_status'    => $this->payment_status,
             'pricing_summary'   => [
                 'sub_total'           => (float) $this->sub_total,
-                'item_total_discount' => (float) $this->item_total_discount,
-                'gross_total'         => (float) $this->gross_total,
+                'item_total_discount' => (float) $this->item_total_discount ?? 0,
+                'gross_total'         => (float) $this->gross_total ?? 0, // ekhono db te nai
 
                 'discount_type'       => (string) $this->discount_type,
-                'discount_value'     => (float) $this->discount_amount,
-                'discount_amount'      => (float) $this->order_discount,
+                'discount_value'      => (float) $this->discount_amount,
+                'discount_amount'     => (float) $this->cal_discount,
 
-                'coupon_code'         => (string) $this->coupon_code,
-                'coupon_value'     => (float) $this->coupon_discount,
-                'coupon_discount'     => (float) $this->coupon_discount,
-                'coupon_id'           => (float) $this->coupon_discount,
+                'coupon_code'         => (string) $this->coupon_code ?? 'N/L', // ekhono db te nai
+                'coupon_type'         => (string) $this->coupon_type ?? 'N/L', // ekhono db te nai
+                'coupon_value'        => (float) $this->coupon_value ?? 0, // ekhono db te nai
+                'coupon_discount_amount' => (float) $this->coupon_discount_amount ?? 0, // ekhono db te nai 
+                'coupon_id'           => (float) $this->coupon_id ?? null,
 
-                'order_total_discount' => (float) $this->total_discount,
+                'order_total_discount' => (float) $this->total_order_discount ?? 0, // ekhono db te nai
 
                 'shipping_charge'     => (float) $this->shipping_charge,
                 'final_amount'        => (float) $this->final_amount,
@@ -47,10 +48,10 @@ class OrderResource extends JsonResource
                     'id'             => $pay->id,
                     'method'         => $pay->method,
                     'amount'         => (float) $pay->amount,
-                    'transaction_no' => $pay->transaction_no,
+                    //'transaction_no' => $pay->transaction_no,
                     'paid_on'        => $pay->paid_on,
-                    'document_url'   => $pay->document_path ? asset('storage/' . $pay->document_path) : null,
-                    'status'         => $pay->status ?? 'pending'
+                    //'document_url'   => $pay->document_path ? asset('storage/' . $pay->document_path) : null,
+                    //'status'         => $pay->status ?? 'pending'
                 ]);
             }),
             'created_at'        => $this->created_at->toDateTimeString(),
