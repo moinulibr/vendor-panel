@@ -78,8 +78,30 @@ class ReportDummyController extends Controller
     {
         return view('report-dummy.audit-log');
     }
-     public function ledger()
+    public function ledger()
     {
         return view('report-dummy.ledger');
+    }
+    public function customerLedger()
+    {
+        return view('report-dummy.customer-ledger');
+    }
+
+    public function customerDueAging()
+    {
+        return view('report-dummy.customer-due-aging');
+    }
+    public function purchaseOrders()
+    {
+        return view('report-dummy.purchase-orders');
+    }
+    public function cashRegister()
+    {
+        return view('report-dummy.cash-register');
+    }
+
+    public function journalEntries()
+    {
+        return view('report-dummy.journal-entries');
     }
 }

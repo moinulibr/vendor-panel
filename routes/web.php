@@ -323,4 +323,10 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/user-activity',        [ReportDummyController::class, 'userActivity'])->name('user-activity');
     Route::get('/audit-log',            [ReportDummyController::class, 'auditLog'])->name('audit-log');
     Route::get('/ledger',               [ReportDummyController::class, 'ledger'])->name('ledger');
+    Route::get('/ledger-customer',      [ReportDummyController::class, 'ledger'])->name('customerLedger');
+    Route::get('/customer-due-aging',   [ReportDummyController::class, 'customerDueAging'])->name('customer-due-aging');
+    Route::get('/purchase-orders',      [ReportDummyController::class, 'purchaseOrders'])->name('purchase-orders');
+    Route::get('/cash-register',        [ReportDummyController::class, 'cashRegister'])->name('cash-register');
+    Route::get('/journal-entries',      [ReportDummyController::class, 'journalEntries'])->name('journal-entries');
+
 });

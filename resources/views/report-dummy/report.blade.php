@@ -31,23 +31,135 @@
 <body class="bg-gray-50 text-gray-800">
 
 <div class="flex min-h-screen">
-    {{-- Sidebar --}}
+    {{-- Sidebar / Navbar --}}
     <aside class="w-64 bg-white border-r border-gray-200 hidden md:block">
         <div class="p-5 border-b border-gray-100">
-            <h1 class="text-lg font-bold text-indigo-600">📊 ReportHub</h1>
+            <h1 class="text-lg font-bold text-indigo-600">
+                <a href="{{ route('reports.dashboard') }}">📊 ReportHub</a>
+            </h1>
         </div>
-        <nav class="p-3 space-y-1 text-sm">
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Dashboard</a>
-            <a href="#" class="block px-3 py-2 rounded-lg bg-indigo-50 text-indigo-600 font-medium">Daily Sales</a>
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Vendor Payout</a>
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Low Stock</a>
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Profit & Loss</a>
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Inventory</a>
-            <a href="#" class="block px-3 py-2 rounded-lg hover:bg-indigo-50 hover:text-indigo-600">Customers</a>
+        
+        {{-- এখানে সবগুলো রাউট ডাইনামিক করা হয়েছে এবং Active পেজ ট্র্যাক করার লজিক দেওয়া হয়েছে --}}
+        <nav class="p-3 space-y-1 text-sm overflow-y-auto max-h-[calc(100vh-80px)]">
+            
+            <a href="{{ route('reports.dashboard') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.dashboard') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Dashboard
+            </a>
+            
+            <a href="{{ route('reports.daily-sales') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.daily-sales') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Daily Sales
+            </a>
+
+            <a href="{{ route('reports.sales-by-product') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.sales-by-product') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Sales By Product
+            </a>
+
+            <a href="{{ route('reports.sales-by-channel') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.sales-by-channel') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Sales By Channel
+            </a>
+            
+            <a href="{{ route('reports.vendor-payout') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.vendor-payout') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Vendor Payout
+            </a>
+
+            <a href="{{ route('reports.vendor-performance') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.vendor-performance') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Vendor Performance
+            </a>
+
+            <a href="{{ route('reports.commission') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.commission') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Commission
+            </a>
+
+            <a href="{{ route('reports.inventory-movement') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.inventory-movement') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Inventory Movement
+            </a>
+            
+            <a href="{{ route('reports.low-stock') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.low-stock') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Low Stock
+            </a>
+
+            <a href="{{ route('reports.dead-stock') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.dead-stock') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Dead Stock
+            </a>
+
+            <a href="{{ route('reports.stock-valuation') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.stock-valuation') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Stock Valuation
+            </a>
+            
+            <a href="{{ route('reports.profit-loss') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.profit-loss') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Profit & Loss
+            </a>
+            
+            <a href="{{ route('reports.customers') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.customers') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Customers
+            </a>
+
+            <a href="{{ route('reports.returns') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.returns') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Returns
+            </a>
+
+            <a href="{{ route('reports.expenses') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.expenses') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Expenses
+            </a>
+
+            <a href="{{ route('reports.tax') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.tax') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Tax
+            </a>
+
+            <a href="{{ route('reports.user-activity') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.user-activity') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                User Activity
+            </a>
+
+            <a href="{{ route('reports.audit-log') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.audit-log') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Audit Log
+            </a>
+
+            <a href="{{ route('reports.ledger') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.ledger') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                General Ledger
+            </a>
+
+            <a href="{{ route('reports.customer-due-aging') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.customer-due-aging') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Customer Due Aging
+            </a>
+
+            <a href="{{ route('reports.purchase-orders') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.purchase-orders') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Purchase Order
+            </a>
+
+            <a href="{{ route('reports.cash-register') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.cash-register') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Cash Register
+            </a>
+
+            <a href="{{ route('reports.journal-entries') }}" 
+               class="block px-3 py-2 rounded-lg transition {{ request()->routeIs('reports.journal-entries') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'hover:bg-indigo-50 hover:text-indigo-600 text-gray-600' }}">
+                Journal Entries
+            </a>
         </nav>
     </aside>
 
-    {{-- Main --}}
+    {{-- Main Content Section --}}
     <main class="flex-1">
         {{-- Topbar --}}
         <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
