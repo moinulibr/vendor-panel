@@ -39,7 +39,6 @@
             </h1>
         </div>
         
-        {{-- এখানে সবগুলো রাউট ডাইনামিক করা হয়েছে এবং Active পেজ ট্র্যাক করার লজিক দেওয়া হয়েছে --}}
         <nav class="p-3 space-y-1 text-sm overflow-y-auto max-h-[calc(100vh-80px)]">
             
             <a href="{{ route('reports.dashboard') }}" 
