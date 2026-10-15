@@ -12,14 +12,14 @@ return new class extends Migration
         Schema::create('sale_refunds', function (Blueprint $table) {
             $table->id();
             $table->string('refund_no', 50)->unique();
-            $table->foreignId('return_id')->constrained('sale_returns')->cascadeOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
-            $table->decimal('amount', 12, 2);
-            $table->enum('method', ['cash', 'original_method', 'store_credit', 'bank', 'mobile']);
+            $table->foreignId('return_id')->comment('FK to sale_returns table');
+            $table->foreignId('customer_id')->comment('FK to users table However, for web-lead customers, the contact_id from the contacts table will be used instead.');
+            $table->decimal('amount', 12, 2)->default(0);
+            $table->enum('method', ['cash', 'original_method', 'store_credit', 'bank', 'mobile','other']);
             $table->string('reference_no', 100)->nullable();
             $table->enum('status', ['pending', 'success', 'failed'])->default('pending');
             $table->timestamp('refunded_at')->nullable();
-            $table->foreignId('refunded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('refunded_by')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
 

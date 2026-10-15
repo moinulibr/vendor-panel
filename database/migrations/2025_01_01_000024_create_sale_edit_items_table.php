@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('sale_edit_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
+            $table->foreignId('sale_id')->comment('FK to sales table');
             $table->unsignedBigInteger('sale_item_id')->nullable();
             $table->enum('change_type', ['added', 'removed', 'qty_increase', 'qty_decrease', 'price_change', 'discount_change']);
             $table->integer('old_qty')->nullable();

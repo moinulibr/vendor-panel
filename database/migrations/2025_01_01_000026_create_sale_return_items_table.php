@@ -11,11 +11,11 @@ return new class extends Migration
     {
         Schema::create('sale_return_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('return_id')->constrained('sale_returns')->cascadeOnDelete();
-            $table->foreignId('sale_item_id')->constrained('sale_items')->restrictOnDelete();
-            $table->foreignId('batch_id')->nullable()->constrained('product_batches')->nullOnDelete();
-            $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
-            $table->foreignId('variant_id')->nullable()->constrained('product_variants')->nullOnDelete();
+            $table->foreignId('return_id')->comment('FK to sale_returns table');
+            $table->foreignId('sale_item_id')->comment('FK to sale_items table');
+            $table->foreignId('batch_id')->nullable()->comment('FK to batches table');
+            $table->foreignId('product_id')->comment('FK to products table');
+            $table->foreignId('variation_id')->nullable()->comment('FK to variations table');
 
             $table->decimal('unit_price_snapshot', 12, 2);
             $table->integer('qty_returned');

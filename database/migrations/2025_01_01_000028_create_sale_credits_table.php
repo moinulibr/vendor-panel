@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('sale_credits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained('customers')->cascadeOnDelete();
-            $table->foreignId('source_return_id')->nullable()->constrained('sale_returns')->nullOnDelete();
+            $table->foreignId('customer_id')->comment('FK to users table');
+            $table->foreignId('source_return_id')->nullable()->comment('FK to sale_returns table');
             $table->decimal('amount', 12, 2);
             $table->decimal('used', 12, 2)->default(0);
             $table->decimal('balance', 12, 2);
