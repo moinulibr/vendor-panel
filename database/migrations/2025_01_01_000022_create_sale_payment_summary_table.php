@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sale_payment_summary', function (Blueprint $table) {
-            $table->foreignId('sale_id')->primary()->constrained('sales')->cascadeOnDelete();
+            $table->foreignId('sale_id')->comment('FK to sales table');
             $table->decimal('total_paid', 12, 2)->default(0);
             $table->decimal('total_refunded', 12, 2)->default(0);
             $table->decimal('net_paid', 12, 2)->default(0);

@@ -11,14 +11,14 @@ return new class extends Migration
     {
         Schema::create('sale_taxes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
-            $table->foreignId('item_id')->constrained('sale_items')->cascadeOnDelete();
-            $table->string('tax_name', 50);
+            $table->foreignId('sale_id')->nullable();
+            $table->foreignId('item_id')->nullable();
+            $table->string('tax_name', 50)->nullable();
             $table->string('tax_category', 50)->nullable();
             $table->string('hs_code', 20)->nullable();
-            $table->decimal('tax_rate', 5, 2);
-            $table->decimal('taxable_amount', 12, 2);
-            $table->decimal('tax_amount', 12, 2);
+            $table->decimal('tax_rate', 5, 2)->default(0);
+            $table->decimal('taxable_amount', 12, 2)->default(0);
+            $table->decimal('tax_amount', 12, 2)->default(0);
             $table->timestamps();
 
             $table->index('sale_id');

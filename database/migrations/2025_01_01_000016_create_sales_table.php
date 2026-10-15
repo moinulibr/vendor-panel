@@ -16,25 +16,26 @@ return new class extends Migration
             $table->boolean('is_current')->default(true);
 
             $table->string('invoice_no', 50)->unique();
-            $table->enum('channel', ['pos', 'web', 'app', 'dealer', 'sr'])->default('pos');
+            $table->enum('channel', ['pos', 'web', 'app', 'sr'])->default('pos');
             $table->string('source_ref', 100)->nullable()->comment('External order id (ecommerce/SR)');
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
-            $table->enum('customer_type', ['retail', 'regular', 'dealer'])->default('retail');
-            $table->foreignId('warehouse_id')->constrained('warehouses')->restrictOnDelete();
-            $table->foreignId('salesperson_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('customer_id')->nullable()->comment('Customer: Foreign key (FK) referencing the users.id table. However, for web-lead customers, the contact_id from the contacts table will be used instead.');
 
-            $table->enum('status', ['draft', 'confirmed', 'partially_paid', 'paid', 'overpaid', 'returned', 'cancelled'])
-                ->default('draft');
+            $table->enum('customer_type', ['regular', 'dealer','special'])->default('regular');
+            $table->foreignId('warehouse_id')->nullable();
+            $table->foreignId('sales_person_id')->nullable()->comment('FK to users table.');
 
-            $table->decimal('sub_total', 12, 2)->default(0);
-            $table->decimal('item_total_discount', 12, 2)->default(0);
-            $table->decimal('gross_total', 12, 2)->default(0);
+            $table->decimal('sub_total', 12, 2)->default(0)->comment('Calculated: sum of sub_total of all items.');
+            $table->decimal('item_total_discount', 12, 2)->default(0)->comment('Calculated: sum of item_total_discount of all items.');
+            $table->decimal('gross_total', 12, 2)->default(0)->comment('Calculated: sum of gross_total of all items.');
             $table->enum('discount_type', ['percentage', 'fixed'])->nullable();
             $table->decimal('discount_value', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
 
             $table->foreignId('coupon_id')->nullable()->constrained('coupons')->nullOnDelete();
-            $table->decimal('coupon_discount', 12, 2)->default(0);
+            $table->enum('coupon_discount_type', ['percentage', 'fixed'])->nullable();
+            $table->decimal('coupon_discount_value', 12, 2)->default(0);
+            $table->decimal('coupon_discount_amount', 12, 2)->default(0);
+
             $table->decimal('shipping_charge', 12, 2)->default(0);
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->decimal('round_off', 5, 2)->default(0);
@@ -43,11 +44,23 @@ return new class extends Migration
             $table->decimal('paid_amount', 12, 2)->default(0);
             $table->decimal('due_amount', 12, 2)->default(0);
 
+            $table->enum('status', ['draft', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
+                ->default('draft')
+                ->comment('Overall order or transaction lifecycle status');
+
+            $table->enum('payment_status', ['unpaid', 'partially_paid', 'paid', 'overpaid', 'returned'])
+                ->default('unpaid')
+                ->comment('Financial payment status of the transaction');
+
+            $table->enum('shipping_status', ['pending', 'processing', 'shipped', 'delivered', 'failed', 'returned'])
+                ->default('pending')
+                ->comment('Physical delivery or fulfillment status');
+                
             $table->string('currency', 3)->default('BDT');
             $table->decimal('exchange_rate', 10, 4)->default(1);
             $table->text('notes')->nullable();
 
-            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('created_by')->nullable()->comment('FK to users table.');
             $table->timestamps();
 
             $table->index(['customer_id', 'is_current', 'status']);

@@ -13,13 +13,13 @@ return new class extends Migration
             $table->id();
             $table->string('payment_no', 50)->unique();
             $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
-            $table->decimal('amount', 12, 2);
-            $table->enum('method', ['cash', 'card', 'bkash', 'nagad', 'rocket', 'bank', 'credit']);
+            $table->foreignId('customer_id')->nullable()->comment('FK to users table. However, for web-lead customers, the contact_id from the contacts table will be used instead.');
+            $table->decimal('amount', 12, 2)->default(0);
+            $table->enum('method', ['cash', 'card', 'bkash', 'nagad', 'rocket', 'bank', 'credit','advance', 'exchange'])->comment('credit = advance payment');
             $table->string('reference_no', 100)->nullable();
             $table->enum('status', ['pending', 'success', 'failed', 'reversed'])->default('pending');
             $table->timestamp('paid_at')->nullable();
-            $table->foreignId('received_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('received_by')->nullable()->comment('FK to users');
             $table->unsignedBigInteger('register_session_id')->nullable()->comment('FK to cash_register_sessions');
             $table->text('notes')->nullable();
             $table->timestamps();

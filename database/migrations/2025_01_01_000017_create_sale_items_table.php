@@ -11,16 +11,17 @@ return new class extends Migration
     {
         Schema::create('sale_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
-            $table->foreignId('variant_id')->nullable()->constrained('product_variants')->nullOnDelete();
-            $table->foreignId('vendor_id')->nullable()->constrained('vendors')->nullOnDelete()
-                ->comment('Multi-vendor: which vendor supplied this');
+            $table->foreignId('sale_id');
+            $table->foreignId('product_id');
+            $table->foreignId('variation_id')->nullable();
+            $table->foreignId('vendor_id')->nullable()->comment('FK to users tabel. Multi-vendor: which vendor supplied this');
 
-            $table->string('product_name_snapshot', 200);
-            $table->string('variant_label_snapshot', 100)->nullable();
+            $table->string('product_name_snapshot', 200)->nullable()->comment('Locked at sale time');
+            $table->string('variant_label_snapshot', 100)->nullable()->comment('Locked at sale time');
+            $table->string('invoice_name_snapshot', 100)->nullable()->comment('Locked at sale time');
+            $table->string('image_snapshot')->nullable()->comment('Locked at sale time');
             $table->decimal('unit_price_snapshot', 12, 2)->comment('Locked at sale time');
-            $table->enum('customer_type_snapshot', ['retail', 'regular', 'dealer'])->default('retail')
+            $table->enum('customer_type_snapshot', ['regular', 'dealer','special'])->default('regular')
                 ->comment('Which price tier was applied');
 
             $table->integer('qty');

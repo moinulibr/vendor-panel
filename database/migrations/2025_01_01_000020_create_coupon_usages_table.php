@@ -11,9 +11,9 @@ return new class extends Migration
     {
         Schema::create('coupon_usages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('coupon_id')->constrained('coupons')->restrictOnDelete();
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
+            $table->foreignId('coupon_id')->nullable();
+            $table->foreignId('sale_id')->nullable();
+            $table->foreignId('customer_id')->nullable()->nullable();
             $table->decimal('discount_applied', 12, 2);
             $table->timestamp('used_at')->useCurrent();
             $table->timestamps();

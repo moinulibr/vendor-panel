@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('sale_edit_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
+            $table->foreignId('sale_id')->comment('FK to sales table');
             $table->integer('version_from');
             $table->integer('version_to');
             $table->enum('change_type', [
@@ -21,11 +21,12 @@ return new class extends Migration
                 'price_changed',
                 'discount_changed',
                 'shipping_changed',
-                'combined'
+                'combined',
+                'other',
             ]);
             $table->decimal('delta_amount', 12, 2)->default(0);
             $table->text('reason')->nullable();
-            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('changed_by')->nullable()->comment('FK to users table');
             $table->timestamp('changed_at')->useCurrent();
             $table->timestamps();
 
