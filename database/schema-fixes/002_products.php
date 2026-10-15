@@ -139,6 +139,36 @@ if (Schema::hasTable('products')) {
         if (!hasIndex('products', 'ft_products_name')) {
             $table->fullText(['name', 'name_bangla'], 'ft_products_name');
         }
+
+        // Discount Control Policy
+        if (!Schema::hasColumn('products', 'allow_discount')) {
+            $table->boolean('allow_discount')->default(true)->after('price')->comment('Flag to check if discount is allowed on this item (true/false)');
+        }
+
+        if (!Schema::hasColumn('products', 'max_discount_percent')) {
+            $table->decimal('max_discount_percent', 5, 2)->default(0.00)->after('allow_discount')->comment('Maximum discount percentage allowed for this product, e.g., 05.00');
+        }
+
+        if (!Schema::hasColumn('products', 'min_sale_price')) {
+            $table->decimal('min_sale_price', 12, 2)->default(0.00)->after('max_discount_percent')->comment('Minimum allowable selling price floor, e.g., 80.00');
+        }
+
+        // Tax & VAT (Mushak) Compliance
+        if (!Schema::hasColumn('products', 'tax_type')) {
+            $table->enum('tax_type', ['exclusive', 'inclusive', 'exempt'])->default('exclusive')->after('min_sale_price')->comment('Tax behavior mode: exclusive, inclusive, or exempt');
+        }
+
+        if (!Schema::hasColumn('products', 'tax_rate')) {
+            $table->decimal('tax_rate', 5, 2)->default(0.00)->after('tax_type')->comment('VAT or tax rate percentage, e.g., 5.00');
+        }
+
+        if (!Schema::hasColumn('products', 'tax_category')) {
+            $table->string('tax_category')->nullable()->after('tax_rate')->comment('Tax group name for government/Mushak reporting, e.g., "Standard 5%"');
+        }
+
+        if (!Schema::hasColumn('products', 'hs_code')) {
+            $table->string('hs_code')->nullable()->after('tax_category')->comment('Harmonized System Code for customs & VAT audit, e.g., "6105.10.00"');
+        }
     });
 
     // Modify user_id via raw statement safely
@@ -232,6 +262,36 @@ if (Schema::hasTable('variations')) {
         }
         if (!Schema::hasColumn('variations', 'deleted_at')) {
             $table->softDeletes();
+        }
+
+        // Discount Controls for Variant
+        if (!Schema::hasColumn('variations', 'allow_discount')) {
+            $table->boolean('allow_discount')->default(true)->comment('Flag to determine if discounts can be applied to this variant');
+        }
+
+        if (!Schema::hasColumn('variations', 'max_discount_percent')) {
+            $table->decimal('max_discount_percent', 5, 2)->default(0.00)->comment('Maximum discount percentage allowed for this variant');
+        }
+
+        if (!Schema::hasColumn('variations', 'min_sale_price')) {
+            $table->decimal('min_sale_price', 12, 2)->default(0.00)->comment('Minimum allowed selling price threshold for this variant');
+        }
+
+        // VAT & Taxation Controls for Variant
+        if (!Schema::hasColumn('variations', 'tax_type')) {
+            $table->enum('tax_type', ['exclusive', 'inclusive', 'exempt'])->default('exclusive')->comment('Variant specific VAT behavior');
+        }
+
+        if (!Schema::hasColumn('variations', 'tax_rate')) {
+            $table->decimal('tax_rate', 5, 2)->default(0.00)->comment('Variant specific VAT percentage');
+        }
+
+        if (!Schema::hasColumn('variations', 'tax_category')) {
+            $table->string('tax_category')->nullable()->comment('Tax classification category for Mushak reporting');
+        }
+
+        if (!Schema::hasColumn('variations', 'hs_code')) {
+            $table->string('hs_code')->nullable()->comment('Harmonized System Code for customs/Mushak reporting');
         }
 
         // Indexes for Variations
