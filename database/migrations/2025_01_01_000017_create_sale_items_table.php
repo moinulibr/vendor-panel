@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('sale_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id');
-            $table->foreignId('product_id');
+            $table->foreignId('sale_id')->comment('FK to sales table');
+            $table->foreignId('product_id')->comment('FK to products table');
             $table->foreignId('variation_id')->nullable();
             $table->foreignId('vendor_id')->nullable()->comment('FK to users tabel. Multi-vendor: which vendor supplied this');
 

@@ -11,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('sale_taxes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->nullable();
-            $table->foreignId('item_id')->nullable();
+            $table->foreignId('sale_id')->nullable()->comment('FK to sales table');
+            $table->foreignId('sale_item_id')->nullable()->comment('FK to sale_items table');
             $table->string('tax_name', 50)->nullable();
             $table->string('tax_category', 50)->nullable();
             $table->string('hs_code', 20)->nullable();

@@ -12,11 +12,11 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('parent_id')->nullable()->comment('Original sale id when this is an edited version');
-            $table->integer('version')->default(1);
-            $table->boolean('is_current')->default(true);
+            $table->integer('version')->default(1)->comment('Version number like- 1,2,3...');
+            $table->boolean('is_current')->default(true)->comment('1 = active version, 0 = history');
 
-            $table->string('invoice_no', 50)->unique();
-            $table->enum('channel', ['pos', 'web', 'app', 'sr'])->default('pos');
+            $table->string('invoice_no', 50)->nullable()->unique()->comment('Auto-generated invoice number');
+            $table->enum('channel', ['pos', 'web', 'moible_dealer_app', 'sr'])->default('pos');
             $table->string('source_ref', 100)->nullable()->comment('External order id (ecommerce/SR)');
             $table->foreignId('customer_id')->nullable()->comment('Customer: Foreign key (FK) referencing the users.id table. However, for web-lead customers, the contact_id from the contacts table will be used instead.');
 

@@ -24,7 +24,7 @@ return new class extends Migration
                 'combined',
                 'other',
             ]);
-            $table->decimal('delta_amount', 12, 2)->default(0);
+            $table->decimal('delta_amount', 12, 2)->default(0)->comment('Change in amount');
             $table->text('reason')->nullable();
             $table->foreignId('changed_by')->nullable()->comment('FK to users table');
             $table->timestamp('changed_at')->useCurrent();

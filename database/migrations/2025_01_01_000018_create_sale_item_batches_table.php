@@ -11,9 +11,9 @@ return new class extends Migration
     {
         Schema::create('sale_item_batches', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id');
-            $table->foreignId('sale_item_id');
-            $table->foreignId('batch_id');
+            $table->foreignId('sale_id')->comment('FK to sales table');
+            $table->foreignId('sale_item_id')->comment('FK to sale_items table');
+            $table->foreignId('batch_id')->comment('FK to batches table');
             $table->integer('qty_used');
             $table->decimal('unit_cost', 12, 2)->comment('Batch cost price');
             $table->decimal('cost_total', 12, 2)->comment('qty_used × unit_cost = COGS for this allocation');

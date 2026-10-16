@@ -11,9 +11,9 @@ return new class extends Migration
     {
         Schema::create('coupon_usages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('coupon_id')->nullable();
-            $table->foreignId('sale_id')->nullable();
-            $table->foreignId('customer_id')->nullable()->nullable();
+            $table->foreignId('coupon_id')->nullable()->comment('FK to coupons table');
+            $table->foreignId('sale_id')->nullable()->comment('FK to sales table');
+            $table->foreignId('customer_id')->nullable()->nullable()->comment('FK to users table');
             $table->decimal('discount_applied', 12, 2);
             $table->timestamp('used_at')->useCurrent();
             $table->timestamps();
