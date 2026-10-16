@@ -11,12 +11,14 @@ return new class extends Migration
     {
         Schema::create('sale_credits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->comment('FK to users table');
-            $table->foreignId('source_return_id')->nullable()->comment('FK to sale_returns table');
-            $table->decimal('amount', 12, 2);
-            $table->decimal('used', 12, 2)->default(0);
-            $table->decimal('balance', 12, 2);
-            $table->timestamp('expires_at')->nullable();
+            $table->foreignId('customer_id')->comment('FK to users table (credit owner)');
+            $table->foreignId('source_return_id')->nullable()->comment('FK to sale_returns (source of credit)');
+
+            $table->decimal('amount', 12, 2)->comment('Credit issued');
+            $table->decimal('used', 12, 2)->default(0)->comment('Amount already used');
+            $table->decimal('balance', 12, 2)->comment('amount - used');
+
+            $table->timestamp('expires_at')->nullable()->comment('Credit expiry (if any)');
             $table->timestamps();
 
             $table->index(['customer_id', 'balance']);

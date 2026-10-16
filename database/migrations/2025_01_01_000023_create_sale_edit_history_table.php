@@ -11,9 +11,10 @@ return new class extends Migration
     {
         Schema::create('sale_edit_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sale_id')->comment('FK to sales table');
-            $table->integer('version_from');
-            $table->integer('version_to');
+            $table->foreignId('sale_id')->comment('FK to sales table (original sale id)');
+            $table->integer('version_from')->comment('From version');
+            $table->integer('version_to')->comment('To version');
+
             $table->enum('change_type', [
                 'qty_changed',
                 'item_added',
@@ -23,9 +24,10 @@ return new class extends Migration
                 'shipping_changed',
                 'combined',
                 'other',
-            ]);
-            $table->decimal('delta_amount', 12, 2)->default(0)->comment('Change in amount');
-            $table->text('reason')->nullable();
+            ])->comment('What type of edit was made');
+
+            $table->decimal('delta_amount', 12, 2)->default(0)->comment('Change in final_amount (new - old)');
+            $table->text('reason')->nullable()->comment('Why was the edit made');
             $table->foreignId('changed_by')->nullable()->comment('FK to users table');
             $table->timestamp('changed_at')->useCurrent();
             $table->timestamps();

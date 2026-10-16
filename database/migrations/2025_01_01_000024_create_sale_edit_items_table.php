@@ -12,18 +12,22 @@ return new class extends Migration
         Schema::create('sale_edit_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sale_id')->comment('FK to sales table');
-            $table->unsignedBigInteger('sale_item_id')->nullable();
+            $table->unsignedBigInteger('sale_item_id')->nullable()->comment('FK to sale_items (null for added/removed)');
+
             $table->enum('change_type', ['added', 'removed', 'qty_increase', 'qty_decrease', 'price_change', 'discount_change']);
+
             $table->integer('old_qty')->nullable();
             $table->integer('new_qty')->nullable();
             $table->decimal('old_price', 12, 2)->nullable();
             $table->decimal('new_price', 12, 2)->nullable();
             $table->decimal('old_discount', 12, 2)->nullable();
             $table->decimal('new_discount', 12, 2)->nullable();
+
             $table->timestamp('changed_at')->useCurrent();
             $table->timestamps();
 
             $table->index('sale_id');
+            $table->index('sale_item_id');
         });
     }
 

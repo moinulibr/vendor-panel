@@ -10,12 +10,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sale_payment_summary', function (Blueprint $table) {
-            $table->foreignId('sale_id')->comment('FK to sales table');
-            $table->decimal('total_paid', 12, 2)->default(0);
-            $table->decimal('total_refunded', 12, 2)->default(0);
-            $table->decimal('net_paid', 12, 2)->default(0);
+            $table->id();
+            $table->foreignId('sale_id')->comment('FK to sales table — also PK'); // FIXED: added primary()
+            $table->decimal('total_paid', 12, 2)->default(0)->comment('Sum of successful sale_payments');
+            $table->decimal('total_refunded', 12, 2)->default(0)->comment('Sum of successful sale_refunds');
+            $table->decimal('net_paid', 12, 2)->default(0)->comment('total_paid - total_refunded');
             $table->timestamp('last_payment_at')->nullable();
-            $table->integer('payment_count')->default(0);
+            $table->integer('payment_count')->default(0)->comment('Count of payments');
             $table->timestamps();
         });
     }

@@ -11,23 +11,28 @@ return new class extends Migration
     {
         Schema::create('sale_returns', function (Blueprint $table) {
             $table->id();
-            $table->string('return_no', 50)->unique();
-            $table->foreignId('sale_id')->comment('FK to sales table');
-            $table->foreignId('customer_id')->nullable()->comment('FK to users table However, for web-lead customers, the contact_id from the contacts table will be used instead.');
-            $table->foreignId('warehouse_id')->comment('FK to warehouses table [it will be used as locations table]');
+            $table->string('return_no', 50)->unique()->comment('Auto-generated return number');
+            $table->foreignId('sale_id')->comment('FK to sales table (original sale)');
 
-            $table->enum('return_type', ['full', 'partial', 'exchange']);
-            $table->decimal('subtotal_refund', 12, 2)->default(0);
-            $table->decimal('item_disc_reversal', 12, 2)->default(0);
-            $table->decimal('inv_disc_reversal', 12, 2)->default(0);
-            $table->decimal('tax_reversal', 12, 2)->default(0);
-            $table->decimal('shipping_refund', 12, 2)->default(0);
-            $table->decimal('restocking_fee', 12, 2)->default(0)->comment('Fee deducted from refunds for returned items (usually 10-20%)');
-            $table->decimal('total_refund', 12, 2)->default(0);
+            $table->foreignId('customer_id')->nullable()
+                ->comment('FK to users.id. For web-lead customers, use contacts.id.');
 
-            $table->enum('settlement_type', ['cash', 'original_method', 'store_credit', 'exchange']);
+            $table->foreignId('warehouse_id')->comment('FK to warehouses — where returned stock goes');
+
+            $table->enum('return_type', ['full', 'partial', 'exchange'])->comment('Full/partial/exchange');
+            $table->decimal('subtotal_refund', 12, 2)->default(0)->comment('Sum of returned line subtotals');
+            $table->decimal('item_disc_reversal', 12, 2)->default(0)->comment('Item-level discount reversal');
+            $table->decimal('inv_disc_reversal', 12, 2)->default(0)->comment('Invoice discount reversal');
+            $table->decimal('tax_reversal', 12, 2)->default(0)->comment('VAT reversal');
+            $table->decimal('shipping_refund', 12, 2)->default(0)->comment('Shipping refund (usually full return)');
+            $table->decimal('restocking_fee', 12, 2)->default(0)->comment('Fee deducted (10-20% policy)');
+            $table->decimal('total_refund', 12, 2)->default(0)->comment('Final refund amount');
+
+            $table->enum('settlement_type', ['cash', 'original_method', 'store_credit', 'exchange'])
+                ->comment('How is customer getting compensated?');
             $table->enum('status', ['pending', 'completed', 'cancelled'])->default('pending');
             $table->text('reason')->nullable();
+
             $table->foreignId('created_by')->nullable()->comment('FK to users table');
             $table->timestamps();
 
