@@ -69,6 +69,10 @@ return new class extends Migration
             $table->decimal('exchange_rate', 10, 4)->default(1);
             $table->text('notes')->nullable();
 
+            $table->boolean('is_editable_for_admin')->default(true)->comment('Can this sale be edited?');
+            $table->boolean('is_editable_for_staff')->default(true)->comment('Can this sale be edited?');
+            $table->boolean('is_editable_for_customer')->default(true)->comment('Can this sale be edited?');
+            
             $table->foreignId('created_by')->nullable()->comment('FK to users table');
             $table->timestamps();
 

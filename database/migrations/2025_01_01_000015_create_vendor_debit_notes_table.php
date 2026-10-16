@@ -1,5 +1,5 @@
 <?php
-// 2025_01_01_000015_create_vendor_debit_notes_table.php
+// 2025_01_01_000018_create_vendor_debit_notes_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,12 +11,19 @@ return new class extends Migration
     {
         Schema::create('vendor_debit_notes', function (Blueprint $table) {
             $table->id();
-            $table->string('debit_note_no', 50)->unique();
-            $table->foreignId('vendor_id')->constrained('vendors')->restrictOnDelete();
-            $table->foreignId('return_id')->constrained('purchase_returns')->cascadeOnDelete();
-            $table->decimal('amount', 12, 2);
-            $table->enum('status', ['open', 'applied', 'closed'])->default('open');
-            $table->foreignId('applied_to_bill_id')->nullable()->constrained('purchase_bills')->nullOnDelete();
+            $table->string('debit_note_no', 50)->unique()->comment('Unique debit note number (DN-2025-0001)');
+            $table->foreignId('vendor_id')->comment('FK to vendors');
+            $table->foreignId('return_id')->nullable()->comment('FK to purchase_returns (source)');
+
+            $table->decimal('amount', 14, 2)->comment('Debit note amount');
+            $table->enum('status', ['open', 'applied', 'closed'])->default('open')
+                ->comment('open = not yet applied, applied = adjusted to bill, closed = settled');
+            $table->foreignId('applied_to_bill_id')->nullable()->comment('FK to purchase_bills — which bill it was applied to');
+            $table->timestamp('applied_at')->nullable();
+
+            $table->text('reason')->nullable();
+            $table->text('notes')->nullable();
+            $table->foreignId('created_by')->nullable()->comment('FK to users');
             $table->timestamps();
 
             $table->index(['vendor_id', 'status']);

@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::create('batch_summaries', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('batch_id')->unique()->comment('FK to batches table (one summary per batch)');
+            $table->foreignId('product_batch_id')->unique()->comment('FK to product_batches table (one summary per batch)');
             $table->foreignId('product_id')->comment('FK to products (denormalized for fast reports)');
             $table->foreignId('variation_id')->nullable()->comment('FK to product_variations');
             $table->foreignId('warehouse_id')->comment('FK to warehouses');

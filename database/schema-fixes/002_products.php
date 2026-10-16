@@ -140,9 +140,14 @@ if (Schema::hasTable('products')) {
             $table->fullText(['name', 'name_bangla'], 'ft_products_name');
         }
 
+        // Return Policy
+        if (!Schema::hasColumn('products', 'is_returnable')) {
+            $table->boolean('is_returnable')->default(true)->after('price')->comment('Flag to check if product is returnable or not. (true/false)');
+        }
+
         // Discount Control Policy
         if (!Schema::hasColumn('products', 'allow_discount')) {
-            $table->boolean('allow_discount')->default(true)->after('price')->comment('Flag to check if discount is allowed on this item (true/false)');
+            $table->boolean('allow_discount')->default(true)->after('is_returnable')->comment('Flag to check if discount is allowed on this item (true/false)');
         }
 
         if (!Schema::hasColumn('products', 'max_discount_percent')) {
@@ -260,8 +265,15 @@ if (Schema::hasTable('variations')) {
         if (!Schema::hasColumn('variations', 'status')) {
             $table->tinyInteger('status')->default(3)->comment('Variant Product Status -> 0 = deleted, 1 = Active, 2 = Inactive, 3 = Draft, 4 = Archived');
         }
+
+        
         if (!Schema::hasColumn('variations', 'deleted_at')) {
             $table->softDeletes();
+        }
+
+
+        if (!Schema::hasColumn('variations', 'is_returnable')) {
+            $table->boolean('is_returnable')->default(true)->after('status')->comment('Flag to check if product is returnable or not. (true/false)');
         }
 
         // Discount Controls for Variant

@@ -1,5 +1,5 @@
 <?php
-// 2025_01_01_000009_create_purchase_bill_edit_history_table.php
+// 2025_01_01_000012_create_purchase_bill_edit_history_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -11,9 +11,10 @@ return new class extends Migration
     {
         Schema::create('purchase_bill_edit_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('bill_id')->constrained('purchase_bills')->cascadeOnDelete();
-            $table->integer('version_from');
-            $table->integer('version_to');
+            $table->foreignId('bill_id')->comment('FK to purchase_bills (original bill id)');
+            $table->integer('version_from')->comment('From version');
+            $table->integer('version_to')->comment('To version');
+
             $table->enum('change_type', [
                 'qty_changed',
                 'item_added',
@@ -21,11 +22,14 @@ return new class extends Migration
                 'price_changed',
                 'discount_changed',
                 'freight_changed',
-                'combined'
-            ]);
-            $table->decimal('delta_amount', 12, 2)->default(0);
-            $table->text('reason')->nullable();
-            $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
+                'tax_changed',
+                'combined',
+                'other',
+            ])->comment('Type of edit');
+
+            $table->decimal('delta_amount', 12, 2)->default(0)->comment('Change in total_amount (new - old)');
+            $table->text('reason')->nullable()->comment('Why was edit made');
+            $table->foreignId('changed_by')->nullable()->comment('FK to users');
             $table->timestamp('changed_at')->useCurrent();
             $table->timestamps();
 
