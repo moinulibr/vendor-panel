@@ -72,11 +72,10 @@ return new class extends Migration
     private function applyColumnDefinitions(string $table, array $defs): void
     {
         foreach ($defs as $col => [$type, $null, $default, $comment]) {
+            $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
+            $commentSql = addslashes($comment);
             if (!Schema::hasColumn($table, $col)){
                 try {
-                    $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
-                    $commentSql = addslashes($comment);
-
                     DB::statement(
                         "ALTER TABLE `{$table}` ADD `{$col}` {$type } {$null} {$defaultSql} COMMENT '{$commentSql}}'"
                     );
@@ -85,8 +84,6 @@ return new class extends Migration
                 } 
             }else{
                 try {
-                    $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
-                    $commentSql = addslashes($comment);
                     DB::statement(
                         "ALTER TABLE `{$table}` MODIFY `{$col}` {$type} {$null} {$defaultSql} COMMENT '{$commentSql}'"
                     );
