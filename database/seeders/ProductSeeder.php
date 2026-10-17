@@ -150,7 +150,7 @@ class ProductSeeder extends Seeder
                 'is_mobile_app' => 1,
                 'is_feature' => rand(0, 1),
                 'is_reco' => rand(0, 1),
-                'is_new' => 1,
+                'is_new' => 0,
 
                 // Audit
                 'created_at' => $now,
