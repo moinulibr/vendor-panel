@@ -72,15 +72,27 @@ return new class extends Migration
     private function applyColumnDefinitions(string $table, array $defs): void
     {
         foreach ($defs as $col => [$type, $null, $default, $comment]) {
-            if (!Schema::hasColumn($table, $col)) continue;
-            try {
-                $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
-                $commentSql = addslashes($comment);
-                DB::statement(
-                    "ALTER TABLE `{$table}` MODIFY `{$col}` {$type} {$null} {$defaultSql} COMMENT '{$commentSql}'"
-                );
-            } catch (\Exception $e) {
-                Log::warning("MODIFY failed {$table}.{$col}: " . $e->getMessage());
+            if (!Schema::hasColumn($table, $col)){
+                try {
+                    $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
+                    $commentSql = addslashes($comment);
+
+                    DB::statement(
+                        "ALTER TABLE `{$table}` ADD `{$col}` {$type } {$null} {$defaultSql} COMMENT '{$commentSql}}'"
+                    );
+                } catch (\Exception $e) {
+                    Log::warning("ADD column failed {\$table}.{col: " . $e->getMessage());
+                } 
+            }else{
+                try {
+                    $defaultSql = $default !== null ? "DEFAULT {$default}" : '';
+                    $commentSql = addslashes($comment);
+                    DB::statement(
+                        "ALTER TABLE `{$table}` MODIFY `{$col}` {$type} {$null} {$defaultSql} COMMENT '{$commentSql}'"
+                    );
+                } catch (\Exception $e) {
+                    Log::warning("MODIFY failed {$table}.{$col}: " . $e->getMessage());
+                }
             }
         }
     }
