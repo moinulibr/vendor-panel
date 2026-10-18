@@ -93,6 +93,7 @@ class ProductSeeder extends Seeder
             // 2. Base Data Preparation
             $item = $sanitaryItems[array_rand($sanitaryItems)];
             $productName = $item['name'] . ' - ' . Str::random(4);
+            $banglaName = $item['bn'] . ' - ' . Str::random(4);
             $sku = 'SKU-' . strtoupper(Str::random(8));
             $slug = Str::slug($productName) . '-' . time() . rand(10, 99);
             $sellPrice = rand(10000, 500000) / 100; // 100.00 to 5000.00
@@ -111,7 +112,9 @@ class ProductSeeder extends Seeder
             $productId = DB::table('products')->insertGetId([
                 // Basic Info
                 'name' => $productName,
-                'name_bangla' => $item['bn'],
+                'invoice_name' => $productName,
+                'name_bangla' => $banglaName,
+                'invoice_name_bangla' => $banglaName,
                 'image' => $item['image'],
                 'slug' => $slug,
                 'sku' => $sku,
@@ -130,8 +133,8 @@ class ProductSeeder extends Seeder
                 'is_service' => $isService,
                 'is_digital' => false,
                 'track_stock' => $trackStock,
-                'track_batch' => false,
-                'track_expiry' => false,
+                'track_batch' => true,
+                'track_expiry' => true,
                 'track_serial' => false,
                 'is_purchasable' => true,
                 'is_sellable' => true,
@@ -271,8 +274,8 @@ class ProductSeeder extends Seeder
                         'stock_quantity' => rand(10, 200),
                         'stock_reserved' => 0,
                         'stock_alert' => 5.00,
-                        'track_batch' => false,
-                        'track_expiry' => false,
+                        'track_batch' => true,
+                        'track_expiry' => true,
                         'track_serial' => false,
 
                         'weight' => rand(100, 500) / 100,
