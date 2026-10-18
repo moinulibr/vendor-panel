@@ -77,7 +77,7 @@ return new class extends Migration
             if (!Schema::hasColumn($table, $col)){
                 try {
                     DB::statement(
-                        "ALTER TABLE `{$table}` ADD `{$col}` {$type } {$null} {$defaultSql} COMMENT '{$commentSql}}'"
+                        "ALTER TABLE `{$table}` ADD `{$col}` {$type } {$null} {$defaultSql} COMMENT '{$commentSql}'"
                     );
                 } catch (\Exception $e) {
                     Log::warning("ADD column failed {\$table}.{col: " . $e->getMessage());

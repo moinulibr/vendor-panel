@@ -256,7 +256,7 @@ return new class extends Migration
                     "UPDATE variations 
                      SET attribute_hash = MD5(COALESCE(attribute, '')) 
                      WHERE attribute_hash IS NULL 
-                       AND attribute IS NULL 
+                       AND attribute IS NOT NULL 
                        AND attribute != ''"
                 );
             } catch (\Exception $e) {
