@@ -48,7 +48,7 @@ return new class extends Migration
 
                 try {
                     DB::statement(
-                        "ALTER TABLE `{$table}` MODIFY `{$col}` TINYINT(1) NOT NULL DEFAULT {$default} COMMENT '{$comment}'"
+                        "ALTER TABLE `{$table}` MODIFY `{$col}` TINYINT(1) NULL DEFAULT {$default} COMMENT '{$comment}'"
                     );
                 } catch (\Exception $e) {
                     Log::warning("MODIFY failed {$table}.{$col}: " . $e->getMessage());
@@ -104,7 +104,7 @@ return new class extends Migration
         // PHASE 1: BOOLEAN COLUMNS (handle exist/missing)
         // ============================================================
         $this->ensureBooleanColumns('variations', [
-            'is_single_type'                => ['default' => 0, 'comment' => '1 = single fallback variation'],
+            'is_single_type'                => ['default' => 1, 'comment' => '1 = single fallback variation'],
             'is_default_selected_variation' => ['default' => 0, 'comment' => '1 = default selected variation'],
             'return_available'              => ['default' => 1, 'comment' => 'Can be returned'],
             'allow_discount'                => ['default' => 1, 'comment' => 'Discount allowed on this variant'],
@@ -118,23 +118,23 @@ return new class extends Migration
         // ============================================================
         $this->applyColumnDefinitions('variations', [
             // ---- Basic Info ----
-            'product_id'                => ['BIGINT UNSIGNED', 'NOT NULL', null, 'FK to products (parent)'],
+            'product_id'                => ['BIGINT UNSIGNED', 'NULL', null, 'FK to products (parent)'],
             'name'                      => ['VARCHAR(255)', 'NULL', null, 'Variation display name (e.g. Red / M)'],
             'attribute'                 => ['TEXT', 'NULL', null, 'Variation attributes (JSON or text)'],
             'slug'                      => ['VARCHAR(255)', 'NULL', null, 'SEO-friendly slug'],
             'sub_sku'                   => ['VARCHAR(255)', 'NULL', null, 'Variant-specific SKU'],
 
             // ---- Pricing ----
-            'purchase_price'            => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Variant purchase cost'],
-            'sell_price'                => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Variant selling price'],
-            'mrp'                       => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Maximum retail price'],
-            'retail_price'              => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Retail price tier'],
-            'dealer_price'              => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Dealer price tier'],
-            'wholesale_price'           => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Wholesale price tier'],
-            'vendor_purchase_price'     => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor purchase price'],
-            'vendor_base_price'         => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor base price'],
-            'vendor_wholesale_price'    => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor wholesale price'],
-            'vendor_mrp'                => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor MRP'],
+            'purchase_price'            => ['DECIMAL(12,2)', 'NULL', '0.00', 'Variant purchase cost'],
+            'sell_price'                => ['DECIMAL(12,2)', 'NULL', '0.00', 'Variant selling price'],
+            'mrp'                       => ['DECIMAL(12,2)', 'NULL', '0.00', 'Maximum retail price'],
+            'retail_price'              => ['DECIMAL(12,2)', 'NULL', '0.00', 'Retail price tier'],
+            'dealer_price'              => ['DECIMAL(12,2)', 'NULL', '0.00', 'Dealer price tier'],
+            'wholesale_price'           => ['DECIMAL(12,2)', 'NULL', '0.00', 'Wholesale price tier'],
+            'vendor_purchase_price'     => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor purchase price'],
+            'vendor_base_price'         => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor base price'],
+            'vendor_wholesale_price'    => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor wholesale price'],
+            'vendor_mrp'                => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor MRP'],
             'last_price_updated_date'   => ['TIMESTAMP', 'NULL', null, 'Last price change timestamp'],
             'before_updated_prices'     => ['JSON', 'NULL', null, 'Historical prices snapshot'],
 
@@ -146,25 +146,25 @@ return new class extends Migration
             'custom_code'               => ['VARCHAR(255)', 'NULL', null, 'Internal custom code'],
 
             // ---- Status ----
-            'status'                    => ['TINYINT', 'NOT NULL', '1', '0=deleted, 1=active, 2=inactive'],
+            'status'                    => ['TINYINT', 'NULL', '1', '0=deleted, 1=active, 2=inactive'],
 
             // ---- Discount Policy ----
-            'max_discount_percent'      => ['DECIMAL(5,2)', 'NOT NULL', '0.00', 'Max discount % allowed'],
-            'min_sale_price'            => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Minimum floor price'],
+            'max_discount_percent'      => ['DECIMAL(5,2)', 'NULL', '0.00', 'Max discount % allowed'],
+            'min_sale_price'            => ['DECIMAL(12,2)', 'NULL', '0.00', 'Minimum floor price'],
 
             // ---- Tax & VAT (Mushak) ----
-            'tax_type'                  => ["ENUM('exclusive','inclusive','exempt')", 'NOT NULL', "'exclusive'", 'VAT behavior mode'],
-            'tax_rate'                  => ['DECIMAL(5,2)', 'NOT NULL', '0.00', 'VAT rate %'],
+            'tax_type'                  => ["ENUM('exclusive','inclusive','exempt')", 'NULL', "'exclusive'", 'VAT behavior mode'],
+            'tax_rate'                  => ['DECIMAL(5,2)', 'NULL', '0.00', 'VAT rate %'],
             'tax_category'              => ['VARCHAR(255)', 'NULL', null, 'Tax group for Mushak reporting'],
             'hs_code'                   => ['VARCHAR(255)', 'NULL', null, 'Harmonized System Code'],
 
             // ---- Stock & Shipping ----
-            'stock_quantity'            => ['INT', 'NOT NULL', '0', 'Current stock quantity'],
-            'weight'                    => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Weight in kg'],
-            'length'                    => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Length in cm'],
-            'width'                     => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Width in cm'],
-            'height'                    => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Height in cm'],
-            'sort_order'                => ['INT', 'NOT NULL', '0', 'Display order'],
+            'stock_quantity'            => ['INT', 'NULL', '0', 'Current stock quantity'],
+            'weight'                    => ['DECIMAL(8,2)', 'NULL', '0.00', 'Weight in kg'],
+            'length'                    => ['DECIMAL(8,2)', 'NULL', '0.00', 'Length in cm'],
+            'width'                     => ['DECIMAL(8,2)', 'NULL', '0.00', 'Width in cm'],
+            'height'                    => ['DECIMAL(8,2)', 'NULL', '0.00', 'Height in cm'],
+            'sort_order'                => ['INT', 'NULL', '0', 'Display order'],
         ]);
 
         // ============================================================
@@ -256,7 +256,7 @@ return new class extends Migration
                     "UPDATE variations 
                      SET attribute_hash = MD5(COALESCE(attribute, '')) 
                      WHERE attribute_hash IS NULL 
-                       AND attribute IS NOT NULL 
+                       AND attribute IS NULL 
                        AND attribute != ''"
                 );
             } catch (\Exception $e) {
@@ -270,7 +270,7 @@ return new class extends Migration
         if (!Schema::hasTable('variations')) return;
 
         // Only drop columns that were ADDED by this migration
-        // (pre-existing columns NOT touched, so no data loss)
+        // (pre-existing columns touched, so no data loss)
         $columnsToDrop = [
             'attribute_hash',
             'stock_reserved',
@@ -297,7 +297,7 @@ return new class extends Migration
             });
         }
 
-        // NOTE: Type conversions (int → tinyint) NOT reverted.
+        // NOTE: Type conversions (int → tinyint) reverted.
         // Reason: tinyint(1) values 0/1 fit perfectly in int, no data loss.
     }
 };

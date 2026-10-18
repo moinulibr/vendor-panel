@@ -45,7 +45,7 @@ return new class extends Migration
 
                 try {
                     DB::statement(
-                        "ALTER TABLE `{$table}` MODIFY `{$col}` TINYINT(1) NOT NULL DEFAULT {$default} COMMENT '{$comment}'"
+                        "ALTER TABLE `{$table}` MODIFY `{$col}` TINYINT(1)  NULL DEFAULT {$default} COMMENT '{$comment}'"
                     );
                 } catch (\Exception $e) {
                     Log::warning("MODIFY failed {$table}.{$col}: " . $e->getMessage());
@@ -118,11 +118,13 @@ return new class extends Migration
         // ============================================================
         $this->applyColumnDefinitions('products', [
             // Basic
-            'name'                    => ['VARCHAR(255)', 'NOT NULL', null, 'Product display name'],
+            'name'                    => ['VARCHAR(255)', 'NULL', null, 'Product display name'],
+            'invoice_name'            => ['VARCHAR(255)', 'NULL', null, 'Invoice name'],
             'name_bangla'             => ['VARCHAR(255)', 'NULL', null, 'Bangla product name'],
+            'invoice_name_bangla'     => ['VARCHAR(255)', 'NULL', null, 'Bangla product name for invoice'],
             'image'                   => ['VARCHAR(255)', 'NULL', null, 'Main image URL (relative path)'],
             'video'                   => ['VARCHAR(255)', 'NULL', null, 'Product video URL'],
-            'type'                    => ['VARCHAR(50)', 'NOT NULL', null, 'LEGACY: single or variable'],
+            'type'                    => ['VARCHAR(50)',  'NULL', null, 'LEGACY: single or variable'],
             'barcode'                 => ['VARCHAR(255)', 'NULL', null, 'Barcode / EAN / UPC'],
             'mpn'                     => ['VARCHAR(255)', 'NULL', null, 'Manufacturer Part Number'],
             'custom_code'             => ['VARCHAR(255)', 'NULL', null, 'Internal custom code'],
@@ -130,40 +132,40 @@ return new class extends Migration
             'specification'           => ['TEXT', 'NULL', null, 'Technical specifications'],
 
             // Relations
-            'stock_alert'             => ['DECIMAL(8,2)', 'NOT NULL', '1.00', 'Low-stock alert threshold'],
+            'stock_alert'             => ['DECIMAL(8,2)', 'NULL', '1.00', 'Low-stock alert threshold'],
             'brand_id'                => ['BIGINT UNSIGNED', 'NULL', null, 'FK to brands'],
             'unit_id'                 => ['BIGINT UNSIGNED', 'NULL', null, 'FK to units'],
             'category_id'             => ['BIGINT UNSIGNED', 'NULL', null, 'FK to categories'],
             'sub_category_id'         => ['BIGINT UNSIGNED', 'NULL', null, 'FK to sub-categories'],
-            'status'                  => ['TINYINT', 'NOT NULL', '1', '0=inactive, 1=active'],
+            'status'                  => ['TINYINT', 'NULL', '1', '0=inactive, 1=active'],
             'created_by'              => ['BIGINT UNSIGNED', 'NULL', null, 'Creator user ID'],
 
             // Pricing
-            'purchase_price'          => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Latest purchase cost'],
-            'sell_price'              => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Main selling price'],
-            'min_price'               => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Min price across variations'],
-            'max_price'               => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Max price across variations'],
-            'wholesale_price'         => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Wholesale price'],
-            'vendor_purchase_price'   => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor purchase price'],
-            'vendor_base_price'       => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor base price'],
-            'vendor_wholesale_price'  => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor wholesale price'],
-            'vendor_mrp'              => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Vendor MRP'],
-            'mrp'                     => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Maximum retail price'],
-            'retail_price'            => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Retail price'],
-            'dealer_price'            => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Dealer price'],
+            'purchase_price'          => ['DECIMAL(12,2)', 'NULL', '0.00', 'Latest purchase cost'],
+            'sell_price'              => ['DECIMAL(12,2)', 'NULL', '0.00', 'Main selling price'],
+            'min_price'               => ['DECIMAL(12,2)', 'NULL', '0.00', 'Min price across variations'],
+            'max_price'               => ['DECIMAL(12,2)', 'NULL', '0.00', 'Max price across variations'],
+            'wholesale_price'         => ['DECIMAL(12,2)', 'NULL', '0.00', 'Wholesale price'],
+            'vendor_purchase_price'   => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor purchase price'],
+            'vendor_base_price'       => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor base price'],
+            'vendor_wholesale_price'  => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor wholesale price'],
+            'vendor_mrp'              => ['DECIMAL(12,2)', 'NULL', '0.00', 'Vendor MRP'],
+            'mrp'                     => ['DECIMAL(12,2)', 'NULL', '0.00', 'Maximum retail price'],
+            'retail_price'            => ['DECIMAL(12,2)', 'NULL', '0.00', 'Retail price'],
+            'dealer_price'            => ['DECIMAL(12,2)', 'NULL', '0.00', 'Dealer price'],
             'last_price_updated_date' => ['TIMESTAMP', 'NULL', null, 'Last price change timestamp'],
             'before_updated_prices'   => ['JSON', 'NULL', null, 'Historical prices snapshot'],
 
             // Legacy / Extra
             'variants'                => ['TEXT', 'NULL', null, 'LEGACY: use variations table'],
             'user_id'                 => ['BIGINT UNSIGNED', 'NULL', null, 'Vendor user ID (legacy)'],
-            'stock_quantity'          => ['INT', 'NOT NULL', '0', 'Denormalized total stock'],
+            'stock_quantity'          => ['INT', 'NULL', '0', 'Denormalized total stock'],
 
             // Warranty & Return
             'warranty_note'           => ['TEXT', 'NULL', null, 'Warranty terms'],
             'return_note'             => ['TEXT', 'NULL', null, 'Return policy'],
-            'return_days'             => ['INT', 'NOT NULL', '0', 'Return window (days)'],
-            'warranty_days'           => ['INT', 'NOT NULL', '0', 'Warranty period (days)'],
+            'return_days'             => ['INT', 'NULL', '0', 'Return window (days)'],
+            'warranty_days'           => ['INT', 'NULL', '0', 'Warranty period (days)'],
             'estimate_delivery_day'   => ['INT', 'NULL', null, 'Estimated delivery days'],
             'video_link'              => ['VARCHAR(255)', 'NULL', null, 'External video link'],
             'image_size'              => ['BIGINT UNSIGNED', 'NULL', null, 'Image size in bytes'],
@@ -173,22 +175,22 @@ return new class extends Migration
             'meta_description'        => ['TEXT', 'NULL', null, 'SEO meta description'],
             'meta_keywords'           => ['VARCHAR(255)', 'NULL', null, 'SEO meta keywords'],
 
-            // Discount Policy (values, not flags)
-            'max_discount_percent'    => ['DECIMAL(5,2)', 'NOT NULL', '0.00', 'Max discount %'],
-            'min_sale_price'          => ['DECIMAL(12,2)', 'NOT NULL', '0.00', 'Minimum floor price'],
+            // Discount Policy (values, flags)
+            'max_discount_percent'    => ['DECIMAL(5,2)', 'NULL', '0.00', 'Max discount %'],
+            'min_sale_price'          => ['DECIMAL(12,2)', 'NULL', '0.00', 'Minimum floor price'],
 
             // Tax
-            'tax_type'                => ["ENUM('exclusive','inclusive','exempt')", 'NOT NULL', "'exclusive'", 'Tax behavior'],
-            'tax_rate'                => ['DECIMAL(5,2)', 'NOT NULL', '0.00', 'VAT rate %'],
+            'tax_type'                => ["ENUM('exclusive','inclusive','exempt')", 'NULL', "'exclusive'", 'Tax behavior'],
+            'tax_rate'                => ['DECIMAL(5,2)', 'NULL', '0.00', 'VAT rate %'],
             'tax_category'            => ['VARCHAR(255)', 'NULL', null, 'Tax group for Mushak'],
             'hs_code'                 => ['VARCHAR(255)', 'NULL', null, 'Harmonized System Code'],
 
             // Shipping
-            'weight'                  => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Weight (kg)'],
-            'length'                  => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Length (cm)'],
-            'width'                   => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Width (cm)'],
-            'height'                  => ['DECIMAL(8,2)', 'NOT NULL', '0.00', 'Height (cm)'],
-            'sort_order'              => ['INT', 'NOT NULL', '0', 'Display order'],
+            'weight'                  => ['DECIMAL(8,2)', 'NULL', '0.00', 'Weight (kg)'],
+            'length'                  => ['DECIMAL(8,2)', 'NULL', '0.00', 'Length (cm)'],
+            'width'                   => ['DECIMAL(8,2)', 'NULL', '0.00', 'Width (cm)'],
+            'height'                  => ['DECIMAL(8,2)', 'NULL', '0.00', 'Height (cm)'],
+            'sort_order'              => ['INT', 'NULL', '0', 'Display order'],
         ]);
 
         // ============================================================
@@ -222,10 +224,10 @@ return new class extends Migration
                 $table->boolean('track_stock')->default(true)->comment('Track stock?')->after('download_url');
             }
             if (!Schema::hasColumn('products', 'track_batch')) {
-                $table->boolean('track_batch')->default(false)->comment('Track batch?')->after('track_stock');
+                $table->boolean('track_batch')->default(true)->comment('Track batch?')->after('track_stock');
             }
             if (!Schema::hasColumn('products', 'track_expiry')) {
-                $table->boolean('track_expiry')->default(false)->comment('Track expiry?')->after('track_batch');
+                $table->boolean('track_expiry')->default(true)->comment('Track expiry?')->after('track_batch');
             }
             if (!Schema::hasColumn('products', 'track_serial')) {
                 $table->boolean('track_serial')->default(false)->comment('Track serial?')->after('track_expiry');
@@ -275,7 +277,7 @@ return new class extends Migration
             // ---- Commission ----
             if (!Schema::hasColumn('products', 'vendor_commission_type')) {
                 $table->enum('vendor_commission_type', ['percentage', 'fixed'])->nullable()
-                    ->comment('Vendor commission type')->after('origin_country');
+                    ->comment('Vendor commission type')->after('mrp');
             }
             if (!Schema::hasColumn('products', 'vendor_commission_value')) {
                 $table->decimal('vendor_commission_value', 8, 2)->default(0.00)
@@ -363,7 +365,7 @@ return new class extends Migration
         // PHASE 5: BACKFILL
         // ============================================================
         if (Schema::hasColumn('products', 'product_type') && Schema::hasColumn('products', 'type')) {
-            DB::table('products')->whereNull('product_type')->update(['product_type' => 'simple']);
+            DB::table('products')->whereNull('product_type')->whereNotNull('name')->update(['product_type' => 'simple']);
             DB::table('products')->where('type', 'variable')
                 ->update(['has_variants' => true, 'product_type' => 'variant']);
             DB::table('products')->where('type', 'single')
