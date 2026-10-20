@@ -411,6 +411,7 @@ return new class extends Migration
             'last_purchase_at',
             'is_preorder',
             'preorder_available_date',
+            'invoice_name_bangla'
         ];
 
         $existing = array_filter($columnsToDrop, fn($col) => Schema::hasColumn('products', $col));
