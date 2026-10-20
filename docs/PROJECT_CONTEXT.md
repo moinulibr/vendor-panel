@@ -4,21 +4,21 @@
 Multi-vendor ecommerce + POS + Dealer mobile app + SR panel. Single DB, multiple frontends.
 
 ## Stack
-- Laravel 11, PHP 8.3, MySQL 8.0
+- Laravel 12, PHP 8.3, MySQL 8.0
 - Queue: database driver
 - Cache: file (dev), redis (prod)
-- Storage: local public (dev), AWS S3 (prod)
+- Storage: local public (dev)
 
 ## Channels (sales.source / sales.channel)
-pos, web, mobile_dealer_app, sr
+admin_pos, web_ecommerce, mobile_dealer_app, sr
 
 ## Customer Types (tier-based pricing)
-regular, dealer, special
+regular, dealer, special, ecommerce
 
 ## Products
 - ~2000 existing + growing
-- Variants (Color/Size), Combos, Services, Digital
-- Batch-tracked (~40%), Expiry-tracked (~24%)
+- Variants (Color/Size/material/origin..-dynamic), Combos, Services, Digital
+- Batch-tracked (~40% -dynamic), Expiry-tracked (~24% -dynamic)
 - Per-product VAT config: exclusive/inclusive/exempt
 - Per-product discount policy (allow_discount, max_discount_percent, min_sale_price)
 

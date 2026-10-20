@@ -20,9 +20,9 @@
 - Return DTOs or Models, never raw arrays
 
 ## API
-- Routes under `/api/v1/*`
-- Controllers in `app/Http/Controllers/Api/V1/`
-- API Resources in `app/Http/Resources/`
+- Routes under `/api/v1/app*`
+- Controllers in `app/Http/Controllers/Api/V1/App`
+- API Resources in `app/Http/Resources/Api/V1/App`
 - Form Requests for validation
 - Response format: `{ success, data, message, errors }`
 - HTTP status codes: 200 OK, 201 Created, 422 Validation, 500 Error
@@ -37,4 +37,3 @@
 - `DB::table()` in controllers (use models)
 - `->get()` without pagination on list endpoints
 - Storing full image URLs in DB (store relative path, resolve in accessor)
-- Adding `foreignId()->constrained()` (project design: no DB-level FK)

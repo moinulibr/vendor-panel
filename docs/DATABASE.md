@@ -1,7 +1,7 @@
 # Database Schema Overview
 
 ## Master
-- users, customers, vendors, warehouses
+- users, customers, vendors withing users, warehouses
 - brands, categories, units, variant_attributes
 - products (denormalized cache), variations (source of truth)
 - coupons

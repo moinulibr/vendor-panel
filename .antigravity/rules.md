@@ -27,7 +27,7 @@ You are helping with a Laravel 11 multi-vendor ecommerce + POS system.
 - Logging: use `Log::info` for creation, `Log::warning` for edge cases
 
 ## API Rules
-- Prefix: `/api/v1/`
+- Prefix: `/api/v1/app`
 - Response envelope: `{ success: bool, data: mixed, message: string, errors: array }`
 - Validation via FormRequests
 - Pagination on ALL list endpoints
