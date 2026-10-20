@@ -52,8 +52,8 @@ return new class extends Migration
             $table->decimal('final_amount', 12, 2)->default(0)->comment('Total payable by customer');
             $table->decimal('paid_amount', 12, 2)->default(0)->comment('Cache: sum of successful payments');
             $table->decimal('due_amount', 12, 2)->default(0)->comment('final_amount - paid_amount');
-
-            $table->enum('status', ['draft', 'quotation', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
+            $table->dateTime('sale_date')->nullable()->comment('sale create date');
+            $table->enum('status', ['draft', 'quotation', 'pending', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
                 ->default('draft')
                 ->comment('Overall order/transaction lifecycle status');
 

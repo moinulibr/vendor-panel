@@ -11,67 +11,70 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderRepository implements OrderRepositoryInterface
 {
-    public function getPaginatedOrders(int $userId, array $filters): LengthAwarePaginator
+    //public function getPaginatedOrders(int $userId, array $filters): LengthAwarePaginator
+    public function getPaginatedOrders(int $userId, array $filters)
     {
-        $query = Transaction::where('user_id', $userId)
-            ->where('type', 'sell')
-            ->with(['lines', 'vendor_orders', 'payments']);
+        //$query = object();//Sale::..;
 
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            //$query->where('status', $filters['status']);
         }
 
         if (!empty($filters['search'])) {
-            $query->where('invoice_no', 'like', '%' . $filters['search'] . '%');
+           // $query->where('invoice_no', 'like', '%' . $filters['search'] . '%');
         }
 
         if (!empty($filters['date_from'])) {
-            $query->whereDate('transaction_date', '>=', $filters['date_from']);
+            //$query->whereDate('sale_date', '>=', $filters['date_from']);
         }
 
         if (!empty($filters['date_to'])) {
-            $query->whereDate('transaction_date', '<=', $filters['date_to']);
+            //$query->whereDate('sale_date', '<=', $filters['date_to']);
         }
 
-        return $query->latest('id')->paginate($filters['per_page'] ?? 15);
+        //return $query->latest('id')->paginate($filters['per_page'] ?? 15);
     }
 
-    public function findByIdAndUser(int $orderId, int $userId): ?Transaction
+    public function findByIdAndUser(int $orderId, int $userId)
     {
-        return Transaction::where('id', $orderId)
-            ->where('user_id', $userId)
-            ->with(['lines.product', 'vendor_orders', 'payments'])
-            ->first();
+        //return Sale::where('id', $orderId)
+            //->where('customer_id', $userId)
+            //->with(['lines.product', 'vendor_orders', 'payments'])
+            //->first();
     }
 
-    public function createQuotationTransaction(array $data): Transaction
+    public function findOrderByIdAndUser(int $orderId, int $userId)
     {
-        return Transaction::create($data);
+    }
+
+    public function createQuotationTransaction(array $data)
+    {
+        //return sale::create($data);
     }
 
     public function createVendorOrder(array $data)
     {
-        return VendorOrder::create($data);
+        //return VendorOrder::create($data);
     }
 
-    public function createTransactionLines(Transaction $transaction, array $linesData): void
+    public function createTransactionLines(Transaction $transaction, array $linesData)
     {
-        $transaction->lines()->createMany($linesData);
+        //$dsle->lines()->createMany($linesData);
     }
 
-    public function updateTransaction(Transaction $transaction, array $data): bool
+    public function updateTransaction(Transaction $transaction, array $data)
     {
-        return $transaction->update($data);
+        //return $sale->update($data);
     }
 
-    public function syncTransactionLines(Transaction $transaction, array $itemsData): void
+    public function syncTransactionLines(Transaction $transaction, array $itemsData)
     {
-        $transaction->lines()->delete();
-        $transaction->lines()->createMany($itemsData);
+        //$transaction->lines()->delete();
+        //$transaction->lines()->createMany($itemsData);
     }
 
-    public function attachPayment(Transaction $transaction, array $paymentData): TransactionPayment
+    public function attachPayment(Transaction $transaction, array $paymentData)
     {
-        return $transaction->payments()->create($paymentData);
+        //return $transaction->payments()->create($paymentData);
     }
 }
