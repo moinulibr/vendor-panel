@@ -53,7 +53,7 @@ return new class extends Migration
             $table->decimal('paid_amount', 12, 2)->default(0)->comment('Cache: sum of successful payments');
             $table->decimal('due_amount', 12, 2)->default(0)->comment('final_amount - paid_amount');
 
-            $table->enum('status', ['draft', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
+            $table->enum('status', ['draft', 'quotation', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
                 ->default('draft')
                 ->comment('Overall order/transaction lifecycle status');
 
