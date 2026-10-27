@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('sale_payments', function (Blueprint $table) {
             $table->id();
             $table->string('payment_no', 50)->unique()->comment('Auto-generated payment number');
-            $table->foreignId('sale_id')->constrained('sales')->cascadeOnDelete();
+            $table->foreignId('sale_id')->comment('FK to sales table');
 
             $table->foreignId('customer_id')->nullable()
                 ->comment('FK to users.id. For web-lead customers, use contacts.id.');
