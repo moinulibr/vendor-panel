@@ -18,16 +18,16 @@ return new class extends Migration
             $table->string('invoice_no', 50)->nullable()->unique()->comment('Auto-generated invoice number');
             $table->enum('channel', ['admin_pos', 'web_ecommerce', 'mobile_dealer_app', 'sr'])
                 ->default('admin_pos')
-                ->comment('Order source channel'); // FIXED: moible → mobile
+                ->comment('Order source channel');
 
             $table->string('source_ref', 100)->nullable()->comment('External order id (ecommerce/SR)');
 
             $table->foreignId('customer_id')->nullable()
                 ->comment('FK to users.id. For web-lead customers, use contacts.id instead.');
 
-            $table->enum('customer_type', ['regular', 'dealer', 'special'])
+            $table->enum('customer_type', ['regular', 'dealer', 'special', 'ecommerce'])
                 ->default('regular')
-                ->comment('Which price tier applies');
+                ->comment('Which price tier applies'); // ✅ FIXED: added ecommerce
 
             $table->foreignId('warehouse_id')->nullable()->comment('FK to warehouses table');
             $table->foreignId('sales_person_id')->nullable()->comment('FK to users table');
@@ -40,7 +40,7 @@ return new class extends Migration
             $table->decimal('discount_value', 12, 2)->default(0)->comment('Input value (e.g. 10 for 10%)');
             $table->decimal('discount_amount', 12, 2)->default(0)->comment('Actual discount in currency');
 
-            $table->foreignId('coupon_id')->nullable()->constrained('coupons')->nullOnDelete();
+            $table->foreignId('coupon_id')->nullable()->comment('FK to coupons table');
             $table->enum('coupon_discount_type', ['percentage', 'fixed'])->nullable();
             $table->decimal('coupon_discount_value', 12, 2)->default(0)->comment('Input value from coupon');
             $table->decimal('coupon_discount_amount', 12, 2)->default(0)->comment('Actual coupon discount');
@@ -52,7 +52,8 @@ return new class extends Migration
             $table->decimal('final_amount', 12, 2)->default(0)->comment('Total payable by customer');
             $table->decimal('paid_amount', 12, 2)->default(0)->comment('Cache: sum of successful payments');
             $table->decimal('due_amount', 12, 2)->default(0)->comment('final_amount - paid_amount');
-            $table->dateTime('sale_date')->nullable()->comment('sale create date');
+            $table->dateTime('sale_date')->nullable()->comment('Sale date — allows backdated entries');
+
             $table->enum('status', ['draft', 'quotation', 'pending', 'confirmed', 'processing', 'completed', 'returned', 'cancelled', 'rejected', 'refunded'])
                 ->default('draft')
                 ->comment('Overall order/transaction lifecycle status');
@@ -65,14 +66,24 @@ return new class extends Migration
                 ->default('pending')
                 ->comment('Physical delivery / fulfillment status');
 
+            // ✅ NEW: Quotation tracking
+            $table->date('quote_valid_until')->nullable()
+                ->comment('Quotation valid until this date (null if not a quotation)');
+            $table->timestamp('quote_converted_at')->nullable()
+                ->comment('Timestamp when quotation was converted to confirmed sale');
+            $table->foreignId('quote_converted_by')->nullable()
+                ->comment('FK to users — who converted the quotation');
+            $table->text('quote_notes')->nullable()
+                ->comment('Special notes shown on quotation');
+
             $table->string('currency', 3)->default('BDT');
             $table->decimal('exchange_rate', 10, 4)->default(1);
             $table->text('notes')->nullable();
 
-            $table->boolean('is_editable_for_admin')->default(true)->comment('Can this sale be edited?');
-            $table->boolean('is_editable_for_staff')->default(true)->comment('Can this sale be edited?');
-            $table->boolean('is_editable_for_customer')->default(true)->comment('Can this sale be edited?');
-            
+            $table->boolean('is_editable_for_admin')->default(true)->comment('Can admin edit this sale?');
+            $table->boolean('is_editable_for_staff')->default(true)->comment('Can staff edit this sale?');
+            $table->boolean('is_editable_for_customer')->default(true)->comment('Can customer edit this sale?');
+
             $table->foreignId('created_by')->nullable()->comment('FK to users table');
             $table->timestamps();
 
@@ -80,6 +91,8 @@ return new class extends Migration
             $table->index(['parent_id', 'version']);
             $table->index(['channel', 'status']);
             $table->index('created_at');
+            $table->index('sale_date');
+            $table->index(['status', 'quote_valid_until']); // ✅ NEW: for quotation expiry queries
         });
     }
 
