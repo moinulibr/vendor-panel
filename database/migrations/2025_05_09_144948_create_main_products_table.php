@@ -315,6 +315,43 @@ return new class extends Migration
                 $table->timestamp('last_purchase_at')->nullable()->comment('Last purchase time')->after('last_sale_at');
             }
 
+            if (!Schema::hasColumn('products', 'approval_status')) {
+                $table->enum('approval_status', ['draft', 'pending_approval', 'approved', 'rejected', 'changes_requested'])
+                    ->default('approved')  // existing 2000 products auto-approved
+                    ->comment('Vendor submission approval status')
+                    ->after('status');
+            }
+            if (!Schema::hasColumn('products', 'approval_notes')) {
+                $table->text('approval_notes')->nullable()
+                    ->comment('Admin feedback for vendor')
+                    ->after('approval_status');
+            }
+            if (!Schema::hasColumn('products', 'submitted_at')) {
+                $table->timestamp('submitted_at')->nullable()
+                    ->comment('Vendor submission timestamp')
+                    ->after('approval_notes');
+            }
+            if (!Schema::hasColumn('products', 'approved_by')) {
+                $table->foreignId('approved_by')->nullable()
+                    ->comment('FK to users — admin who approved')
+                    ->after('submitted_at');
+            }
+            if (!Schema::hasColumn('products', 'approved_at')) {
+                $table->timestamp('approved_at')->nullable()
+                    ->comment('Approval timestamp')
+                    ->after('approved_by');
+            }
+            if (!Schema::hasColumn('products', 'price_locked')) {
+                $table->boolean('price_locked')->default(false)
+                    ->comment('If true, vendor cannot change price fields')
+                    ->after('approved_at');
+            }
+            if (!Schema::hasColumn('products', 'is_vendor_submitted')) {
+                $table->boolean('is_vendor_submitted')->default(false)
+                    ->comment('Quick filter: was this submitted by a vendor?')
+                    ->after('price_locked');
+            }
+
             // ---- Preorder ----
             if (!Schema::hasColumn('products', 'is_preorder')) {
                 $table->boolean('is_preorder')->default(false)->comment('Preorder enabled')->after('last_purchase_at');
@@ -411,7 +448,14 @@ return new class extends Migration
             'last_purchase_at',
             'is_preorder',
             'preorder_available_date',
-            'invoice_name_bangla'
+            'invoice_name_bangla',
+            'approval_status',
+            'approval_notes',
+            'submitted_at',
+            'approved_by',
+            'approved_at',
+            'price_locked',
+            'is_vendor_submitted',
         ];
 
         $existing = array_filter($columnsToDrop, fn($col) => Schema::hasColumn('products', $col));
