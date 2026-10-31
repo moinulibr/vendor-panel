@@ -12,4 +12,6 @@ interface BatchRepositoryInterface
     public function createBatch(array $data): ProductBatch;
 
     public function decrementBatchQty(ProductBatch $batch, int $qty): void;
+
+    public function getLatestBatchNo(string $prefix): ?string;
 }

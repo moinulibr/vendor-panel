@@ -3,18 +3,17 @@
 namespace App\Services;
 
 use App\Models\Sale;
-use App\Models\SaleItem;
-use App\Models\SaleItemBatch;
-use App\Models\SalePayment;
-use App\Models\SalePaymentSummary;
-use App\Models\SaleTax;
+use App\Repositories\Interface\BatchRepositoryInterface;
+use App\Repositories\Interface\SaleRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class SaleService
 {
     public function __construct(
-        protected BatchService $batchService
+        protected BatchService            $batchService,
+        protected SaleRepositoryInterface $saleRepository,
+        protected BatchRepositoryInterface $batchRepository
     ) {}
 
     // =========================================================================
@@ -115,9 +114,9 @@ class SaleService
             // ------------------------------------------------------------------
             // 3. Calculate invoice-level totals
             // ------------------------------------------------------------------
-            $subTotal          = $processedItems['sub_total'];         // Sum of line_subtotals
-            $itemTotalDiscount = $processedItems['item_total_discount'];// Sum of line_discounts
-            $grossTotal        = $subTotal - $itemTotalDiscount;       // Before invoice disc & tax
+            $subTotal          = $processedItems['sub_total'];          // Sum of line_subtotals
+            $itemTotalDiscount = $processedItems['item_total_discount']; // Sum of line_discounts
+            $grossTotal        = $subTotal - $itemTotalDiscount;        // Before invoice disc & tax
 
             $shippingCharge    = (float) ($data['shipping_charge'] ?? 0);
             $roundOff          = (float) ($data['round_off'] ?? 0);
@@ -146,7 +145,7 @@ class SaleService
             );
 
             // Tax is already computed per line (exclusive adds on top, inclusive is already in price)
-            $taxAmount  = $processedItems['tax_total'];
+            $taxAmount = $processedItems['tax_total'];
 
             $finalAmount = round(
                 $grossTotal - $totalInvoiceDiscount + $shippingCharge + $taxAmount + $roundOff,
@@ -171,7 +170,7 @@ class SaleService
             // ------------------------------------------------------------------
             // 5. Insert Sale row
             // ------------------------------------------------------------------
-            $sale = Sale::create([
+            $sale = $this->saleRepository->createSale([
                 'parent_id'                 => null,
                 'version'                   => 1,
                 'is_current'                => true,
@@ -217,7 +216,7 @@ class SaleService
             // 6. Insert SaleItems + SaleItemBatches + SaleTaxes
             // ------------------------------------------------------------------
             foreach ($processedItems['lines'] as $line) {
-                $saleItem = SaleItem::create([
+                $saleItem = $this->saleRepository->createSaleItem([
                     'sale_id'                               => $sale->id,
                     'product_id'                            => $line['product_id'],
                     'variation_id'                          => $line['variation_id'],
@@ -261,7 +260,6 @@ class SaleService
                     );
 
                     foreach ($allocations as $alloc) {
-                        /** @var \App\Models\ProductBatch $batch */
                         $batch         = $alloc['batch'];
                         $qtyUsed       = $alloc['qty_used'];
                         $unitCost      = $alloc['unit_cost'];
@@ -269,31 +267,31 @@ class SaleService
                         $totalSale     = round($qtyUsed * $unitSalePrice, 2);
                         $costTotal     = round($qtyUsed * $unitCost, 2);
 
-                        SaleItemBatch::create([
-                            'sale_id'          => $sale->id,
-                            'sale_item_id'     => $saleItem->id,
-                            'batch_id'         => $batch->id,
-                            'qty_used'         => $qtyUsed,
-                            'unit_cost'        => $unitCost,
-                            'cost_total'       => $costTotal,
-                            'unit_sale_price'  => $unitSalePrice,
-                            'total_sale_amount'=> $totalSale,
-                            'total_profit'     => round($totalSale - $costTotal, 2),
+                        $this->saleRepository->createSaleItemBatch([
+                            'sale_id'           => $sale->id,
+                            'sale_item_id'      => $saleItem->id,
+                            'batch_id'          => $batch->id,
+                            'qty_used'          => $qtyUsed,
+                            'unit_cost'         => $unitCost,
+                            'cost_total'        => $costTotal,
+                            'unit_sale_price'   => $unitSalePrice,
+                            'total_sale_amount' => $totalSale,
+                            'total_profit'      => round($totalSale - $costTotal, 2),
                         ]);
                     }
                 }
 
                 // Per-item tax row (when tax is not exempt)
                 if ($line['tax_type_snapshot'] !== 'exempt' && $line['tax_amount'] > 0) {
-                    SaleTax::create([
-                        'sale_id'       => $sale->id,
-                        'sale_item_id'  => $saleItem->id,
-                        'tax_name'      => $line['tax_name'] ?? null,
-                        'tax_category'  => $line['tax_category'] ?? null,
-                        'hs_code'       => $line['hs_code'] ?? null,
-                        'tax_rate'      => $line['tax_rate_snapshot'],
-                        'taxable_amount'=> $line['taxable_amount'],
-                        'tax_amount'    => $line['tax_amount'],
+                    $this->saleRepository->createSaleTax([
+                        'sale_id'        => $sale->id,
+                        'sale_item_id'   => $saleItem->id,
+                        'tax_name'       => $line['tax_name'] ?? null,
+                        'tax_category'   => $line['tax_category'] ?? null,
+                        'hs_code'        => $line['hs_code'] ?? null,
+                        'tax_rate'       => $line['tax_rate_snapshot'],
+                        'taxable_amount' => $line['taxable_amount'],
+                        'tax_amount'     => $line['tax_amount'],
                     ]);
                 }
             }
@@ -301,8 +299,8 @@ class SaleService
             // ------------------------------------------------------------------
             // 7. Insert initial payments + SalePaymentSummary
             // ------------------------------------------------------------------
-            $paymentCount   = 0;
-            $lastPaymentAt  = null;
+            $paymentCount  = 0;
+            $lastPaymentAt = null;
 
             foreach ($initialPayments as $payment) {
                 $amount = (float) $payment['amount'];
@@ -310,9 +308,9 @@ class SaleService
                     continue;
                 }
 
-                $paidAt = isset($payment['paid_at']) ? $payment['paid_at'] : now();
+                $paidAt = $payment['paid_at'] ?? now();
 
-                SalePayment::create([
+                $this->saleRepository->createSalePayment([
                     'payment_no'          => $this->generatePaymentNo(),
                     'sale_id'             => $sale->id,
                     'customer_id'         => $data['customer_id'] ?? null,
@@ -331,7 +329,7 @@ class SaleService
             }
 
             // Always create a payment summary row for the sale.
-            SalePaymentSummary::create([
+            $this->saleRepository->createSalePaymentSummary([
                 'sale_id'         => $sale->id,
                 'total_paid'      => $paidAmount,
                 'total_refunded'  => 0,
@@ -372,18 +370,18 @@ class SaleService
         $taxTotal          = 0.0;
 
         foreach ($items as $item) {
-            $qty               = (int) $item['qty'];
-            $unitPrice         = (float) $item['unit_price_snapshot'];
-            $lineSubtotal      = round($qty * $unitPrice, 2);
+            $qty          = (int) $item['qty'];
+            $unitPrice    = (float) $item['unit_price_snapshot'];
+            $lineSubtotal = round($qty * $unitPrice, 2);
 
             // Item-level discount
-            $allowDiscount     = (bool) ($item['allow_discount'] ?? true);
-            $lineDiscount      = $allowDiscount ? round((float) ($item['line_discount'] ?? 0), 2) : 0.0;
-            $lineDiscPercent   = $allowDiscount ? round((float) ($item['line_discount_percent'] ?? 0), 2) : 0.0;
+            $allowDiscount   = (bool) ($item['allow_discount'] ?? true);
+            $lineDiscount    = $allowDiscount ? round((float) ($item['line_discount'] ?? 0), 2) : 0.0;
+            $lineDiscPercent = $allowDiscount ? round((float) ($item['line_discount_percent'] ?? 0), 2) : 0.0;
 
             // Taxable base
-            $taxType           = $item['tax_type_snapshot'] ?? 'exempt';
-            $taxRate           = (float) ($item['tax_rate_snapshot'] ?? 0);
+            $taxType = $item['tax_type_snapshot'] ?? 'exempt';
+            $taxRate = (float) ($item['tax_rate_snapshot'] ?? 0);
 
             [$taxableAmount, $taxAmount] = $this->computeLineTax(
                 $lineSubtotal,
@@ -393,9 +391,9 @@ class SaleService
             );
 
             // Vendor commission
-            $vcType   = $item['vendor_commission_type_snapshot'] ?? null;
-            $vcValue  = (float) ($item['vendor_commission_value_snapshot'] ?? 0);
-            $vcAmount = $this->resolveCommissionAmount($vcType, $vcValue, $lineSubtotal - $lineDiscount);
+            $vcType       = $item['vendor_commission_type_snapshot'] ?? null;
+            $vcValue      = (float) ($item['vendor_commission_value_snapshot'] ?? 0);
+            $vcAmount     = $this->resolveCommissionAmount($vcType, $vcValue, $lineSubtotal - $lineDiscount);
             $vendorPayable = round(($lineSubtotal - $lineDiscount) - $vcAmount, 2);
 
             // Salesperson commission
@@ -589,38 +587,38 @@ class SaleService
      */
     private function insertLedgerEntries(Sale $sale, array $lines, string $invoiceNo, array $data): void
     {
-        $now      = now();
+        $now       = now();
         $entryDate = $data['sale_date']
             ? date('Y-m-d', strtotime($data['sale_date']))
             : $now->toDateString();
-        $currency    = $data['currency'] ?? 'BDT';
-        $exchRate    = (float) ($data['exchange_rate'] ?? 1);
-        $createdBy   = $data['created_by'] ?? null;
+        $currency  = $data['currency'] ?? 'BDT';
+        $exchRate  = (float) ($data['exchange_rate'] ?? 1);
+        $createdBy = $data['created_by'] ?? null;
 
         // --- Customer debit (sale) ---
         if ($sale->customer_id) {
-            $prevBalance = $this->getRunningBalance('customer', $sale->customer_id);
+            $prevBalance = $this->saleRepository->getLatestLedgerBalance('customer', $sale->customer_id);
             $newBalance  = round($prevBalance + $sale->final_amount, 2);
 
-            DB::table('payment_ledger')->insert([
-                'party_type'     => 'customer',
-                'party_id'       => $sale->customer_id,
-                'entry_date'     => $entryDate,
-                'entry_at'       => $now,
-                'entry_type'     => 'sale',
-                'reference_type' => 'Sale',
-                'reference_id'   => $sale->id,
-                'reference_no'   => $invoiceNo,
-                'debit'          => $sale->final_amount,
-                'credit'         => 0,
-                'running_balance'=> $newBalance,
-                'currency'       => $currency,
-                'exchange_rate'  => $exchRate,
-                'description'    => "Sale invoice {$invoiceNo}",
-                'notes'          => null,
-                'created_by'     => $createdBy,
-                'created_at'     => $now,
-                'updated_at'     => $now,
+            $this->saleRepository->insertLedgerEntry([
+                'party_type'      => 'customer',
+                'party_id'        => $sale->customer_id,
+                'entry_date'      => $entryDate,
+                'entry_at'        => $now,
+                'entry_type'      => 'sale',
+                'reference_type'  => 'Sale',
+                'reference_id'    => $sale->id,
+                'reference_no'    => $invoiceNo,
+                'debit'           => $sale->final_amount,
+                'credit'          => 0,
+                'running_balance' => $newBalance,
+                'currency'        => $currency,
+                'exchange_rate'   => $exchRate,
+                'description'     => "Sale invoice {$invoiceNo}",
+                'notes'           => null,
+                'created_by'      => $createdBy,
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ]);
         }
 
@@ -639,42 +637,30 @@ class SaleService
             if ($payable <= 0) {
                 continue;
             }
-            $prevBalance = $this->getRunningBalance('vendor', $vendorId);
+            $prevBalance = $this->saleRepository->getLatestLedgerBalance('vendor', $vendorId);
             $newBalance  = round($prevBalance + $payable, 2);
 
-            DB::table('payment_ledger')->insert([
-                'party_type'     => 'vendor',
-                'party_id'       => $vendorId,
-                'entry_date'     => $entryDate,
-                'entry_at'       => $now,
-                'entry_type'     => 'sale',
-                'reference_type' => 'Sale',
-                'reference_id'   => $sale->id,
-                'reference_no'   => $invoiceNo,
-                'debit'          => 0,
-                'credit'         => round($payable, 2),
-                'running_balance'=> $newBalance,
-                'currency'       => $currency,
-                'exchange_rate'  => $exchRate,
-                'description'    => "Vendor payable for sale {$invoiceNo}",
-                'notes'          => null,
-                'created_by'     => $createdBy,
-                'created_at'     => $now,
-                'updated_at'     => $now,
+            $this->saleRepository->insertLedgerEntry([
+                'party_type'      => 'vendor',
+                'party_id'        => $vendorId,
+                'entry_date'      => $entryDate,
+                'entry_at'        => $now,
+                'entry_type'      => 'sale',
+                'reference_type'  => 'Sale',
+                'reference_id'    => $sale->id,
+                'reference_no'    => $invoiceNo,
+                'debit'           => 0,
+                'credit'          => round($payable, 2),
+                'running_balance' => $newBalance,
+                'currency'        => $currency,
+                'exchange_rate'   => $exchRate,
+                'description'     => "Vendor payable for sale {$invoiceNo}",
+                'notes'           => null,
+                'created_by'      => $createdBy,
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ]);
         }
-    }
-
-    /**
-     * Get the most-recent running_balance for a party (for appending).
-     */
-    private function getRunningBalance(string $partyType, int $partyId): float
-    {
-        return (float) DB::table('payment_ledger')
-            ->where('party_type', $partyType)
-            ->where('party_id', $partyId)
-            ->orderBy('id', 'desc')
-            ->value('running_balance') ?? 0.0;
     }
 
     // =========================================================================
@@ -683,17 +669,14 @@ class SaleService
 
     /**
      * Generate an invoice number: INV-YYYY-NNNN.
-     * Uses a DB lock to be safe under concurrent requests.
+     * Uses a DB lock via repository to be safe under concurrent requests.
      */
     private function generateInvoiceNo(): string
     {
         $year   = now()->format('Y');
         $prefix = "INV-{$year}-";
 
-        $latest = Sale::where('invoice_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->lockForUpdate()
-            ->value('invoice_no');
+        $latest = $this->saleRepository->getLatestInvoiceNo($prefix);
 
         $next = 1;
         if ($latest) {
@@ -712,10 +695,7 @@ class SaleService
         $year   = now()->format('Y');
         $prefix = "PAY-{$year}-";
 
-        $latest = SalePayment::where('payment_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->lockForUpdate()
-            ->value('payment_no');
+        $latest = $this->saleRepository->getLatestPaymentNo($prefix);
 
         $next = 1;
         if ($latest) {

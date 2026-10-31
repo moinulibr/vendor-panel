@@ -35,4 +35,11 @@ class BatchRepository implements BatchRepositoryInterface
             $batch->update(['status' => 'depleted']);
         }
     }
+
+    public function getLatestBatchNo(string $prefix): ?string
+    {
+        return ProductBatch::where('batch_no', 'like', $prefix . '%')
+            ->orderBy('id', 'desc')
+            ->value('batch_no');
+    }
 }

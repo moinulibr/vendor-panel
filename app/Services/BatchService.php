@@ -3,11 +3,15 @@
 namespace App\Services;
 
 use App\Models\ProductBatch;
-use Illuminate\Support\Facades\DB;
+use App\Repositories\Interface\BatchRepositoryInterface;
 use RuntimeException;
 
 class BatchService
 {
+    public function __construct(
+        protected BatchRepositoryInterface $batchRepository
+    ) {}
+
     /**
      * Allocate qty from available batches using FIFO (oldest batch first, soonest-expiry first).
      *
@@ -30,19 +34,10 @@ class BatchService
     ): array {
         // Fetch eligible batches ordered by expiry_date ASC (FEFO), then created_at ASC (FIFO).
         // Non-expiring batches (null expiry) go last.
-        $batches = ProductBatch::where('product_id', $productId)
-            ->where('warehouse_id', $warehouseId)
-            ->where('status', 'active')
-            ->where('qty_available', '>', 0)
-            ->when($variationId !== null, fn ($q) => $q->where('variation_id', $variationId))
-            ->orderByRaw('CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END ASC')
-            ->orderBy('expiry_date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->lockForUpdate()
-            ->get();
+        $batches = $this->batchRepository->getFIFOBatches($productId, $variationId, $warehouseId);
 
-        $allocations  = [];
-        $remaining    = $qtyNeeded;
+        $allocations = [];
+        $remaining   = $qtyNeeded;
 
         foreach ($batches as $batch) {
             if ($remaining <= 0) {
@@ -53,12 +48,7 @@ class BatchService
             $consume = min($batch->qty_available, $remaining);
 
             // Decrement qty_available on the batch immediately (within caller's DB::transaction).
-            $batch->decrement('qty_available', $consume);
-
-            // If fully depleted, mark as depleted.
-            if ($batch->qty_available <= 0) {
-                $batch->update(['status' => 'depleted']);
-            }
+            $this->batchRepository->decrementBatchQty($batch, $consume);
 
             $allocations[] = [
                 'batch'     => $batch,
@@ -110,7 +100,7 @@ class BatchService
     {
         $batchNo = $data['batch_no'] ?? $this->generateBatchNo();
 
-        return ProductBatch::create([
+        return $this->batchRepository->createBatch([
             'batch_no'                   => $batchNo,
             'product_id'                 => $data['product_id'],
             'variation_id'               => $data['variation_id'] ?? null,
@@ -124,7 +114,7 @@ class BatchService
             'expiry_date'                => $data['expiry_date'] ?? null,
             'supplier_batch_no'          => $data['supplier_batch_no'] ?? null,
             'qty_received'               => $data['qty_received'],
-            'qty_available'              => $data['qty_received'],   // All received qty starts as available
+            'qty_available'              => $data['qty_received'], // All received qty starts as available
             'qty_reserved'               => 0,
             'cost_price'                 => $data['cost_price'],
             'selling_price_ref'          => $data['selling_price_ref'] ?? null,
@@ -144,12 +134,10 @@ class BatchService
      */
     private function generateBatchNo(): string
     {
-        $year  = now()->format('Y');
+        $year   = now()->format('Y');
         $prefix = "BAT-{$year}-";
 
-        $latest = ProductBatch::where('batch_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->value('batch_no');
+        $latest = $this->batchRepository->getLatestBatchNo($prefix);
 
         $next = 1;
         if ($latest) {
