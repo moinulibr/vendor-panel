@@ -3,14 +3,12 @@
 namespace App\Services;
 
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
-use App\Models\Product;
-use App\Models\Variation;
 use App\Repositories\Coupon\Interface\CouponRepositoryInterface;
 use App\Repositories\Discount\Interface\DiscountRepositoryInterface;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use App\Repositories\User\Interface\UserRepositoryInterface;
-use App\Utils\UserType;
 use Exception;
+
 class CartService
 {
     public function __construct(
@@ -21,12 +19,10 @@ class CartService
         protected PriceService $priceService,
         protected DiscountRepositoryInterface $discountRepository,
         protected SettingService $settingService
-        ) {}
+    ) {}
 
     public function getUserCart(int $userId): array
     {
-        // TODO:  Cart items value (price) will be modify after every night 12 AM or every 5 hours later cart's items price will be updated [price taken form products table or related tables].
-
         $cart = $this->cartRepository->getOrCreateCart($userId);
         $cartItems = $cart->items()->with(['product', 'variation'])->get();
 
@@ -34,6 +30,27 @@ class CartService
         $itemTotalDiscount = 0;
 
         foreach ($cartItems as $item) {
+            // ✅ NEW: Auto-update price from current variation/product
+            $currentEntity = $item->variation ?? $item->product;
+            if ($currentEntity) {
+                $currentPrice = $this->priceService->getUserTypeWisePrice($userId, $currentEntity);
+                if ($item->unit_price != $currentPrice) {
+                    $newSubTotal = $item->quantity * $currentPrice;
+                    $newDiscount = $item->discount_type === 'percentage'
+                        ? ($newSubTotal * ($item->discount_amount / 100))
+                        : ($item->discount_amount * $item->quantity);
+                    $newFinal = max(0, $newSubTotal - $newDiscount);
+
+                    $item->update([
+                        'unit_price'   => $currentPrice,
+                        'sub_total'    => $newSubTotal,
+                        'final_amount' => $newFinal,
+                    ]);
+                    $item->unit_price = $currentPrice;
+                }
+            }
+
+            // Calculate line totals
             $subtotal = $item->quantity * $item->unit_price;
             $discount = $item->discount_type === 'percentage'
                 ? ($subtotal * ($item->discount_amount / 100))
@@ -68,14 +85,16 @@ class CartService
 
         // Sync Calculated Values into Cart Schema
         $this->cartRepository->updateCartTotals($cart->id, [
-            'sub_total'    => $itemSubtotal,
-            'final_amount' => $finalAmount,
+            'sub_total'           => $itemSubtotal,
+            'item_total_discount' => $itemTotalDiscount,
+            'final_amount'        => $finalAmount,
         ]);
 
         $userModel = $this->userRepository->findById($userId);
 
         $deliveryCharge  = $this->settingService->getDeliverySettings();
         $offers  = $this->settingService->getCouponAndDiscountSettings();
+
         return [
             'delivery_system' => $deliveryCharge,
             'offers'   => $offers,
@@ -110,23 +129,27 @@ class CartService
     public function addToCart(int $userId, array $data): mixed
     {
         $productId = $data['product_base_id'];
-
-        //$product = $this->productRepository->findBySlugOrId($productId, $location = null);
         $product = $this->productRepository->findVariationBySlugOrId($productId, $location = null);
 
         $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->id ?? null);
-
         $unitPrice = $this->priceService->getUserTypeWisePrice($userId, $product);
-        //$unitPrice = $product->sell_price;
-        $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);
 
+        // ✅ NEW: Extract vendor_id and labels from variation/product
+        $vendorId = $product->vendor_id ?? $product->product->vendor_id ?? null;
+        $variantLabel = $product->name ?? null;
+        $productLabel = $product->product->name ?? null;
+
+        $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);
         $newQuantity = $existingItem ? ($existingItem->quantity + $data['quantity']) : $data['quantity'];
 
         return $this->cartRepository->addOrUpdateItem($cart, [
-            'product_id'   => $data['product_id'],
-            'variation_id' => $data['variation_id'] ?? null,
-            'quantity'     => $newQuantity,
-            'unit_price'   => $unitPrice,
+            'product_id'             => $data['product_id'],
+            'variation_id'           => $data['variation_id'] ?? null,
+            'vendor_id'              => $vendorId,
+            'product_label_snapshot' => $productLabel,
+            'variant_label_snapshot' => $variantLabel,
+            'quantity'               => $newQuantity,
+            'unit_price'             => $unitPrice,
         ]);
     }
 
@@ -145,7 +168,6 @@ class CartService
         }
 
         $coupon = $this->couponRepository->findValidCoupon($couponCode, $grossTotal);
-
         if (!$coupon) {
             throw new Exception('Invalid or expired coupon code!');
         }
@@ -166,20 +188,12 @@ class CartService
         return $this->cartRepository->clearCoupon($cart->id);
     }
 
-    /**
-     * applyCartDiscount function
-     *
-     * @param integer $userId
-     * @param string $discountTitle
-     * @return boolean
-     */
     public function applyCartDiscount(int $userId, string $discountTitle): bool
     {
         $cartData = $this->getUserCart($userId);
         $grossTotal = $cartData['summary']['gross_total'];
 
         $discount = $this->discountRepository->findValidDiscount($discountTitle, $userId, $grossTotal);
-
         if (!$discount) {
             throw new Exception('Invalid or non-applicable discount offer!');
         }
@@ -206,27 +220,7 @@ class CartService
     public function clearCart(int $userId): bool
     {
         $cart = $this->cartRepository->getOrCreateCart($userId);
-        // Clean coupon along with cart items
-        //$this->cartRepository->clearCoupon($cart->id);
         $this->cartRepository->clearAllItemFromCart($cart->id);
         return $this->cartRepository->clearCart($cart->id);
     }
 }
-
-
-
-
-/*    private function userTypeWisePrice(int $userId, Object $productVariation)
-    {
-       $user =  $this->userRepository->findById($userId);
-       $price = [];
-       if($user->user_type == UserType::DEALER){
-        return $productVariation->dealer_price;
-       }
-       else if($user->user_type == UserType::GENERAL_APP_CUSTOMER){
-        return $productVariation->wholesale_price;
-       }else{
-        return $productVariation->sell_price;
-       }
-    }
-*/
