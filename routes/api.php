@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\NotificationController;
 use App\Http\Controllers\Api\V1\App\ProductController;
+use App\Http\Controllers\Api\V1\App\SaleController;
 use App\Http\Controllers\Api\V1\App\SettingsController;
 use App\Http\Controllers\Api\V1\App\TestingFeaturesController;
 use App\Http\Controllers\Api\V1\App\UserDeviceAndFcmTokenController;
@@ -124,6 +125,13 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/{id}/payment', [OrderController::class, 'submitPayment']);
 
             Route::get('/summary-report', [OrderController::class, 'getOrderSummaryReport']);
+        });
+
+        // Sales Routes
+        Route::prefix('sales')->controller(SaleController::class)->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::get('/{id}', 'show');
         });
 
         //setting static data [temporary]
