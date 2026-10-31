@@ -21,6 +21,11 @@ You are helping with a Laravel 11 multi-vendor ecommerce + POS system.
 - Casts: `boolean`, `decimal:2`, `array` for JSON columns
 - Accessors prefixed `get*Attribute`
 
+## Strict Architectural Rules
+- NO Database queries (Model::query(), DB::table()) inside Services or Controllers.
+- All DB interactions MUST go through a Repository.
+- Controllers -> Services -> Repositories -> Models.
+
 ## Service Rules
 - All service methods must be wrapped in `DB::transaction`
 - Never return arrays — return Models or DTOs

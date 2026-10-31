@@ -1,5 +1,11 @@
 # Coding Conventions
 
+## Repositories
+- app/Repositories — one per module (SaleRepository, BatchRepository)
+- ALL database queries (Eloquent, DB::table) MUST be in Repositories. NEVER in Services.
+- Interfaces MUST be created in app/Repositories/Interface/ and bound in AppServiceProvider.
+- Services receive Repositories via constructor injection.
+
 ## Migrations
 - NEVER modify existing migration files. Create new ALTER ones.
 - NEVER use `migrate:fresh` on existing data. Always `php artisan migrate`.
@@ -15,6 +21,8 @@
 - No business logic in models. All logic in Services.
 
 ## Services
+- app/Services — Business logic, calculations, and transactions (DB::transaction).
+- NEVER write DB::table() or Model::where() inside a Service. Call Repository methods instead.
 - app/Services — one per module (`SaleService`, `PurchaseService`, `BatchService`)
 - Methods are transactional (`DB::transaction`)
 - Return DTOs or Models, never raw arrays
