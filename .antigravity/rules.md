@@ -24,8 +24,10 @@ You are helping with a Laravel 11 multi-vendor ecommerce + POS system.
 ## Strict Architectural Rules
 - NO Database queries (Model::query(), DB::table()) inside Services or Controllers.
 - All DB interactions MUST go through a Repository.
-- Repository structure MUST follow: app/Repositories/{ModuleName}/{ModuleName}Repository.php and app/Repositories/{ModuleName}/Interface/{ModuleName}RepositoryInterface.php.
 - Controllers -> Services -> Repositories -> Models.
+
+## Repository Structure
+- Repository structure MUST follow: app/Repositories/{ModuleName}/{ModuleName}Repository.php and app/Repositories/{ModuleName}/Interface/{ModuleName}RepositoryInterface.php.
 
 ## Service Rules
 - All service methods must be wrapped in `DB::transaction`
