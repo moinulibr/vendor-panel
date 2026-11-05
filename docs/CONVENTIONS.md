@@ -3,7 +3,7 @@
 ## Repositories
 - app/Repositories — one per module (SaleRepository, BatchRepository)
 - ALL database queries (Eloquent, DB::table) MUST be in Repositories. NEVER in Services.
-- Interfaces MUST be created in app/Repositories/Interface/ and bound in AppServiceProvider.
+- Repository structure MUST follow: app/Repositories/{ModuleName}/{ModuleName}Repository.php and app/Repositories/{ModuleName}/Interface/{ModuleName}RepositoryInterface.php. and bound in AppServiceProvider.
 - Services receive Repositories via constructor injection.
 
 ## Migrations
