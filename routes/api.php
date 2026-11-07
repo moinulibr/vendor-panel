@@ -132,6 +132,7 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/', 'index');
             Route::post('/', 'store');
             Route::get('/{id}', 'show');
+            Route::post('/{id}/confirm', 'confirmQuotation');
         });
 
         //setting static data [temporary]

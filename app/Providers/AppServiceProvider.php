@@ -14,10 +14,12 @@ use App\Repositories\DeviceToken\Interface\UserDeviceTokenRepositoryInterface;
 use App\Repositories\DeviceToken\UserDeviceTokenRepository;
 use App\Repositories\Discount\DiscountRepository;
 use App\Repositories\Discount\Interface\DiscountRepositoryInterface;
-use App\Repositories\Interface\BatchRepositoryInterface;
-use App\Repositories\BatchRepository;
-use App\Repositories\Interface\SaleRepositoryInterface;
-use App\Repositories\SaleRepository;
+use App\Repositories\Batch\Interface\BatchRepositoryInterface;
+use App\Repositories\Batch\BatchRepository;
+use App\Repositories\Sale\Interface\SaleRepositoryInterface;
+use App\Repositories\Sale\SaleRepository;
+use App\Repositories\Sale\Interface\SaleEditRepositoryInterface;
+use App\Repositories\Sale\SaleEditRepository;
 use App\Repositories\Favorite\FavoriteRepository;
 use App\Repositories\Favorite\Interface\FavoriteRepositoryInterface;
 use App\Repositories\Notification\Interface\NotificationRepositoryInterface;
@@ -70,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DiscountRepositoryInterface::class, DiscountRepository::class);
         $this->app->bind(BatchRepositoryInterface::class, BatchRepository::class);
         $this->app->bind(SaleRepositoryInterface::class, SaleRepository::class);
+        $this->app->bind(SaleEditRepositoryInterface::class, SaleEditRepository::class);
         
     }
 

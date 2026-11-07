@@ -111,10 +111,14 @@ class SaleResource extends JsonResource
                         'is_combo'                             => (bool) $item->is_combo,
                         'line_note'                            => $item->line_note,
                         'batches'                              => $item->relationLoaded('batchAllocations') ? $item->batchAllocations->map(fn($b) => [
-                            'id'               => $b->id,
-                            'product_batch_id' => $b->product_batch_id,
-                            'allocated_qty'    => (int) $b->allocated_qty,
-                            'batch_cost_price' => (float) $b->batch_cost_price,
+                            'id'                => $b->id,
+                            'batch_id'          => $b->batch_id ?? $b->product_batch_id,
+                            'qty_used'          => (int) ($b->qty_used ?? $b->allocated_qty),
+                            'unit_cost'         => (float) ($b->unit_cost ?? $b->batch_cost_price),
+                            'cost_total'        => (float) $b->cost_total,
+                            'unit_sale_price'   => (float) $b->unit_sale_price,
+                            'total_sale_amount' => (float) $b->total_sale_amount,
+                            'total_profit'      => (float) $b->total_profit,
                         ]) : null,
                     ];
                 });
