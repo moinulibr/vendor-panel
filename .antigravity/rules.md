@@ -26,8 +26,10 @@ You are helping with a Laravel 11 multi-vendor ecommerce + POS system.
 - All DB interactions MUST go through a Repository.
 - Controllers -> Services -> Repositories -> Models.
 
-## Repository Structure
-- Repository structure MUST follow: app/Repositories/{ModuleName}/{ModuleName}Repository.php and app/Repositories/{ModuleName}/Interface/{ModuleName}RepositoryInterface.php.
+## Repository Pattern
+- ALWAYS use Module-based repository folders: `app/Repositories/{ModuleName}/Interface/{ModuleName}RepositoryInterface.php` and `app/Repositories/{ModuleName}/{ModuleName}Repository.php`.
+- NEVER put repositories in a flat `app/Repositories/Interface` folder.
+- Sale MUST be created from the Cart. Use `cart_id` to fetch items from `CartRepository`.
 
 ## Service Rules
 - All service methods must be wrapped in `DB::transaction`
