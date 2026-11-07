@@ -2,18 +2,21 @@
 
 namespace App\Services;
 
+use App\Models\Cart;
 use App\Models\Sale;
-use App\Repositories\Interface\BatchRepositoryInterface;
-use App\Repositories\Interface\SaleRepositoryInterface;
+use App\Repositories\Batch\Interface\BatchRepositoryInterface;
+use App\Repositories\Cart\Interface\CartRepositoryInterface;
+use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class SaleService
 {
     public function __construct(
-        protected BatchService            $batchService,
-        protected SaleRepositoryInterface $saleRepository,
-        protected BatchRepositoryInterface $batchRepository
+        protected BatchService             $batchService,
+        protected SaleRepositoryInterface  $saleRepository,
+        protected BatchRepositoryInterface $batchRepository,
+        protected CartRepositoryInterface  $cartRepository,
     ) {}
 
     // =========================================================================
@@ -214,7 +217,10 @@ class SaleService
 
             // ------------------------------------------------------------------
             // 6. Insert SaleItems + SaleItemBatches + SaleTaxes
+            //    Batch allocation only when status is 'confirmed' (skip for quotations)
             // ------------------------------------------------------------------
+            $isConfirmed = ($status === 'confirmed');
+
             foreach ($processedItems['lines'] as $line) {
                 $saleItem = $this->saleRepository->createSaleItem([
                     'sale_id'                               => $sale->id,
@@ -250,8 +256,8 @@ class SaleService
                     'line_note'                             => $line['line_note'],
                 ]);
 
-                // Batch allocation (FIFO)
-                if (!empty($line['track_batch']) && $data['warehouse_id']) {
+                // Batch allocation (FIFO) — only when confirmed and product tracks batches
+                if ($isConfirmed && !empty($line['track_batch']) && $data['warehouse_id']) {
                     $allocations = $this->batchService->allocateFIFO(
                         $line['product_id'],
                         $line['variation_id'],
@@ -339,11 +345,206 @@ class SaleService
             ]);
 
             // ------------------------------------------------------------------
-            // 8. Insert PaymentLedger entries
+            // 8. Insert PaymentLedger entries — only when confirmed
             // ------------------------------------------------------------------
-            $this->insertLedgerEntries($sale, $processedItems['lines'], $invoiceNo, $data);
+            if ($isConfirmed) {
+                $this->insertLedgerEntries($sale, $processedItems['lines'], $invoiceNo, $data);
+            }
 
             return $sale->fresh();
+        });
+    }
+
+    /**
+     * Create a new sale from an existing cart in a single DB transaction.
+     *
+     * Fetches the cart (and its loaded items with product/variation relations),
+     * builds the item list by snapshotting live product data, then delegates to
+     * the full createSale() pipeline.
+     *
+     * Quotation flow  ($data['status'] === 'quotation'):
+     *   - Sets payment_status = 'unpaid'.
+     *   - Does NOT allocate batches or write ledger entries.
+     *   - Cart is still cleared after the quotation is recorded.
+     *
+     * Confirmed flow  ($data['status'] === 'confirmed' or derived):
+     *   - Allocates batches via FIFO (BatchService).
+     *   - Writes PaymentLedger entries (customer debit, per-vendor credit).
+     *   - Clears the cart after all DB work succeeds.
+     *
+     * Expected $data shape (all keys except 'cart_id' are identical to createSale):
+     * [
+     *   'cart_id'              => int,
+     *   'channel'              => string,
+     *   'customer_id'          => int|null,
+     *   'customer_type'        => string,
+     *   'warehouse_id'         => int,
+     *   'sales_person_id'      => int|null,
+     *   'sale_date'            => string|null,
+     *   'shipping_charge'      => float,
+     *   'round_off'            => float,
+     *   'discount_type'        => string|null,
+     *   'discount_value'       => float,
+     *   'coupon_id'            => int|null,
+     *   'coupon_discount_type' => string|null,
+     *   'coupon_discount_value'=> float,
+     *   'currency'             => string,
+     *   'exchange_rate'        => float,
+     *   'notes'                => string|null,
+     *   'status'               => 'quotation'|'confirmed'|null,
+     *   'created_by'           => int|null,
+     *   'payments'             => [...],     // optional initial payments
+     * ]
+     *
+     * @throws RuntimeException When cart is empty or stock is insufficient.
+     */
+    public function createSaleFromCart(int $userId, array $data): Sale
+    {
+        return DB::transaction(function () use ($userId, $data) {
+
+            // ------------------------------------------------------------------
+            // 1. Load cart with items and their product/variation relations
+            // ------------------------------------------------------------------
+            $cart = $this->cartRepository->getSingleCartByCartAndUserId($data['cart_id'], $userId);
+
+            if (!$cart) {
+                throw new RuntimeException("Cart #{$data['cart_id']} not found for user #{$userId}.");
+            }
+
+            $cart->load(['items.product', 'items.variation']);
+
+            if ($cart->items->isEmpty()) {
+                throw new RuntimeException("Cart #{$cart->id} is empty. Cannot create a sale.");
+            }
+
+            // ------------------------------------------------------------------
+            // 2. Build the items array by snapshotting live product/variation data
+            // ------------------------------------------------------------------
+            $customerType = $data['customer_type'] ?? 'regular';
+            $items        = [];
+
+            foreach ($cart->items as $cartItem) {
+                $product   = $cartItem->product;
+                $variation = $cartItem->variation; // null for simple products
+
+                if (!$product) {
+                    throw new RuntimeException(
+                        "Cart item #{$cartItem->id} references a missing product."
+                    );
+                }
+
+                // Resolve the price: cart already stores unit_price at add-time.
+                // Use it as the snapshot so the invoice matches what the customer saw.
+                $unitPrice = (float) $cartItem->unit_price;
+
+                // Resolve product name snapshot
+                $productNameSnapshot = $product->name ?? $product->title ?? (string) $product->id;
+
+                // Variant label: prefer cart-stored snapshot, fall back to variation attributes
+                $variantLabelSnapshot = $cartItem->variant_label_snapshot
+                    ?? ($variation ? ($variation->label ?? $variation->sku ?? null) : null);
+
+                // Invoice name: use variation's invoice_name if available, else product name
+                $invoiceNameSnapshot = ($variation ? ($variation->invoice_name ?? null) : null)
+                    ?? $productNameSnapshot;
+
+                // Image snapshot: relative path only (never full URL per CONVENTIONS.md)
+                $imageSnapshot = $product->image ?? null;
+
+                // Tax details — read from product, variation takes precedence if set
+                $taxType = $variation
+                    ? ($variation->tax_type ?? $product->tax_type ?? 'exempt')
+                    : ($product->tax_type ?? 'exempt');
+
+                $taxRate = $variation
+                    ? (float) ($variation->tax_rate ?? $product->tax_rate ?? 0)
+                    : (float) ($product->tax_rate ?? 0);
+
+                $taxName     = $product->tax_name ?? null;
+                $taxCategory = $product->tax_category ?? null;
+                $hsCode      = $product->hs_code ?? null;
+
+                // Batch tracking — variation-level overrides product-level
+                $trackBatch = $variation
+                    ? (bool) ($variation->track_batch ?? $product->track_batch ?? false)
+                    : (bool) ($product->track_batch ?? false);
+
+                // Vendor commission — from product (platform-level)
+                $vcType  = $product->vendor_commission_type ?? null;
+                $vcValue = (float) ($product->vendor_commission_value ?? 0);
+
+                // Salesperson commission
+                $spType  = $product->salesperson_commission_type ?? null;
+                $spValue = (float) ($product->salesperson_commission_value ?? 0);
+
+                // Line-level discount from cart item
+                $lineDiscount        = (float) ($cartItem->discount_amount ?? 0);
+                $lineDiscountPercent  = 0.0;
+                if ($lineDiscount > 0 && ($cartItem->discount_type === 'percentage')) {
+                    $lineDiscountPercent = (float) ($cartItem->discount_amount ?? 0);
+                    // Recalculate actual amount for percentage-type discounts
+                    $lineSubtotalForDisc = $cartItem->quantity * $unitPrice;
+                    $lineDiscount        = round($lineSubtotalForDisc * $lineDiscountPercent / 100, 2);
+                }
+
+                $items[] = [
+                    'product_id'                            => $cartItem->product_id,
+                    'variation_id'                          => $cartItem->variation_id,
+                    'vendor_id'                             => $cartItem->vendor_id,
+                    'qty'                                   => (int) $cartItem->quantity,
+                    // Snapshots
+                    'product_name_snapshot'                 => $productNameSnapshot,
+                    'variant_label_snapshot'                => $variantLabelSnapshot,
+                    'invoice_name_snapshot'                 => $invoiceNameSnapshot,
+                    'image_snapshot'                        => $imageSnapshot,
+                    'unit_price_snapshot'                   => $unitPrice,
+                    'customer_type_snapshot'                => $customerType,
+                    'allow_discount'                        => (bool) ($product->allow_discount ?? true),
+                    // Tax
+                    'tax_type_snapshot'                     => $taxType,
+                    'tax_rate_snapshot'                     => $taxRate,
+                    'tax_name'                              => $taxName,
+                    'tax_category'                          => $taxCategory,
+                    'hs_code'                               => $hsCode,
+                    // Discounts
+                    'line_discount'                         => $lineDiscount,
+                    'line_discount_percent'                 => $lineDiscountPercent,
+                    // Commissions
+                    'vendor_commission_type_snapshot'       => $vcType,
+                    'vendor_commission_value_snapshot'      => $vcValue,
+                    'salesperson_commission_type_snapshot'  => $spType,
+                    'salesperson_commission_value_snapshot' => $spValue,
+                    // Flags
+                    'is_combo'                              => (bool) ($product->is_combo ?? false),
+                    'track_batch'                           => $trackBatch,
+                    'line_note'                             => $cartItem->notes ?? null,
+                ];
+            }
+
+            // ------------------------------------------------------------------
+            // 3. Merge cart-derived items into $data and delegate to createSale()
+            //    createSale() runs inside the same transaction (no nested begin).
+            // ------------------------------------------------------------------
+            $saleData          = $data;
+            $saleData['items'] = $items;
+
+            // Carry coupon from cart if not explicitly supplied
+            if (!isset($saleData['coupon_id']) && $cart->coupon_id) {
+                $saleData['coupon_id']             = $cart->coupon_id;
+                $saleData['coupon_discount_type']  = $cart->coupon_discount_type;
+                $saleData['coupon_discount_value']  = 0; // already resolved to amount
+                // Override: treat coupon_discount_amount as a fixed override below
+            }
+
+            $sale = $this->createSale($saleData);
+
+            // ------------------------------------------------------------------
+            // 4. Clear the cart after successful sale creation
+            // ------------------------------------------------------------------
+            $this->cartRepository->clearAllItemFromCart($cart->id);
+            $this->cartRepository->clearCart($cart->id);
+
+            return $sale;
         });
     }
 
@@ -391,9 +592,9 @@ class SaleService
             );
 
             // Vendor commission
-            $vcType       = $item['vendor_commission_type_snapshot'] ?? null;
-            $vcValue      = (float) ($item['vendor_commission_value_snapshot'] ?? 0);
-            $vcAmount     = $this->resolveCommissionAmount($vcType, $vcValue, $lineSubtotal - $lineDiscount);
+            $vcType        = $item['vendor_commission_type_snapshot'] ?? null;
+            $vcValue       = (float) ($item['vendor_commission_value_snapshot'] ?? 0);
+            $vcAmount      = $this->resolveCommissionAmount($vcType, $vcValue, $lineSubtotal - $lineDiscount);
             $vendorPayable = round(($lineSubtotal - $lineDiscount) - $vcAmount, 2);
 
             // Salesperson commission

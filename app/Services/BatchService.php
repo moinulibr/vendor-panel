@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\ProductBatch;
-use App\Repositories\Interface\BatchRepositoryInterface;
+use App\Repositories\Batch\Interface\BatchRepositoryInterface;
 use RuntimeException;
 
 class BatchService
@@ -11,6 +11,10 @@ class BatchService
     public function __construct(
         protected BatchRepositoryInterface $batchRepository
     ) {}
+
+    // =========================================================================
+    // Public API
+    // =========================================================================
 
     /**
      * Allocate qty from available batches using FIFO (oldest batch first, soonest-expiry first).
