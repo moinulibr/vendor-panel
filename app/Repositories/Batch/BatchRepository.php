@@ -4,7 +4,7 @@ namespace App\Repositories\Batch;
 
 use App\Models\ProductBatch;
 use App\Repositories\Batch\Interface\BatchRepositoryInterface;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 
 class BatchRepository implements BatchRepositoryInterface
 {
@@ -14,7 +14,7 @@ class BatchRepository implements BatchRepositoryInterface
             ->where('warehouse_id', $warehouseId)
             ->where('status', 'active')
             ->where('qty_available', '>', 0)
-            ->when($variationId !== null, fn ($q) => $q->where('variation_id', $variationId))
+            ->when($variationId !== null, fn($q) => $q->where('variation_id', $variationId))
             ->orderByRaw('CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END ASC')
             ->orderBy('expiry_date', 'asc')
             ->orderBy('created_at', 'asc')
@@ -30,16 +30,16 @@ class BatchRepository implements BatchRepositoryInterface
     public function decrementBatchQty(ProductBatch $batch, int $qty): void
     {
         $batch->decrement('qty_available', $qty);
-
         if ($batch->qty_available <= 0) {
             $batch->update(['status' => 'depleted']);
         }
     }
 
-    public function getLatestBatchNo(string $prefix): ?string
+    public function incrementBatchQty(ProductBatch $batch, int $qty): void
     {
-        return ProductBatch::where('batch_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->value('batch_no');
+        $batch->increment('qty_available', $qty);
+        if ($batch->qty_available > 0 && $batch->status === 'depleted') {
+            $batch->update(['status' => 'active']);
+        }
     }
 }

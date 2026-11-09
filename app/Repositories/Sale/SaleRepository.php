@@ -72,4 +72,12 @@ class SaleRepository implements SaleRepositoryInterface
     {
         DB::table('payment_ledger')->insert($data);
     }
+
+    public function updateSaleStatus(Sale $sale, string $paymentStatus, string $status): void
+    {
+        $sale->update([
+            'payment_status' => $paymentStatus,
+            'status' => $status
+        ]);
+    }
 }

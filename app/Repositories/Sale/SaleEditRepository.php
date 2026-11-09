@@ -6,13 +6,20 @@ use App\Models\Sale;
 use App\Models\SaleEditHistory;
 use App\Models\SaleEditItem;
 use App\Repositories\Sale\Interface\SaleEditRepositoryInterface;
-use Illuminate\Support\Collection;
 
 class SaleEditRepository implements SaleEditRepositoryInterface
 {
-    public function createNewVersion(array $data): Sale
+    public function updateOldSaleToHistory(Sale $sale): void
     {
-        return Sale::create($data);
+        $sale->update(['is_current' => false]);
+    }
+
+    public function createNewVersion(Sale $oldSale, array $newSaleData): Sale
+    {
+        $newSaleData['parent_id'] = $oldSale->parent_id ?? $oldSale->id;
+        $newSaleData['version'] = $oldSale->version + 1;
+        $newSaleData['is_current'] = true;
+        return Sale::create($newSaleData);
     }
 
     public function createEditHistory(array $data): SaleEditHistory
@@ -20,32 +27,8 @@ class SaleEditRepository implements SaleEditRepositoryInterface
         return SaleEditHistory::create($data);
     }
 
-    public function createEditItems(array $items): Collection
+    public function createEditItem(array $data): SaleEditItem
     {
-        if (empty($items)) {
-            return collect();
-        }
-
-        if (array_is_list($items) === false && isset($items['sale_id'])) {
-            $items = [$items];
-        }
-
-        $records = collect();
-        foreach ($items as $item) {
-            $records->push(SaleEditItem::create($item));
-        }
-
-        return $records;
-    }
-
-    public function updateOldSaleToHistory(Sale|int $sale, array $attributes = []): bool
-    {
-        $data = array_merge(['is_current' => false], $attributes);
-
-        if ($sale instanceof Sale) {
-            return $sale->update($data);
-        }
-
-        return (bool) Sale::where('id', $sale)->update($data);
+        return SaleEditItem::create($data);
     }
 }

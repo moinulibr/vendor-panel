@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class OldVariation extends Model
+{
+    protected $guarded=[];
+
+    public function product(){
+
+        return $this->belongsTo(Product::class);
+    }
+
+    public function stocks()
+    {
+        return $this->hasMany(ProductStock::class, 'variation_id');
+    }
+}
