@@ -116,7 +116,7 @@ Route::prefix('v1/app')->group(function () {
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
 
         // Order & Quotation Routes
-        Route::prefix('orders')->group(function () {
+        Route::prefix('sales')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::post('/quotation', [OrderController::class, 'storeQuotation']);
             Route::get('/{id}', [OrderController::class, 'show']);
@@ -128,9 +128,9 @@ Route::prefix('v1/app')->group(function () {
         });
 
         // Sales & Quotation Routes
-        Route::prefix('sales')->group(function () {
+        Route::prefix('orders')->group(function () {
             Route::get('/', [SaleController::class, 'index']);
-            Route::post('/', [SaleController::class, 'store']); // Cart to Sale/Quotation
+            Route::post('/quotation', [SaleController::class, 'store']); // Cart to Sale/Quotation
             Route::get('/summary-report', [SaleController::class, 'summaryReport']);
             Route::get('/{id}', [SaleController::class, 'show']);
             Route::put('/{id}', [SaleController::class, 'update']);

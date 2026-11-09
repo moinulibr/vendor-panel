@@ -20,7 +20,7 @@ class StoreSaleRequest extends FormRequest
             'user_base_id'    => [$isSR ? 'required' : 'nullable', 'integer', 'exists:users,id'],
             'cart_id'         => 'required|integer|exists:carts,id',
             'channel'         => 'nullable|string|in:admin_pos,web_ecommerce,mobile_dealer_app,sr',
-            'warehouse_id'    => 'required|integer|exists:warehouses,id',
+            'warehouse_id'    => 'nullable|integer|exists:warehouses,id',
             'status'          => 'nullable|string|in:draft,quotation,confirmed', // নতুন স্ট্যাটাস
             'note'            => 'nullable|string|max:500',
             'shipping_charge' => 'nullable|numeric|min:0',

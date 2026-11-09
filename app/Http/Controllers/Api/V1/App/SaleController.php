@@ -12,6 +12,7 @@ use App\Services\SaleEditService;
 use App\Utils\UserType;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class SaleController extends BaseApiController
 {
@@ -59,6 +60,7 @@ class SaleController extends BaseApiController
                 statusCode: 201
             );
         } catch (Exception $e) {
+            Log::error($e);
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
