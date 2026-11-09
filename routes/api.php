@@ -127,12 +127,15 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/summary-report', [OrderController::class, 'getOrderSummaryReport']);
         });
 
-        // Sales Routes
-        Route::prefix('sales')->controller(SaleController::class)->group(function () {
-            Route::get('/', 'index');
-            Route::post('/', 'store');
-            Route::get('/{id}', 'show');
-            Route::post('/{id}/confirm', 'confirmQuotation');
+        // Sales & Quotation Routes
+        Route::prefix('sales')->group(function () {
+            Route::get('/', [SaleController::class, 'index']);
+            Route::post('/', [SaleController::class, 'store']); // Cart to Sale/Quotation
+            Route::get('/summary-report', [SaleController::class, 'summaryReport']);
+            Route::get('/{id}', [SaleController::class, 'show']);
+            Route::put('/{id}', [SaleController::class, 'update']);
+            Route::post('/{id}/confirm', [SaleController::class, 'confirmQuotation']);
+            Route::post('/{id}/payment', [SaleController::class, 'submitPayment']);
         });
 
         //setting static data [temporary]

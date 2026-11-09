@@ -16,6 +16,87 @@ class SaleEditService
         protected SaleEditRepositoryInterface $saleEditRepository
     ) {}
 
+    /**
+     * Update a Pending Quotation
+     */
+    public function updateQuotation(int $saleId, int $userId, array $data): Sale
+    {
+        return DB::transaction(function () use ($saleId, $userId, $data) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+
+            if (!$sale) {
+                throw new Exception("Quotation not found.");
+            }
+
+            if ($sale->status !== 'quotation') {
+                throw new Exception("Only pending quotations can be updated.");
+            }
+
+            // ১. নোট আপডেট
+            if (isset($data['note'])) {
+                $this->saleRepository->updateSale($sale, ['notes' => $data['note']]);
+            }
+
+            // ২. আইটেম আপডেট (যদি রিকোয়েস্টে থাকে)
+            if (!empty($data['items'])) {
+                // পুরনো আইটেম ডিলিট করে নতুন আইটেম বসানো হচ্ছে (যেহেতু এটি এখনো কোটেশন, ব্যাচ বা লেজারে কোনো প্রভাব পড়েনি)
+                $sale->items()->delete();
+
+                $subTotal = 0;
+                $taxTotal = 0;
+
+                foreach ($data['items'] as $itemData) {
+                    $lineSubTotal = $itemData['quantity'] * $itemData['unit_price'];
+                    $lineDiscount = $itemData['discount'] ?? 0;
+
+                    // প্রোডাক্ট ও ভ্যারিয়েশন থেকে ডাটা নেয়া
+                    $product = \App\Models\Product::find($itemData['product_id']);
+                    $variation = isset($itemData['variation_id']) ? \App\Models\Variation::find($itemData['variation_id']) : null;
+
+                    $taxType = $variation->tax_type ?? $product->tax_type ?? 'exempt';
+                    $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
+                    $taxAmount = ($taxType === 'exclusive') ? round(($lineSubTotal - $lineDiscount) * $taxRate / 100, 2) : 0;
+
+                    $this->saleRepository->createSaleItem([
+                        'sale_id' => $sale->id,
+                        'product_id' => $itemData['product_id'],
+                        'variation_id' => $itemData['variation_id'] ?? null,
+                        'vendor_id' => $product->vendor_id,
+                        'product_name_snapshot' => $product->name,
+                        'variant_label_snapshot' => $variation->name ?? null,
+                        'unit_price_snapshot' => $itemData['unit_price'],
+                        'qty' => $itemData['quantity'],
+                        'line_subtotal' => $lineSubTotal,
+                        'line_discount' => $lineDiscount,
+                        'taxable_amount' => $lineSubTotal - $lineDiscount,
+                        'tax_type_snapshot' => $taxType,
+                        'tax_rate_snapshot' => $taxRate,
+                        'tax_amount' => $taxAmount,
+                        'line_total' => ($lineSubTotal - $lineDiscount) + $taxAmount,
+                        'status' => 'active'
+                    ]);
+
+                    $subTotal += $lineSubTotal;
+                    $taxTotal += $taxAmount;
+                }
+
+                // টোটাল আপডেট
+                $grossTotal = $subTotal - ($data['discount_value'] ?? 0);
+                $finalAmount = $grossTotal + $sale->shipping_charge + $taxTotal;
+
+                $this->saleRepository->updateSale($sale, [
+                    'sub_total' => $subTotal,
+                    'gross_total' => $grossTotal,
+                    'tax_amount' => $taxTotal,
+                    'final_amount' => $finalAmount,
+                    'due_amount' => $finalAmount, // যেহেতু কোটেশন, পেইড ০
+                ]);
+            }
+
+            return $sale->fresh('items');
+        });
+    }
+    
     public function editSale(int $saleId, array $data): Sale
     {
         return DB::transaction(function () use ($saleId, $data) {

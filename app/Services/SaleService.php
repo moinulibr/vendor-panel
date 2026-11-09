@@ -7,6 +7,7 @@ use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class SaleService
 {
@@ -15,6 +16,24 @@ class SaleService
         protected SaleRepositoryInterface $saleRepository,
         protected CartRepositoryInterface $cartRepository
     ) {}
+
+    // =========================================================================
+    // Core Methods
+    // =========================================================================
+
+    public function getUserSales(int $userId, array $filters)
+    {
+        return $this->saleRepository->getPaginatedSales($userId, $filters);
+    }
+
+    public function getSaleDetails(int $saleId, int $userId): Sale
+    {
+        $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+        if (!$sale) {
+            throw new Exception("Sale or Quotation not found.");
+        }
+        return $sale;
+    }
 
     public function createSaleFromCart(int $userId, array $data): Sale
     {
@@ -158,7 +177,100 @@ class SaleService
         });
     }
 
-    // === Helper Methods (Logic for calculations) ===
+    public function confirmQuotation(int $saleId, int $userId): Sale
+    {
+        return DB::transaction(function () use ($saleId, $userId) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+
+            if (!$sale || $sale->status !== 'quotation') {
+                throw new Exception("Quotation not found or already confirmed.");
+            }
+
+            // ১. স্ট্যাটাস আপডেট
+            $this->saleRepository->updateSale($sale, ['status' => 'confirmed']);
+
+            // ২. ব্যাচ অ্যালোকেট করা
+            foreach ($sale->items as $item) {
+                if ($item->track_batch ?? false) {
+                    $allocations = $this->batchService->allocateFIFO(
+                        $item->product_id,
+                        $item->variation_id,
+                        $sale->warehouse_id,
+                        $item->qty
+                    );
+                    foreach ($allocations as $alloc) {
+                        $this->saleRepository->createSaleItemBatch([
+                            'sale_id' => $sale->id,
+                            'sale_item_id' => $item->id,
+                            'batch_id' => $alloc['batch']->id,
+                            'qty_used' => $alloc['qty_used'],
+                            'unit_cost' => $alloc['unit_cost'],
+                            'cost_total' => $alloc['qty_used'] * $alloc['unit_cost'],
+                            'unit_sale_price' => $item->unit_price_snapshot,
+                            'total_sale_amount' => $alloc['qty_used'] * $item->unit_price_snapshot,
+                            'total_profit' => ($alloc['qty_used'] * $item->unit_price_snapshot) - ($alloc['qty_used'] * $alloc['unit_cost'])
+                        ]);
+                    }
+                }
+            }
+
+            // ৩. লেজার এন্ট্রি
+            $linesForLedger = $sale->items->map(fn($item) => [
+                'vendor_id' => $item->vendor_id,
+                'vendor_payable_amount' => $item->vendor_payable_amount
+            ])->toArray();
+            $this->insertLedgerEntries($sale, $linesForLedger);
+
+            return $sale;
+        });
+    }
+
+    public function submitPayment(int $saleId, int $userId, array $data): void
+    {
+        DB::transaction(function () use ($saleId, $userId, $data) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+            if (!$sale || $sale->status === 'quotation') {
+                throw new Exception("Cannot submit payment for this sale.");
+            }
+
+            $this->saleRepository->createSalePayment([
+                'payment_no' => $this->generatePaymentNo(),
+                'sale_id' => $sale->id,
+                'customer_id' => $userId,
+                'amount' => $data['amount'],
+                'method' => $data['method'],
+                'reference_no' => $data['reference_no'] ?? null,
+                'status' => 'pending',
+                'paid_at' => now(),
+            ]);
+
+            $newPaid = $sale->paid_amount + $data['amount'];
+            $newDue = $sale->final_amount - $newPaid;
+            $paymentStatus = $newDue <= 0 ? 'paid' : 'partially_paid';
+
+            $this->saleRepository->updateSale($sale, [
+                'paid_amount' => $newPaid,
+                'due_amount' => max(0, $newDue),
+                'payment_status' => $paymentStatus,
+            ]);
+        });
+    }
+
+    public function getSummaryReport(int $userId): array
+    {
+        $stats = $this->saleRepository->getSummaryStats($userId);
+        return array_merge([
+            'total_orders' => 0,
+            'total_quotations' => 0,
+            'total_order_amount' => 0,
+            'total_paid_amount' => 0,
+            'total_due_amount' => 0
+        ], array_filter($stats));
+    }
+
+    // =========================================================================
+    // Helper Methods
+    // =========================================================================
 
     private function processCartItems($cartItems): array
     {
@@ -168,7 +280,6 @@ class SaleService
         $taxTotal = 0;
 
         foreach ($cartItems as $item) {
-            // Mocking snapshot logic from product/variation relationships
             $product = $item->product;
             $variation = $item->variation;
 
@@ -179,16 +290,13 @@ class SaleService
             $taxType = $variation->tax_type ?? $product->tax_type ?? 'exempt';
             $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
 
-            // Calculate Tax
-            $base = $lineSubTotal;
             $taxAmount = 0;
             if ($taxType === 'exclusive') {
-                $taxAmount = round($base * $taxRate / 100, 2);
+                $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
             } elseif ($taxType === 'inclusive') {
-                $taxAmount = round($base - ($base / (1 + $taxRate / 100)), 2);
+                $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
             }
 
-            // Commission logic
             $vcType = $variation->vendor_commission_type ?? $product->vendor_commission_type;
             $vcValue = $variation->vendor_commission_value ?? $product->vendor_commission_value ?? 0;
             $vcAmount = ($vcType === 'percentage') ? round($lineSubTotal * $vcValue / 100, 2) : $vcValue;
@@ -203,8 +311,8 @@ class SaleService
                 'unit_price_snapshot' => $unitPrice,
                 'qty' => $qty,
                 'line_subtotal' => $lineSubTotal,
-                'line_discount' => 0, // Assuming no item discount in cart yet
-                'taxable_amount' => $base,
+                'line_discount' => 0,
+                'taxable_amount' => $lineSubTotal,
                 'tax_type_snapshot' => $taxType,
                 'tax_rate_snapshot' => $taxRate,
                 'tax_amount' => $taxAmount,
@@ -250,7 +358,6 @@ class SaleService
         $now = now();
         $entryDate = $now->toDateString();
 
-        // Customer Debit
         if ($sale->customer_id) {
             $prev = $this->saleRepository->getLatestLedgerBalance('customer', $sale->customer_id);
             $this->saleRepository->insertLedgerEntry([
@@ -273,10 +380,9 @@ class SaleService
             ]);
         }
 
-        // Vendor Credit
         $vendorTotals = [];
         foreach ($lines as $line) {
-            if ($line['vendor_id']) {
+            if (isset($line['vendor_id']) && $line['vendor_id']) {
                 $vendorTotals[$line['vendor_id']] = ($vendorTotals[$line['vendor_id']] ?? 0) + $line['vendor_payable_amount'];
             }
         }
