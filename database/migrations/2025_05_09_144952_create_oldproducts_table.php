@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('products'))return;
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name')->nullable();
@@ -33,6 +34,7 @@ return new class extends Migration
             $table->tinyInteger('is_new')->nullable()->default(1);
             $table->timestamps();
         });
+        
     }
 
     /**
