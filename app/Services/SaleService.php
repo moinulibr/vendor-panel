@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\Sale;
+use App\Models\Warehouse;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 class SaleService
 {
@@ -42,6 +42,13 @@ class SaleService
             $cart = $this->cartRepository->getSingleCartByCartAndUserId($data['cart_id'], $userId);
             if (!$cart || $cart->items()->count() === 0) {
                 throw new Exception("Cart is empty or not found.");
+            }
+
+            // 🟢 FIX: Handle missing warehouse_id
+            //$warehouseId = $data['warehouse_id'] ?? Warehouse::where('is_default', true)->value('id') ?? Warehouse::value('id');
+            $warehouseId = $data['warehouse_id'] ?? 1;
+            if (!$warehouseId) {
+                throw new Exception("No warehouse found. Please configure a warehouse first.");
             }
 
             // 2. Process Cart Items into Sale format
@@ -86,7 +93,7 @@ class SaleService
                 'source_ref' => $data['source_ref'] ?? null,
                 'customer_id' => $userId,
                 'customer_type' => $data['customer_type'] ?? 'dealer',
-                'warehouse_id' => $data['warehouse_id'],
+                'warehouse_id' => $warehouseId, // 🟢 Now uses the fallback variable
                 'sales_person_id' => $data['sales_person_id'] ?? null,
                 'sub_total' => $subTotal,
                 'item_total_discount' => $itemTotalDiscount,
@@ -118,8 +125,8 @@ class SaleService
                     $allocations = $this->batchService->allocateFIFO(
                         $line['product_id'],
                         $line['variation_id'],
-                        $sale->warehouse_id,
-                        $line['qty']
+                        $warehouseId,
+                        $line['qty'] // 🟢 Using $warehouseId
                     );
                     foreach ($allocations as $alloc) {
                         $this->saleRepository->createSaleItemBatch([
