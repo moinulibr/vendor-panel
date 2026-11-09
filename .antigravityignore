@@ -1,0 +1,16 @@
+node_modules/
+vendor/
+storage/
+bootstrap/cache/
+public/uploads/
+public/storage/
+*.log
+*.sql
+*.sqlite
+.env
+.env.*
+public/images/
+public/build/
+.git/
+.idea/
+.vscode/

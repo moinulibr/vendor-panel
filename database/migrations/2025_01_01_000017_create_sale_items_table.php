@@ -13,16 +13,17 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sale_id')->comment('FK to sales table');
             $table->foreignId('product_id')->comment('FK to products table');
-            $table->foreignId('variation_id')->nullable()->comment('FK to product_variations table');
-            $table->foreignId('vendor_id')->nullable()->comment('FK to users table (multi-vendor — which vendor supplied)');
+            $table->foreignId('variation_id')->nullable()->comment('FK to variations table'); // FIXED comment
+            $table->foreignId('vendor_id')->nullable()->comment('FK to users (which vendor supplied this)');
 
             $table->string('product_name_snapshot', 200)->nullable()->comment('Product name at sale time');
             $table->string('variant_label_snapshot', 100)->nullable()->comment('Variant label at sale time (e.g. Red / M)');
             $table->string('invoice_name_snapshot', 100)->nullable()->comment('Name to display on invoice');
-            $table->string('image_snapshot', 255)->nullable()->comment('Product image URL at sale time'); // FIXED: added length 255
+            $table->string('image_snapshot', 255)->nullable()->comment('Product image URL at sale time');
 
             $table->decimal('unit_price_snapshot', 12, 2)->comment('Price locked at sale time');
-            $table->enum('customer_type_snapshot', ['regular', 'dealer', 'special'])->default('regular')
+            $table->enum('customer_type_snapshot', ['regular', 'dealer', 'special', 'ecommerce'])
+                ->default('regular')
                 ->comment('Which price tier was applied at sale time');
 
             $table->integer('qty');
@@ -41,6 +42,23 @@ return new class extends Migration
             $table->decimal('allocated_inv_disc', 12, 2)->default(0)->comment('Proportional share of invoice-level discount');
             $table->decimal('line_total', 12, 2)->comment('subtotal - line_disc - alloc_inv_disc + tax');
 
+            // Vendor commission snapshot (locked at sale time)
+            $table->enum('vendor_commission_type_snapshot', ['percentage', 'fixed'])->nullable()
+                ->comment('Vendor commission type locked at sale time');
+            $table->decimal('vendor_commission_value_snapshot', 8, 2)->default(0)
+                ->comment('Vendor commission rate/value at sale time');
+            $table->decimal('vendor_commission_amount', 12, 2)->default(0)
+                ->comment('Actual vendor commission deducted (line_total × rate)');
+            $table->decimal('vendor_payable_amount', 12, 2)->default(0)
+                ->comment('Amount payable to vendor for this line (line_total - commission)');
+
+            $table->enum('salesperson_commission_type_snapshot', ['percentage', 'fixed'])->nullable()
+                ->comment('Salesperson commission type at sale time');
+            $table->decimal('salesperson_commission_value_snapshot', 8, 2)->default(0)
+                ->comment('Salesperson commission rate/value at sale time');
+            $table->decimal('salesperson_commission_amount', 12, 2)->default(0)
+                ->comment('Actual salesperson commission earned on this line');
+
             $table->boolean('is_combo')->default(false)->comment('Is this a combo/package product?');
             $table->enum('status', ['active', 'removed', 'returned', 'partially_returned'])->default('active');
             $table->string('line_note', 200)->nullable()->comment('e.g. "original", "added today"');
@@ -49,6 +67,7 @@ return new class extends Migration
             $table->index(['sale_id', 'status']);
             $table->index(['product_id', 'created_at']);
             $table->index('vendor_id');
+            $table->index(['vendor_id', 'status'], 'idx_sale_items_vendor_status'); // ✅ NEW
         });
     }
 

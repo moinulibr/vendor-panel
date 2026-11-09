@@ -223,6 +223,25 @@ return new class extends Migration
                     ->comment('Last sale timestamp (cache)')
                     ->after('total_sold');
             }
+
+            if (!Schema::hasColumn('variations', 'vendor_commission_type')) {
+                $table->enum('vendor_commission_type', ['percentage', 'fixed'])->nullable()
+                    ->comment('Vendor commission type (overrides product-level if set)')
+                    ->after('vendor_id');
+            }
+            if (!Schema::hasColumn('variations', 'vendor_commission_value')) {
+                $table->decimal('vendor_commission_value', 8, 2)->default(0.00)
+                    ->comment('Vendor commission value (overrides product-level if set)')
+                    ->after('vendor_commission_type');
+            }
+
+            // Variation-level approval (inherits from parent product by default)
+            if (!Schema::hasColumn('variations', 'approval_status')) {
+                $table->enum('approval_status', ['draft', 'pending_approval', 'approved', 'rejected', 'changes_requested'])
+                    ->default('approved')
+                    ->comment('Variation approval status (usually inherits parent)')
+                    ->after('status');
+            }
         });
 
         // ============================================================
@@ -283,6 +302,9 @@ return new class extends Migration
             'salesperson_commission_value',
             'total_sold',
             'last_sale_at',
+            'vendor_commission_type',
+            'vendor_commission_value',
+            'approval_status',
         ];
 
         $existing = [];

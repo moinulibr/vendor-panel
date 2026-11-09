@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\App\FcmNotificationController;
 use App\Http\Controllers\Api\V1\App\FavoriteController;
 use App\Http\Controllers\Api\V1\App\NotificationController;
 use App\Http\Controllers\Api\V1\App\ProductController;
+use App\Http\Controllers\Api\V1\App\SaleController;
 use App\Http\Controllers\Api\V1\App\SettingsController;
 use App\Http\Controllers\Api\V1\App\TestingFeaturesController;
 use App\Http\Controllers\Api\V1\App\UserDeviceAndFcmTokenController;
@@ -124,6 +125,17 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/{id}/payment', [OrderController::class, 'submitPayment']);
 
             Route::get('/summary-report', [OrderController::class, 'getOrderSummaryReport']);
+        });
+
+        // Sales & Quotation Routes
+        Route::prefix('sales')->group(function () {
+            Route::get('/', [SaleController::class, 'index']);
+            Route::post('/', [SaleController::class, 'store']); // Cart to Sale/Quotation
+            Route::get('/summary-report', [SaleController::class, 'summaryReport']);
+            Route::get('/{id}', [SaleController::class, 'show']);
+            Route::put('/{id}', [SaleController::class, 'update']);
+            Route::post('/{id}/confirm', [SaleController::class, 'confirmQuotation']);
+            Route::post('/{id}/payment', [SaleController::class, 'submitPayment']);
         });
 
         //setting static data [temporary]

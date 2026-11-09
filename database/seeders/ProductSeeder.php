@@ -420,4 +420,14 @@ class ProductSeeder extends Seeder
             return collect();
         }
     }
+
+    //Image upload
+    private function uploadImage($image, $path)
+    {
+        $image = str_replace('data:image/png;base64,', '', $image);
+        $image = str_replace(' ', '+', $image);
+        $image = base64_decode($image);
+        file_put_contents($path, $image);
+    }
+
 }

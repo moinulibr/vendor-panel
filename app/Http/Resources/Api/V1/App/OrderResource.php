@@ -12,13 +12,15 @@ class OrderResource extends JsonResource
         return [
             'id'                => $this->id,
             'invoice_no'        => $this->invoice_no,
-            'order_type'        => $this->quotation ? 'quotation' : 'order',
-            'is_editable'       => true,
-            'transaction_date'  => $this->transaction_date,
-            'status'            => $this->shipping_status, // e.g. pending, approved, final, cancelled
-            'is_quotation'      => (bool) $this->quotation,
+            'order_type'        => $this->status,
+            'is_editable'       => $this->is_editable_for_customer,
+            'sale_date'         => $this->sale_date,
+            'status'            => $this->status, // e.g. pending, approved, final, cancelled
+            'shipping_status'   => $this->shipping_status, // e.g. pending, approved, final, cancelled
+            'is_quotation'      => $this->status == 'quotation' ? true : false,
             'payment_status'    => $this->payment_status,
             'pricing_summary'   => [
+                //please do modify as per Sale table. 
                 'sub_total'           => (float) $this->sub_total,
                 'item_total_discount' => (float) $this->item_total_discount ?? 0,
                 'gross_total'         => (float) $this->gross_total ?? 0, // ekhono db te nai
@@ -42,7 +44,8 @@ class OrderResource extends JsonResource
                 'total_paid'          => (float) $this->payments->sum('amount'),
                 'due_amount'          => max(0, (float) $this->final_amount - (float) $this->payments->sum('amount')),
             ],
-            'note'                    => $this->note,
+            'note'       => $this->notes,
+            // please do modify as per Sale table.
             'payments' => $this->whenLoaded('payments', function () {
                 return $this->payments->map(fn($pay) => [
                     'id'             => $pay->id,
