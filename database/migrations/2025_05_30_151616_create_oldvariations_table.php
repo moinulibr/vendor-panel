@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('variations')) return;
         Schema::create('variations', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('product_id');
