@@ -29,7 +29,7 @@ class CartItemResource extends JsonResource
         $formattedAttributes = "";
         $variationName = null;
 
-        if ($variation && $variation->name && $variation->name !== 'dummy') {
+        if ($variation && $variation->name && $product->has_variants) {
             $variationName = $variation->name;
             if ($product && isset($product->variants)) {
                 $rawAttributes = is_string($product->variants)
