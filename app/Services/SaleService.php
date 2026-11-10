@@ -93,7 +93,7 @@ class SaleService
                 'source_ref' => $data['source_ref'] ?? null,
                 'customer_id' => $userId,
                 'customer_type' => $data['customer_type'] ?? 'dealer',
-                'warehouse_id' => $warehouseId, // 🟢 Now uses the fallback variable
+                'warehouse_id' => $warehouseId,
                 'sales_person_id' => $data['sales_person_id'] ?? null,
                 'sub_total' => $subTotal,
                 'item_total_discount' => $itemTotalDiscount,
@@ -109,6 +109,15 @@ class SaleService
                 'sale_date' => now(),
                 'status' => $status,
                 'payment_status' => $paymentStatus,
+
+                // 🟢 FIX: Explicit Default Values
+                'shipping_status' => 'pending',
+                'currency' => 'BDT',
+                'exchange_rate' => 1,
+                'is_editable_for_admin' => true,
+                'is_editable_for_staff' => true,
+                'is_editable_for_customer' => true,
+
                 'notes' => $data['note'] ?? null,
                 'created_by' => auth()->id(),
             ]);
@@ -279,7 +288,7 @@ class SaleService
     // Helper Methods
     // =========================================================================
 
-    private function processCartItems($cartItems): array
+    private function processCartItems(array $cartItems): array
     {
         $lines = [];
         $subTotal = 0;

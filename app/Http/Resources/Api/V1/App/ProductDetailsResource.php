@@ -96,7 +96,7 @@ class ProductDetailsResource extends JsonResource
 
         // Priority 1: Check Variant prices if available, else fallback to Main Product prices
         $baseSellPrice = $variant?->sell_price ?? $product?->sell_price ?? 0;
-        $baseMrp       = $variant?->mrp ?? $product?->mrp ?? ($baseSellPrice + 20);
+        $baseMrp       = $variant?->mrp ?? $product?->mrp ?? ($baseSellPrice);
 
         if ($userType == UserType::DEALER) {
             // Dealer User (5)

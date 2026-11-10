@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Utils\UserType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class ProductSeeder extends Seeder
         $brandIds = $this->safePluck('brands', 'status', 1) ?: [1];
         $categoryIds = $this->safePluck('categories', 'status', 1) ?: [1];
         $unitIds = $this->safePluck('units') ?: [1];
+        $vendorIds = $this->safePluck('users', 'status', 1) ?: [1]; // Assuming vendors exist
 
         $dbAttributes = $this->safeAttributes();
         if ($dbAttributes->isEmpty()) {
@@ -30,7 +32,6 @@ class ProductSeeder extends Seeder
         // Parse attributes into usable array
         $parsedAttributes = [];
         foreach ($dbAttributes as $attr) {
-            // Handle legacy typo `valus` OR correct `values`
             $values = $attr->valus ?? ($attr->values ?? 'Default');
             $parsedAttributes[] = [
                 'id'     => $attr->id,
@@ -106,6 +107,7 @@ class ProductSeeder extends Seeder
                 $item = $sanitaryItems[array_rand($sanitaryItems)];
                 $productName = $item['name'] . ' - ' . strtoupper(Str::random(4));
                 $banglaName  = $item['bn']  . ' - ' . $i;
+                $invoiceName = $item['name'] . ' Invoice';
 
                 $sku      = 'SKU-' . str_pad((string) $i, 6, '0', STR_PAD_LEFT);
                 $slug     = Str::slug($productName) . '-' . $i;
@@ -118,20 +120,20 @@ class ProductSeeder extends Seeder
                 $brandId    = $brandIds[array_rand($brandIds)];
                 $categoryId = $categoryIds[array_rand($categoryIds)];
                 $unitId     = $unitIds[array_rand($unitIds)];
+                $vendorId   = $vendorIds[array_rand($vendorIds)];
 
                 // Stock behavior
                 $trackStock   = !$isService;
                 $stockManage  = !$isService;
-                $trackBatch   = $trackStock && (rand(1, 100) <= 60); // 60% batch-tracked
+                $trackBatch   = $trackStock && (rand(1, 100) <= 60);
                 $trackExpiry  = $trackBatch && (rand(1, 100) <= 70);
                 $trackSerial  = $trackStock && !$trackBatch && (rand(1, 100) <= 10);
-
-                $baseStock = $trackStock ? rand(10, 500) : 0;
+                $baseStock    = $trackStock ? rand(10, 500) : 0;
 
                 // ---------------------------------------------
-                // 3.3 Pre-calculate variations data (if variant)
+                // 3.3 Pre-calculate variations data
                 // ---------------------------------------------
-                $variationsData = [];   // Will hold all variations to insert after
+                $variationsData = [];
                 $varPrices = [];
                 $varStocks = [];
 
@@ -144,7 +146,6 @@ class ProductSeeder extends Seeder
                     foreach ($pickedVals as $vIdx => $val) {
                         $varSellPrice = round($sellPrice + (rand(50, 300) / 10), 2);
                         $varStock     = rand(10, 200);
-
                         $varPrices[] = $varSellPrice;
                         $varStocks[] = $varStock;
 
@@ -158,7 +159,6 @@ class ProductSeeder extends Seeder
                         ];
                     }
                 } else {
-                    // Simple/Combo/Service → 1 default variation
                     $variationsData[] = [
                         'is_default' => true,
                         'name'       => 'Default',
@@ -174,23 +174,20 @@ class ProductSeeder extends Seeder
                 // ---------------------------------------------
                 // 3.4 Product-level aggregates
                 // ---------------------------------------------
-                $productStock  = array_sum($varStocks);
-                $minPrice      = min($varPrices);
-                $maxPrice      = max($varPrices);
+                $productStock   = array_sum($varStocks);
+                $minPrice       = min($varPrices);
+                $maxPrice       = max($varPrices);
                 $totalPurchased = $productStock + rand(0, 100);
-                $lastPurchase  = $now->copy()->subDays(rand(1, 60));
-                $totalSold     = rand(0, 1000);
-                $lastSaleAt    = $totalSold > 0 ? $now->copy()->subDays(rand(1, 30)) : null;
 
                 // ---------------------------------------------
-                // 3.5 INSERT PRODUCT
+                // 3.5 INSERT PRODUCT (With all New Columns)
                 // ---------------------------------------------
                 $productId = DB::table('products')->insertGetId([
                     // ---- Basic ----
                     'name'                 => $productName,
-                    'invoice_name'         => $productName,
+                    'invoice_name'         => $invoiceName,               // 🟢 Added
                     'name_bangla'          => $banglaName,
-                    'invoice_name_bangla'  => $banglaName,
+                    'invoice_name_bangla'  => $banglaName,                // 🟢 Added
                     'image'                => $item['image'],
                     'slug'                 => $slug,
                     'sku'                  => $sku,
@@ -229,7 +226,7 @@ class ProductSeeder extends Seeder
                     'is_mobile_app'        => 1,
                     'is_feature'           => rand(0, 1),
                     'is_reco'              => rand(0, 1),
-                    'is_new'               => 0,  // ✅ Always 0 per requirement
+                    'is_new'               => 0,
 
                     // ---- Audit ----
                     'created_at'           => $now,
@@ -239,8 +236,8 @@ class ProductSeeder extends Seeder
                     // ---- Pricing ----
                     'purchase_price'         => round($sellPrice * 0.7, 2),
                     'sell_price'             => $sellPrice,
-                    'min_price'              => $minPrice,       // ✅ From variations
-                    'max_price'              => $maxPrice,       // ✅ From variations
+                    'min_price'              => $minPrice,
+                    'max_price'              => $maxPrice,
                     'wholesale_price'        => round($sellPrice * 0.9, 2),
                     'retail_price'           => $sellPrice,
                     'dealer_price'           => round($sellPrice * 0.85, 2),
@@ -250,15 +247,16 @@ class ProductSeeder extends Seeder
                     'vendor_wholesale_price' => round($sellPrice * 0.8, 2),
                     'vendor_mrp'             => $mrp,
                     'last_price_updated_date' => $now,
+                    'before_updated_prices'  => null,                    // 🟢 Added
 
                     // ---- Extra & Policies ----
-                    'user_id'              => 1,
-                    'vendor_id'            => 1,
+                    'user_id'              => $vendorId,
+                    'vendor_id'            => $vendorId,                 // 🟢 Using real vendor ID
                     'stock_manage'         => $stockManage,
-                    'stock_quantity'       => $productStock,   // ✅ Sum of variations
+                    'stock_quantity'       => $productStock,
                     'pack_size'            => 1,
                     'warranty_available'   => 0,
-                    'return_available'     => 1,
+                    'return_available'     => 1,                         // 🟢 Matches DB
                     'allow_discount'       => 1,
                     'max_discount_percent' => 10.00,
                     'min_sale_price'       => round($sellPrice * 0.8, 2),
@@ -283,22 +281,31 @@ class ProductSeeder extends Seeder
                     'sort_order' => 0,
 
                     // ---- Analytics ----
-                    'total_sold'      => $totalSold,
+                    'total_sold'      => rand(0, 1000),
                     'total_purchased' => $totalPurchased,
                     'views_count'     => rand(100, 5000),
                     'avg_rating'      => rand(30, 50) / 10,
                     'review_count'    => rand(0, 100),
-                    'last_sale_at'    => $lastSaleAt,
-                    'last_purchase_at' => $lastPurchase,
+                    'last_sale_at'    => null,
+                    'last_purchase_at' => $now->copy()->subDays(rand(1, 60)),
 
                     // ---- SEO ----
                     'meta_title'       => $productName,
                     'meta_description' => 'Buy ' . $productName . ' at best price.',
                     'meta_keywords'    => 'sanitary, bathroom, ' . strtolower($item['name']),
+
+                    // ---- 🟢 NEW: Approval Workflow ----
+                    'approval_status'     => 'approved',
+                    'approval_notes'      => 'Auto-seeded product.',
+                    'submitted_at'        => $now,
+                    'approved_by'         => 1,
+                    'approved_at'         => $now,
+                    'price_locked'        => false,
+                    'is_vendor_submitted' => rand(0, 1),
                 ]);
 
                 // ---------------------------------------------
-                // 3.6 INSERT VARIATIONS
+                // 3.6 INSERT VARIATIONS (With all New Columns)
                 // ---------------------------------------------
                 foreach ($variationsData as $v) {
                     $varAttrJson = json_encode($v['attribute']);
@@ -327,6 +334,7 @@ class ProductSeeder extends Seeder
                         'vendor_wholesale_price'   => round($varSell * 0.8, 2),
                         'vendor_mrp'               => $mrp,
                         'last_price_updated_date'  => $now,
+                        'before_updated_prices'    => null,                  // 🟢 Added
 
                         // Media
                         'image'      => $item['image'],
@@ -364,9 +372,19 @@ class ProductSeeder extends Seeder
                         'height'     => 10,
                         'sort_order' => $v['sort_order'],
 
-                        // Vendor & Analytics
-                        'vendor_id'   => 1,
+                        // Vendor & Commission 🟢 Added missing fields
+                        'vendor_id'                    => $vendorId,
+                        'vendor_commission_type'       => 'percentage',
+                        'vendor_commission_value'      => 10.00,
+                        'salesperson_commission_type'  => 'percentage',
+                        'salesperson_commission_value' => 2.00,
+
+                        // Analytics
                         'total_sold'  => 0,
+                        'last_sale_at' => null,
+
+                        // 🟢 NEW: Approval Workflow for Variation
+                        'approval_status' => 'approved',
 
                         'created_at' => $now,
                         'updated_at' => $now,
@@ -384,31 +402,28 @@ class ProductSeeder extends Seeder
         } catch (\Exception $e) {
             DB::rollBack();
             $this->command->error('❌ Seeder failed: ' . $e->getMessage());
-            $this->command->error('   Rolled back — no partial data inserted.');
             throw $e;
         }
     }
 
-    /**
-     * Safely pluck IDs from a table (returns [] if table missing/empty)
-     */
     private function safePluck(string $table, ?string $whereCol = null, $whereVal = null): array
     {
         try {
             if (!\Illuminate\Support\Facades\Schema::hasTable($table)) {
                 return [];
             }
-            $q = DB::table($table);
-            if ($whereCol) $q->where($whereCol, $whereVal);
-            return $q->pluck('id')->toArray();
+            if($table == 'users'){
+                return DB::table($table)->where('user_type', UserType::VENDOR)->pluck('id')->toArray();
+            }else{
+                $q = DB::table($table);
+                if ($whereCol) $q->where($whereCol, $whereVal);
+                return $q->pluck('id')->toArray();
+            }
         } catch (\Exception $e) {
             return [];
         }
     }
 
-    /**
-     * Safely fetch attributes (handles `valus` typo)
-     */
     private function safeAttributes()
     {
         try {
@@ -420,14 +435,4 @@ class ProductSeeder extends Seeder
             return collect();
         }
     }
-
-    //Image upload
-    private function uploadImage($image, $path)
-    {
-        $image = str_replace('data:image/png;base64,', '', $image);
-        $image = str_replace(' ', '+', $image);
-        $image = base64_decode($image);
-        file_put_contents($path, $image);
-    }
-
 }

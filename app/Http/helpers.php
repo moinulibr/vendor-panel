@@ -43,16 +43,33 @@ function newdate($date=null){
 }
 
 
-function getImage($folder=null,$value=null){
-    
-	$url = asset('images/no_found.png');
-	$path = public_path($folder.'/'.$value);
-	if (!empty($folder) && (!empty($value))) {
-		if(file_exists($path)){
-			$url = asset($folder.'/'.$value);
+if (!function_exists('getImage')) {
+	function getImage($folder = null, $value = null)
+	{
+		$placeholder = asset('images/no_found.png');
+
+		if (empty($value)) {
+			return $placeholder;
 		}
+
+		// 1. Full URL (http/https) or Base64 Data URI
+		if (filter_var($value, FILTER_VALIDATE_URL) || str_starts_with($value, 'data:')) {
+			return $value;
+		}
+
+		// 2. Laravel Storage like: storage/products/image.png
+		if (str_starts_with($value, 'storage/')) {
+			return asset($value);
+		}
+
+		// 3.(Direct Public Folder + Random String
+		$path = public_path($folder.'/'.$value);
+		if (!empty($folder) && file_exists($path)) {
+			return asset($folder . '/' . $value);
+		}
+
+		return $placeholder;
 	}
-	return $url;
 }
 
 function deleteImage($folder=null, $file=null){

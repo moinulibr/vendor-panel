@@ -113,7 +113,7 @@ class ProductResource extends JsonResource
     private static function userTypeWisePriceSetup($product, $variant = null, int $userType = UserType::GENERAL_APP_CUSTOMER): array
     {
         $baseSellPrice = $variant?->sell_price ?? $product->sell_price ?? 0;
-        $baseMrp = $variant?->mrp ?? $product->mrp ?? ($baseSellPrice + 20);
+        $baseMrp = $variant?->mrp ?? $product->mrp ?? ($baseSellPrice);
 
         if ($userType == UserType::DEALER) {
             // Dealer User (5)

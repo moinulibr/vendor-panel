@@ -16,7 +16,7 @@ class ProductVariationResource extends JsonResource
             'sub_sku'        => $this->sub_sku,
             'purchase_price' => (float) $this->purchase_price,
             'sell_price'     => (float) $this->sell_price,
-            'mrp_price'      => (float) ($this->sell_price + 20),
+            'mrp_price'      => (float) ($this->sell_price),
             //'stock'          => $this->when(isset($this->qty_available), (int) $this->qty_available),
             'stock'          => ProductStockResource::collection($this->stocks),
             'created_at'     => $this->created_at?->toIso8601String(),
