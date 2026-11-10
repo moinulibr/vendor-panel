@@ -308,10 +308,13 @@ class SaleService
             $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
 
             $taxAmount = 0;
-            if ($taxType === 'exclusive') {
-                $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
-            } elseif ($taxType === 'inclusive') {
-                $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
+            //tax calculation is stop by hardcoded
+            if(Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP){
+                if ($taxType === 'exclusive') {
+                    $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
+                } elseif ($taxType === 'inclusive') {
+                    $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
+                }
             }
 
             $vcType = $variation->vendor_commission_type ?? $product->vendor_commission_type;
@@ -322,8 +325,8 @@ class SaleService
                 'product_id' => $item->product_id,
                 'variation_id' => $item->variation_id,
                 'vendor_id' => $item->vendor_id ?? $product->vendor_id,
-                'product_name_snapshot' => $product->name,
-                'variant_label_snapshot' => $variation->name ?? null,
+                'product_name_snapshot' => $item->product_label_snapshot ?? $product->name,
+                'variant_label_snapshot' => $item->variant_label_snapshot ?? $product->has_variants ? $variation->name :  null,
                 'image_snapshot' => $variation->image ?? $product->image,
                 'unit_price_snapshot' => $unitPrice,
                 'qty' => $qty,

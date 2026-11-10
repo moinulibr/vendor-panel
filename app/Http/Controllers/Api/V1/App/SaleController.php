@@ -51,7 +51,7 @@ class SaleController extends BaseApiController
             }
 
             $sale = $this->saleService->createSaleFromCart($userId, $request->validated());
-            Log::info(json_encode(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments'))));
+            //Log::info(json_encode(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments'))));
             return $this->jsonResponse(
                 success: true,
                 message: $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.',

@@ -12,7 +12,8 @@ class Util {
 
     //default ware house id
     public const DEFAULT_WAREHOUSE_ID = 1;
-    
+    public const IS_TAX_APPLICABLE_FOR_MOBILE_APP = false;
+
     public function paymentTypes(){
 
         return [

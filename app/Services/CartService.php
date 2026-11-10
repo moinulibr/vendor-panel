@@ -129,15 +129,19 @@ class CartService
     public function addToCart(int $userId, array $data): mixed
     {
         $productId = $data['product_base_id'];
-        $product = $this->productRepository->findVariationBySlugOrId($productId, $location = null);
+        $pvariation = $this->productRepository->findVariationBySlugOrId($productId, $location = null);
 
         $cart = $this->cartRepository->getOrCreateCart($userId, auth()->user()->id ?? null);
-        $unitPrice = $this->priceService->getUserTypeWisePrice($userId, $product);
+        $unitPrice = $this->priceService->getUserTypeWisePrice($userId, $pvariation);
 
         // ✅ NEW: Extract vendor_id and labels from variation/product
-        $vendorId = $product->vendor_id ?? $product->product->vendor_id ?? null;
-        $variantLabel = $product->name ?? null;
-        $productLabel = $product->product->name ?? null;
+        $vendorId = $pvariation->vendor_id ?? $pvariation->product->vendor_id ?? null;
+
+        $variantLabel = null;
+        if($pvariation->product->has_variants) {
+            $variantLabel = $pvariation->name ?? null;
+        }
+        $productLabel = $pvariation->product->name ?? null;
 
         $existingItem = $this->cartRepository->findItem($cart->id, $data['product_id'], $data['variation_id'] ?? null);
         $newQuantity = $existingItem ? ($existingItem->quantity + $data['quantity']) : $data['quantity'];

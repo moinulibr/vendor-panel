@@ -10,16 +10,20 @@ class CartItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'cart_id',
-        'product_id',
-        'variation_id',
-        'quantity',
-        'unit_price',
-        'discount_amount',
-        'discount_type',
-        'discount_id',
+        "cart_id",
+        "product_id",
+        "variation_id",
+        "vendor_id",
+        "product_label_snapshot",
+        "variant_label_snapshot",
+        "quantity",
+        "unit_price",
         "sub_total",
-        "net_total"
+        "final_amount",
+        "discount_amount",
+        "discount_type",
+        "discount_id",
+        "notes",
     ];
 
     protected $touches = ['cart']; // this will update the updated_at field on the parent model - carts table
