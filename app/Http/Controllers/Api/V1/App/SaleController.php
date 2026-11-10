@@ -56,7 +56,7 @@ class SaleController extends BaseApiController
             return $this->jsonResponse(
                 success: true,
                 message: $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.',
-                data: new SaleResource($sale->load('items', 'payments')),
+                data: new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')),
                 statusCode: 201
             );
         } catch (Exception $e) {
@@ -74,7 +74,7 @@ class SaleController extends BaseApiController
             return $this->jsonResponse(
                 success: true,
                 message: 'Details fetched successfully.',
-                data: new SaleResource($sale),
+                data: new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')),
                 statusCode: 200
             );
         } catch (Exception $e) {
