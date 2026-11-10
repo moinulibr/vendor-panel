@@ -288,7 +288,7 @@ class SaleService
     // Helper Methods
     // =========================================================================
 
-    private function processCartItems(array $cartItems): array
+    private function processCartItems($cartItems): array
     {
         $lines = [];
         $subTotal = 0;
