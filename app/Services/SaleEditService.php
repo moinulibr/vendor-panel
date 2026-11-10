@@ -32,14 +32,12 @@ class SaleEditService
                 throw new Exception("Only pending quotations can be updated.");
             }
 
-            // ১. নোট আপডেট
             if (isset($data['note'])) {
                 $this->saleRepository->updateSale($sale, ['notes' => $data['note']]);
             }
 
-            // ২. আইটেম আপডেট (যদি রিকোয়েস্টে থাকে)
             if (!empty($data['items'])) {
-                // পুরনো আইটেম ডিলিট করে নতুন আইটেম বসানো হচ্ছে (যেহেতু এটি এখনো কোটেশন, ব্যাচ বা লেজারে কোনো প্রভাব পড়েনি)
+
                 $sale->items()->delete();
 
                 $subTotal = 0;
@@ -49,7 +47,6 @@ class SaleEditService
                     $lineSubTotal = $itemData['quantity'] * $itemData['unit_price'];
                     $lineDiscount = $itemData['discount'] ?? 0;
 
-                    // প্রোডাক্ট ও ভ্যারিয়েশন থেকে ডাটা নেয়া
                     $product = \App\Models\Product::find($itemData['product_id']);
                     $variation = isset($itemData['variation_id']) ? \App\Models\Variation::find($itemData['variation_id']) : null;
 
@@ -80,7 +77,7 @@ class SaleEditService
                     $taxTotal += $taxAmount;
                 }
 
-                // টোটাল আপডেট
+                
                 $grossTotal = $subTotal - ($data['discount_value'] ?? 0);
                 $finalAmount = $grossTotal + $sale->shipping_charge + $taxTotal;
 
@@ -89,7 +86,7 @@ class SaleEditService
                     'gross_total' => $grossTotal,
                     'tax_amount' => $taxTotal,
                     'final_amount' => $finalAmount,
-                    'due_amount' => $finalAmount, // যেহেতু কোটেশন, পেইড ০
+                    'due_amount' => $finalAmount,
                 ]);
             }
 

@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\Warehouse;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
+use App\Utils\Util;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
@@ -46,7 +47,7 @@ class SaleService
 
             // 🟢 FIX: Handle missing warehouse_id
             //$warehouseId = $data['warehouse_id'] ?? Warehouse::where('is_default', true)->value('id') ?? Warehouse::value('id');
-            $warehouseId = $data['warehouse_id'] ?? 1;
+            $warehouseId = $data['warehouse_id'] ?? Util::DEFAULT_WAREHOUSE_ID;
             if (!$warehouseId) {
                 throw new Exception("No warehouse found. Please configure a warehouse first.");
             }
@@ -109,15 +110,12 @@ class SaleService
                 'sale_date' => now(),
                 'status' => $status,
                 'payment_status' => $paymentStatus,
-
-                // 🟢 FIX: Explicit Default Values
                 'shipping_status' => 'pending',
                 'currency' => 'BDT',
                 'exchange_rate' => 1,
                 'is_editable_for_admin' => true,
                 'is_editable_for_staff' => true,
                 'is_editable_for_customer' => true,
-
                 'notes' => $data['note'] ?? null,
                 'created_by' => auth()->id(),
             ]);
@@ -135,7 +133,7 @@ class SaleService
                         $line['product_id'],
                         $line['variation_id'],
                         $warehouseId,
-                        $line['qty'] // 🟢 Using $warehouseId
+                        $line['qty']
                     );
                     foreach ($allocations as $alloc) {
                         $this->saleRepository->createSaleItemBatch([
@@ -298,6 +296,9 @@ class SaleService
         foreach ($cartItems as $item) {
             $product = $item->product;
             $variation = $item->variation;
+
+            // Fallback if product was deleted
+            if (!$product) continue;
 
             $unitPrice = $item->unit_price;
             $qty = $item->quantity;

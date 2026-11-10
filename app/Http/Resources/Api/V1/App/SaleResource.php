@@ -88,7 +88,7 @@ class SaleResource extends JsonResource
                         'variant_label_snapshot'               => $item->variant_label_snapshot,
                         'invoice_name_snapshot'                => $item->invoice_name_snapshot,
                         'image_snapshot'                       => $item->image_snapshot,
-                        'unit_price_snapshot'                  => (float) $item->unit_price_snapshot,
+                        'unit_price'                           => (float) $item->unit_price_snapshot,
                         'customer_type_snapshot'               => $item->customer_type_snapshot,
                         'qty'                                  => (int) $item->qty,
                         'line_subtotal'                        => (float) $item->line_subtotal,
