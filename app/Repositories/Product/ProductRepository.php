@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductRepository implements ProductRepositoryInterface
 {
-    protected $variableStatus = 3;
-    protected $isEnableForMobileApp = 0;
+    protected $variableStatus = 1;
+    protected $isEnableForMobileApp = 1;
     /**
      * Get optimized products list for POS search.
      * Handles single and variable products seamlessly up to 10M records.
