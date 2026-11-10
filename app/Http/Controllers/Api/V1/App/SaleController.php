@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Requests\Api\V1\App\Order\OrderListRequest;
+use App\Http\Requests\Api\V1\App\Sale\SaleListRequest;
 use App\Http\Requests\Api\V1\App\Sale\StoreSaleRequest;
 use App\Http\Requests\Api\V1\App\Sale\SubmitPaymentRequest;
 use App\Http\Requests\Api\V1\App\Sale\UpdateSaleRequest;
-use App\Http\Resources\Api\V1\App\SaleResource;
+use App\Http\Resources\Api\V1\App\Sale\SaleResource;
 use App\Services\SaleService;
 use App\Services\SaleEditService;
 use App\Utils\UserType;
@@ -21,7 +21,7 @@ class SaleController extends BaseApiController
         protected SaleEditService $saleEditService
     ) {}
 
-    public function index(OrderListRequest $request): JsonResponse
+    public function index(SaleListRequest $request): JsonResponse
     {
         try {
             $userId = auth()->id();
@@ -50,9 +50,8 @@ class SaleController extends BaseApiController
                 $userId = $request->user_base_id;
             }
 
-            // Cart থেকে Sale বা Quotation তৈরি হবে
             $sale = $this->saleService->createSaleFromCart($userId, $request->validated());
-
+            Log::info(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')));
             return $this->jsonResponse(
                 success: true,
                 message: $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.',
@@ -70,7 +69,7 @@ class SaleController extends BaseApiController
         try {
             $userId = auth()->id();
             $sale = $this->saleService->getSaleDetails($id, $userId);
-
+            Log::info(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')));
             return $this->jsonResponse(
                 success: true,
                 message: 'Details fetched successfully.',
@@ -86,7 +85,7 @@ class SaleController extends BaseApiController
     {
         try {
             $userId = auth()->id();
-            // কোটেশন আপডেটের জন্য SaleEditService ব্যবহার হবে
+
             $sale = $this->saleEditService->updateQuotation($id, $userId, $request->validated());
 
             return $this->jsonResponse(

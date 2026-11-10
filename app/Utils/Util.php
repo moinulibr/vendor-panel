@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 class Util {
+
+    //default ware house id
+    public const DEFAULT_WAREHOUSE_ID = 1;
     
     public function paymentTypes(){
 
