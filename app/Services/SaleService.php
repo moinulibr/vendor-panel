@@ -45,8 +45,7 @@ class SaleService
                 throw new Exception("Cart is empty or not found.");
             }
 
-            // 🟢 FIX: Handle missing warehouse_id
-            //$warehouseId = $data['warehouse_id'] ?? Warehouse::where('is_default', true)->value('id') ?? Warehouse::value('id');
+            // 🟢 FIX: Handle missing warehouse_id using Util
             $warehouseId = $data['warehouse_id'] ?? Util::DEFAULT_WAREHOUSE_ID;
             if (!$warehouseId) {
                 throw new Exception("No warehouse found. Please configure a warehouse first.");
@@ -127,7 +126,7 @@ class SaleService
                     'status' => 'active'
                 ]));
 
-                // ONLY Allocate Batches if NOT a quotation
+                // 🟢 Stock is ONLY allocated if NOT a quotation
                 if (!$isQuotation && $line['track_batch']) {
                     $allocations = $this->batchService->allocateFIFO(
                         $line['product_id'],
@@ -200,10 +199,10 @@ class SaleService
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
-            // ১. স্ট্যাটাস আপডেট
+            // ১. স্ট্যাটাস আপডেট (Now it becomes a real sale, so stock will deduct)
             $this->saleRepository->updateSale($sale, ['status' => 'confirmed']);
 
-            // ২. ব্যাচ অ্যালোকেট করা
+            // ২. ব্যাচ অ্যালোকেট করা (Stock deduction happens here)
             foreach ($sale->items as $item) {
                 if ($item->track_batch ?? false) {
                     $allocations = $this->batchService->allocateFIFO(
@@ -228,7 +227,7 @@ class SaleService
                 }
             }
 
-            // ৩. লেজার এন্ট্রি
+            // ৩. লেজার এন্ট্রি (Now money is owed)
             $linesForLedger = $sale->items->map(fn($item) => [
                 'vendor_id' => $item->vendor_id,
                 'vendor_payable_amount' => $item->vendor_payable_amount
@@ -297,7 +296,6 @@ class SaleService
             $product = $item->product;
             $variation = $item->variation;
 
-            // Fallback if product was deleted
             if (!$product) continue;
 
             $unitPrice = $item->unit_price;
@@ -308,8 +306,8 @@ class SaleService
             $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
 
             $taxAmount = 0;
-            //tax calculation is stop by hardcoded
-            if(Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP){
+            // 🟢 Tax calculation stopped by hardcoded condition
+            if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP) {
                 if ($taxType === 'exclusive') {
                     $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
                 } elseif ($taxType === 'inclusive') {
