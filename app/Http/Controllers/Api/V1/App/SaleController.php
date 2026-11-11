@@ -4,21 +4,25 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\Api\V1\App\Sale\SaleListRequest;
 use App\Http\Requests\Api\V1\App\Sale\StoreSaleRequest;
+use App\Http\Requests\Api\V1\App\Sale\StoreSaleReturnRequest;
 use App\Http\Requests\Api\V1\App\Sale\SubmitPaymentRequest;
 use App\Http\Requests\Api\V1\App\Sale\UpdateSaleRequest;
 use App\Http\Resources\Api\V1\App\Sale\SaleResource;
 use App\Services\SaleService;
 use App\Services\SaleEditService;
+use App\Services\SaleReturnService;
 use App\Utils\UserType;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Log;
 
 class SaleController extends BaseApiController
 {
     public function __construct(
         protected SaleService $saleService,
-        protected SaleEditService $saleEditService
+        protected SaleEditService $saleEditService,
+        protected SaleReturnService $saleReturnService
     ) {}
 
     public function index(SaleListRequest $request): JsonResponse
@@ -69,6 +73,17 @@ class SaleController extends BaseApiController
         }
     }
 
+    public function update(UpdateSaleRequest $request, int $id): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $sale = $this->saleEditService->editSale($id, $userId, $request->validated()['items'] ?? []);
+            return $this->jsonResponse(true, 'Sale updated successfully.', new SaleResource($sale), 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), 400);
+        }
+    }
+
     public function confirmQuotation(int $id): JsonResponse
     {
         try {
@@ -100,6 +115,30 @@ class SaleController extends BaseApiController
             }
             $this->saleService->submitPayment($id, $userId, $request->validated());
             return $this->jsonResponse(true, 'Payment submitted for verification.', null, 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), 400);
+        }
+    }
+
+    public function returnSale(StoreSaleReturnRequest $request, int $id): JsonResponse
+    {
+        try {
+            $request->validate([
+                'items' => 'required|array',
+                'items.*.sale_item_id' => 'required|integer',
+                'items.*.qty_returned' => 'required|integer|min:1',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            $userId = auth()->id();
+            $sale = $this->saleReturnService->createReturn(
+                $id,
+                $userId,
+                $request->items,
+                $request->reason ?? 'Customer Return'
+            );
+
+            return $this->jsonResponse(true, 'Sale returned successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }

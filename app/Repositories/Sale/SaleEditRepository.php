@@ -27,8 +27,8 @@ class SaleEditRepository implements SaleEditRepositoryInterface
         return SaleEditHistory::create($data);
     }
 
-    public function createEditItem(array $data): SaleEditItem
+    public function createEditItem(array $data): void
     {
-        return SaleEditItem::create($data);
+        SaleEditItem::create($data);
     }
 }

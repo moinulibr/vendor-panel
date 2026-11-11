@@ -3,118 +3,112 @@
 namespace App\Services;
 
 use App\Models\Sale;
-use App\Models\SaleReturn;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
-use App\Repositories\Batch\Interface\BatchRepositoryInterface;
+use App\Repositories\Sale\Interface\SaleReturnRepositoryInterface;
 use Exception;
 use Illuminate\Support\Facades\DB;
 
 class SaleReturnService
 {
     public function __construct(
-        protected BatchService $batchService,
         protected SaleRepositoryInterface $saleRepository,
-        protected BatchRepositoryInterface $batchRepository
+        protected SaleReturnRepositoryInterface $returnRepository,
+        protected BatchService $batchService
     ) {}
 
-    public function createReturn(int $saleId, array $data): SaleReturn
+    public function createReturn(int $saleId, int $userId, array $returnItems, string $reason): Sale
     {
-        return DB::transaction(function () use ($saleId, $data) {
-            $sale = Sale::with('items')->where('is_current', true)->findOrFail($saleId);
+        return DB::transaction(function () use ($saleId, $userId, $returnItems, $reason) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+
+            if (!$sale || !in_array($sale->status, ['confirmed', 'processing', 'completed'])) {
+                throw new Exception("This sale is not eligible for return.");
+            }
 
             $totalRefund = 0;
 
-            // 1. Create SaleReturn Record
-            $saleReturn = SaleReturn::create([
-                'return_no' => 'RET-' . now()->format('Ymd') . '-' . rand(1000, 9999),
+            // ১. রিটার্ন হেডার তৈরি
+            $saleReturn = $this->returnRepository->createSaleReturn([
+                'return_no' => $this->generateReturnNo(),
                 'sale_id' => $sale->id,
-                'customer_id' => $sale->customer_id,
+                'customer_id' => $userId,
                 'warehouse_id' => $sale->warehouse_id,
-                'return_type' => $data['return_type'] ?? 'partial',
-                'settlement_type' => $data['settlement_type'] ?? 'original_method',
+                'return_type' => count($returnItems) === $sale->items->count() ? 'full' : 'partial',
+                'settlement_type' => 'original_method',
                 'status' => 'completed',
-                'reason' => $data['reason'] ?? 'Customer requested',
+                'reason' => $reason,
                 'created_by' => auth()->id(),
             ]);
 
-            // 2. Process each item to return
-            foreach ($data['items'] as $returnItem) {
-                $saleItem = $sale->items()->findOrFail($returnItem['sale_item_id']);
+            // ২. আইটেম প্রসেসিং
+            foreach ($returnItems as $reqItem) {
+                $saleItem = $sale->items()->find($reqItem['sale_item_id']);
+                if (!$saleItem || $reqItem['qty_returned'] > $saleItem->qty) {
+                    throw new Exception("Invalid return quantity for item ID {$reqItem['sale_item_id']}.");
+                }
 
-                $qtyReturned = $returnItem['qty_returned'];
-                $refundPerItem = ($saleItem->line_total / $saleItem->qty) * $qtyReturned;
-                $totalRefund += $refundPerItem;
+                // Proportional Refund Calculation
+                $ratio = $reqItem['qty_returned'] / $saleItem->qty;
+                $lineRefund = $saleItem->line_subtotal * $ratio;
+                $taxReversal = $saleItem->tax_amount * $ratio;
+                $netRefund = $lineRefund + $taxReversal;
+                $totalRefund += $netRefund;
 
-                // Create SaleReturnItem
-                \App\Models\SaleReturnItem::create([
+                $this->returnRepository->createSaleReturnItem([
                     'return_id' => $saleReturn->id,
                     'sale_item_id' => $saleItem->id,
                     'product_id' => $saleItem->product_id,
                     'variation_id' => $saleItem->variation_id,
-                    'qty_returned' => $qtyReturned,
                     'unit_price_snapshot' => $saleItem->unit_price_snapshot,
-                    'line_refund' => $saleItem->line_total,
-                    'net_refund' => $refundPerItem,
-                    'restock' => $returnItem['restock'] ?? true,
-                    'condition' => $returnItem['condition'] ?? 'good',
+                    'qty_returned' => $reqItem['qty_returned'],
+                    'line_refund' => $lineRefund,
+                    'tax_reversal' => $taxReversal,
+                    'net_refund' => $netRefund,
+                    'restock' => true,
+                    'condition' => 'good',
                 ]);
 
-                // 3. Restock Batch (if applicable)
-                if (($returnItem['restock'] ?? true) && $saleItem->variation_id) {
-                    // Find batch allocation for this item
-                    $allocations = DB::table('sale_item_batches')->where('sale_item_id', $saleItem->id)->get();
-                    foreach ($allocations as $alloc) {
-                        if ($qtyReturned <= 0) break;
-                        $restockQty = min($alloc->qty_used, $qtyReturned);
+                // 🟢 স্টক ফেরত (Restock)
+                if ($saleItem->track_batch ?? $saleItem->product->track_batch) {
+                    $batchAllocs = $saleItem->batchAllocations;
+                    $qtyToRestore = $reqItem['qty_returned'];
 
-                        $batch = \App\Models\ProductBatch::find($alloc->batch_id);
-                        if ($batch) {
-                            $this->batchRepository->incrementBatchQty($batch, $restockQty);
-                        }
-                        $qtyReturned -= $restockQty;
+                    foreach ($batchAllocs as $alloc) {
+                        if ($qtyToRestore <= 0) break;
+                        $restoreQty = min($alloc->qty_used, $qtyToRestore);
+                        $this->batchService->restoreStock($alloc->batch_id, $restoreQty);
+                        $qtyToRestore -= $restoreQty;
                     }
                 }
-
-                // 4. Reverse Salesperson Commission
-                if ($sale->sales_person_id) {
-                    DB::table('salesperson_commissions')
-                        ->where('sale_item_id', $saleItem->id)
-                        ->increment('reversed_amount', $refundPerItem * 0.05); // Example logic
-                }
             }
 
-            // 5. Update SaleReturn totals
-            $saleReturn->update(['total_refund' => $totalRefund]);
+            // ৩. সেল স্ট্যাটাস আপডেট
+            $newStatus = $saleReturn->return_type === 'full' ? 'returned' : 'processing'; // partial return
+            $newDueAmount = max(0, $sale->due_amount - $totalRefund);
 
-            // 6. Update Original Sale payment status
-            $newPaidAmount = max(0, $sale->paid_amount - $totalRefund);
-            $newDueAmount = max(0, $sale->final_amount - $newPaidAmount);
+            $this->saleRepository->updateSale($sale, [
+                'status' => $newStatus,
+                'due_amount' => $newDueAmount,
+                'payment_status' => $newDueAmount <= 0 ? 'paid' : 'partially_paid'
+            ]);
 
-            $this->saleRepository->updateSaleStatus(
-                $sale,
-                $newDueAmount == 0 ? 'paid' : 'partially_paid',
-                $data['return_type'] === 'full' ? 'returned' : 'confirmed'
-            );
+            // ৪. রিফান্ড এন্ট্রি
+            $this->returnRepository->createSaleRefund([
+                'refund_no' => $this->generateRefundNo(),
+                'return_id' => $saleReturn->id,
+                'customer_id' => $userId,
+                'amount' => $totalRefund,
+                'method' => 'original_method',
+                'status' => 'success',
+                'refunded_by' => auth()->id(),
+                'refunded_at' => now(),
+            ]);
 
-            // 7. Create Refund Record (if cash)
-            if (($data['settlement_type'] ?? '') === 'cash') {
-                \App\Models\SaleRefund::create([
-                    'refund_no' => 'REF-' . now()->format('Ymd') . '-' . rand(1000, 9999),
-                    'return_id' => $saleReturn->id,
-                    'customer_id' => $sale->customer_id,
-                    'amount' => $totalRefund,
-                    'method' => 'cash',
-                    'status' => 'success',
-                    'refunded_at' => now(),
-                    'refunded_by' => auth()->id(),
-                ]);
-            }
-
-            // 8. Update Ledger (Credit Customer)
-            $prevBalance = $this->saleRepository->getLatestLedgerBalance('customer', $sale->customer_id);
+            // ৫. লেজার এন্ট্রি (Customer Credit)
+            $prevBalance = $this->saleRepository->getLatestLedgerBalance('customer', $userId);
             $this->saleRepository->insertLedgerEntry([
                 'party_type' => 'customer',
-                'party_id' => $sale->customer_id,
+                'party_id' => $userId,
                 'entry_date' => now()->toDateString(),
                 'entry_at' => now(),
                 'entry_type' => 'refund_paid',
@@ -124,10 +118,30 @@ class SaleReturnService
                 'debit' => 0,
                 'credit' => $totalRefund,
                 'running_balance' => $prevBalance - $totalRefund,
-                'description' => "Refund for return {$saleReturn->return_no}",
+                'currency' => 'BDT',
+                'exchange_rate' => 1,
+                'description' => "Refund for Return {$saleReturn->return_no}",
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
-            return $saleReturn;
+            return $sale;
         });
+    }
+
+    private function generateReturnNo(): string
+    {
+        $prefix = "RET-" . now()->format('Y') . "-";
+        $latest = $this->returnRepository->getLatestReturnNo($prefix);
+        $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function generateRefundNo(): string
+    {
+        $prefix = "REF-" . now()->format('Y') . "-";
+        $latest = $this->returnRepository->getLatestRefundNo($prefix);
+        $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 }

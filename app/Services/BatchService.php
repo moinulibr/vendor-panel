@@ -39,4 +39,15 @@ class BatchService
 
         return $allocations;
     }
+
+    public function restoreStock(int $batchId, int $qty): void
+    {
+        $batch = \App\Models\ProductBatch::find($batchId);
+        if ($batch) {
+            $batch->increment('qty_available', $qty);
+            if ($batch->status === 'depleted' && $batch->qty_available > 0) {
+                $batch->update(['status' => 'active']);
+            }
+        }
+    }
 }
