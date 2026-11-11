@@ -94,10 +94,12 @@ class CartService
 
         $deliveryCharge  = $this->settingService->getDeliverySettings();
         $offers  = $this->settingService->getCouponAndDiscountSettings();
+        $quotationDuration  = $this->settingService->getQuotationExpiresDuration();
 
         return [
             'delivery_system' => $deliveryCharge,
             'offers'   => $offers,
+            'quotation_duration'  => $quotationDuration,
             'summary' => [
                 'id'                    => $cart->id,
                 'cart_id'               => $cart->id,
@@ -122,6 +124,7 @@ class CartService
                 'user_id'             => $userId,
                 'type'                => $userModel?->user_type,
                 'name'                => $userModel?->name,
+                'quote_expires_at'    => $this->settingService->getQuotationExpiresAt(),
             ],
         ];
     }

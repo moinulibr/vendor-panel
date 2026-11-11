@@ -135,7 +135,15 @@ Route::prefix('v1/app')->group(function () {
             Route::get('/{id}', [SaleController::class, 'show']);
             Route::put('/{id}', [SaleController::class, 'update']);
             Route::post('/{id}/confirm', [SaleController::class, 'confirmQuotation']);
+            Route::post('/{id}/cancel', [SaleController::class, 'cancelQuotation']);// new add korchi. 
             Route::post('/{id}/payment', [SaleController::class, 'submitPayment']);
+            // full functional kore daw. controller theke suru kore sob jaygate
+            //sale update with new item, existing item qty + or -, same exiting item with price plus, and also minus
+            //sale return with full function kore daw. [quotation theke o cancel hobe pare - easy]
+            // abr full process howar pore o cancel hote pare. 
+            // return  full functional kore daw
+            // refun full functional kore daw
+            
         });
 
         //setting static data [temporary]

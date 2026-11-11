@@ -49,17 +49,10 @@ class SaleController extends BaseApiController
             if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
                 $userId = $request->user_base_id;
             }
-
             $sale = $this->saleService->createSaleFromCart($userId, $request->validated());
-            //Log::info(json_encode(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments'))));
-            return $this->jsonResponse(
-                success: true,
-                message: $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.',
-                data: new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')),
-                statusCode: 201
-            );
+            $sale->load(['items.batchAllocations', 'payments']);
+            return $this->jsonResponse(true, $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.', new SaleResource($sale), 201);
         } catch (Exception $e) {
-            Log::error($e);
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
@@ -69,33 +62,10 @@ class SaleController extends BaseApiController
         try {
             $userId = auth()->id();
             $sale = $this->saleService->getSaleDetails($id, $userId);
-            Log::info(json_encode(new SaleResource($sale->load('items', 'items.batchAllocations', 'payments'))));
-            return $this->jsonResponse(
-                success: true,
-                message: 'Details fetched successfully.',
-                data: new SaleResource($sale->load('items', 'items.batchAllocations', 'payments')),
-                statusCode: 200
-            );
+            $sale->load(['items.batchAllocations', 'payments']);
+            return $this->jsonResponse(true, 'Details fetched successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 404);
-        }
-    }
-
-    public function update(UpdateSaleRequest $request, int $id): JsonResponse
-    {
-        try {
-            $userId = auth()->id();
-
-            $sale = $this->saleEditService->updateQuotation($id, $userId, $request->validated());
-
-            return $this->jsonResponse(
-                success: true,
-                message: 'Quotation updated successfully.',
-                data: new SaleResource($sale),
-                statusCode: 200
-            );
-        } catch (Exception $e) {
-            return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
 
@@ -104,13 +74,18 @@ class SaleController extends BaseApiController
         try {
             $userId = auth()->id();
             $sale = $this->saleService->confirmQuotation($id, $userId);
+            return $this->jsonResponse(true, 'Quotation confirmed to Sale successfully.', new SaleResource($sale), 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), 400);
+        }
+    }
 
-            return $this->jsonResponse(
-                success: true,
-                message: 'Quotation confirmed to Sale successfully.',
-                data: new SaleResource($sale),
-                statusCode: 200
-            );
+    public function cancelQuotation(int $id): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $sale = $this->saleService->cancelQuotation($id, $userId);
+            return $this->jsonResponse(true, 'Quotation cancelled successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
@@ -120,19 +95,11 @@ class SaleController extends BaseApiController
     {
         try {
             $userId = auth()->id();
-
             if ($request->hasFile('document')) {
                 $request->file('document')->store('payment_receipts', 'public');
             }
-
             $this->saleService->submitPayment($id, $userId, $request->validated());
-
-            return $this->jsonResponse(
-                success: true,
-                message: 'Payment submitted for verification.',
-                data: null,
-                statusCode: 200
-            );
+            return $this->jsonResponse(true, 'Payment submitted for verification.', null, 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
@@ -143,15 +110,10 @@ class SaleController extends BaseApiController
         try {
             $userId = auth()->id();
             $summary = $this->saleService->getSummaryReport($userId);
-
-            return $this->jsonResponse(
-                success: true,
-                message: 'Summary report retrieved successfully.',
-                data: $summary,
-                statusCode: 200
-            );
+            return $this->jsonResponse(true, 'Summary report retrieved successfully.', $summary, 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 422);
         }
     }
+
 }

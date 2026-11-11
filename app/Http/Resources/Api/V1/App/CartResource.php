@@ -14,6 +14,7 @@ class CartResource extends JsonResource
             'items'   => CartItemResource::collection($this->resource['items']),
             'delivery' => $this->resource['delivery_system'],
             'offers' => $this->resource['offers'],
+            'quotation_validity' => $this->resource['quotation_duration'],
             'user' => $this->resource['user'],
         ];
     }

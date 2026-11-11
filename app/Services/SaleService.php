@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\PaymentStatus;
+use App\Enums\SaleStatus;
 use App\Models\Sale;
-use App\Models\Warehouse;
+use App\Models\SaleReturn;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use App\Utils\Util;
@@ -15,12 +17,9 @@ class SaleService
     public function __construct(
         protected BatchService $batchService,
         protected SaleRepositoryInterface $saleRepository,
-        protected CartRepositoryInterface $cartRepository
+        protected CartRepositoryInterface $cartRepository,
+        protected SettingService $settingService
     ) {}
-
-    // =========================================================================
-    // Core Methods
-    // =========================================================================
 
     public function getUserSales(int $userId, array $filters)
     {
@@ -39,26 +38,21 @@ class SaleService
     public function createSaleFromCart(int $userId, array $data): Sale
     {
         return DB::transaction(function () use ($userId, $data) {
-            // 1. Fetch Cart
             $cart = $this->cartRepository->getSingleCartByCartAndUserId($data['cart_id'], $userId);
             if (!$cart || $cart->items()->count() === 0) {
                 throw new Exception("Cart is empty or not found.");
             }
 
-            // 🟢 FIX: Handle missing warehouse_id using Util
             $warehouseId = $data['warehouse_id'] ?? Util::DEFAULT_WAREHOUSE_ID;
             if (!$warehouseId) {
                 throw new Exception("No warehouse found. Please configure a warehouse first.");
             }
 
-            // 2. Process Cart Items into Sale format
             $processedItems = $this->processCartItems($cart->items);
 
-            // 3. Totals Calculation
             $subTotal = $processedItems['sub_total'];
             $itemTotalDiscount = $processedItems['item_total_discount'];
             $grossTotal = $subTotal - $itemTotalDiscount;
-
             $shippingCharge = (float) ($data['shipping_charge'] ?? 0);
             $taxAmount = $processedItems['tax_total'];
 
@@ -68,22 +62,21 @@ class SaleService
                 $grossTotal
             );
 
-            $totalInvoiceDiscount = $discountAmount;
-            $processedItems['lines'] = $this->allocateInvoiceDiscount($processedItems['lines'], $totalInvoiceDiscount, $grossTotal);
+            $processedItems['lines'] = $this->allocateInvoiceDiscount($processedItems['lines'], $discountAmount, $grossTotal);
+            $finalAmount = round(($grossTotal - $discountAmount) + $shippingCharge + $taxAmount, 2);
 
-            $finalAmount = round(($grossTotal - $totalInvoiceDiscount) + $shippingCharge + $taxAmount, 2);
-
-            // 4. Payment Status logic
             $initialPayments = $data['payments'] ?? [];
             $paidAmount = collect($initialPayments)->sum('amount');
             $dueAmount = $finalAmount - $paidAmount;
 
-            $isQuotation = (($data['status'] ?? 'confirmed') === 'quotation');
+            $isQuotation = (($data['status'] ?? 'confirmed') === SaleStatus::QUOTATION->value);
 
-            $paymentStatus = $isQuotation ? 'unpaid' : ($paidAmount <= 0 ? 'unpaid' : ($paidAmount >= $finalAmount ? 'paid' : 'partially_paid'));
-            $status = $isQuotation ? 'quotation' : 'confirmed';
+            $paymentStatus = $isQuotation ? PaymentStatus::UNPAID->value : ($paidAmount <= 0 ? PaymentStatus::UNPAID->value : ($paidAmount >= $finalAmount ? PaymentStatus::PAID->value : PaymentStatus::PARTIALLY_PAID->value));
+            $status = $isQuotation ? SaleStatus::QUOTATION->value : SaleStatus::CONFIRMED->value;
 
-            // 5. Create Sale Record
+            // 🟢 User Modification Kept
+            $quoteValidUntil = $isQuotation ? $this->settingService->getQuotationExpiresDuration() : null;
+
             $sale = $this->saleRepository->createSale([
                 'parent_id' => null,
                 'version' => 1,
@@ -110,23 +103,22 @@ class SaleService
                 'status' => $status,
                 'payment_status' => $paymentStatus,
                 'shipping_status' => 'pending',
+                'quote_valid_until' => $quoteValidUntil,
                 'currency' => 'BDT',
                 'exchange_rate' => 1,
                 'is_editable_for_admin' => true,
                 'is_editable_for_staff' => true,
                 'is_editable_for_customer' => true,
-                'notes' => $data['note'] ?? null,
+                'quote_notes' => $data['note'] ?? null,
                 'created_by' => auth()->id(),
             ]);
 
-            // 6. Insert Items & Batches
             foreach ($processedItems['lines'] as $line) {
                 $saleItem = $this->saleRepository->createSaleItem(array_merge($line, [
                     'sale_id' => $sale->id,
                     'status' => 'active'
                 ]));
 
-                // 🟢 Stock is ONLY allocated if NOT a quotation
                 if (!$isQuotation && $line['track_batch']) {
                     $allocations = $this->batchService->allocateFIFO(
                         $line['product_id'],
@@ -150,42 +142,12 @@ class SaleService
                 }
             }
 
-            // 7. Ledger & Payments (Only if not quotation)
             if (!$isQuotation) {
                 $this->insertLedgerEntries($sale, $processedItems['lines']);
-
-                $paymentCount = 0;
-                $lastPaymentAt = null;
-                foreach ($initialPayments as $payment) {
-                    if ($payment['amount'] <= 0) continue;
-                    $this->saleRepository->createSalePayment([
-                        'payment_no' => $this->generatePaymentNo(),
-                        'sale_id' => $sale->id,
-                        'customer_id' => $userId,
-                        'amount' => $payment['amount'],
-                        'method' => $payment['method'],
-                        'reference_no' => $payment['reference_no'] ?? null,
-                        'status' => 'success',
-                        'paid_at' => now(),
-                        'received_by' => auth()->id(),
-                    ]);
-                    $paymentCount++;
-                    $lastPaymentAt = now();
-                }
-
-                $this->saleRepository->createSalePaymentSummary([
-                    'sale_id' => $sale->id,
-                    'total_paid' => $paidAmount,
-                    'total_refunded' => 0,
-                    'net_paid' => $paidAmount,
-                    'last_payment_at' => $lastPaymentAt,
-                    'payment_count' => $paymentCount,
-                ]);
+                $this->processInitialPayments($sale, $initialPayments, $paidAmount, $userId);
             }
 
-            // 8. Clear Cart
             $this->cartRepository->clearCart($cart->id);
-
             return $sale;
         });
     }
@@ -195,16 +157,14 @@ class SaleService
         return DB::transaction(function () use ($saleId, $userId) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
 
-            if (!$sale || $sale->status !== 'quotation') {
+            if (!$sale || $sale->status !== SaleStatus::QUOTATION->value) {
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
-            // ১. স্ট্যাটাস আপডেট (Now it becomes a real sale, so stock will deduct)
-            $this->saleRepository->updateSale($sale, ['status' => 'confirmed']);
+            $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CONFIRMED->value]);
 
-            // ২. ব্যাচ অ্যালোকেট করা (Stock deduction happens here)
             foreach ($sale->items as $item) {
-                if ($item->track_batch ?? false) {
+                if ($item?->product?->track_batch ?? false) {
                     $allocations = $this->batchService->allocateFIFO(
                         $item->product_id,
                         $item->variation_id,
@@ -227,7 +187,6 @@ class SaleService
                 }
             }
 
-            // ৩. লেজার এন্ট্রি (Now money is owed)
             $linesForLedger = $sale->items->map(fn($item) => [
                 'vendor_id' => $item->vendor_id,
                 'vendor_payable_amount' => $item->vendor_payable_amount
@@ -242,7 +201,7 @@ class SaleService
     {
         DB::transaction(function () use ($saleId, $userId, $data) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
-            if (!$sale || $sale->status === 'quotation') {
+            if (!$sale || $sale->status === SaleStatus::QUOTATION->value) {
                 throw new Exception("Cannot submit payment for this sale.");
             }
 
@@ -259,13 +218,29 @@ class SaleService
 
             $newPaid = $sale->paid_amount + $data['amount'];
             $newDue = $sale->final_amount - $newPaid;
-            $paymentStatus = $newDue <= 0 ? 'paid' : 'partially_paid';
+            $paymentStatus = $newDue <= 0 ? PaymentStatus::PAID->value : PaymentStatus::PARTIALLY_PAID->value;
 
             $this->saleRepository->updateSale($sale, [
                 'paid_amount' => $newPaid,
                 'due_amount' => max(0, $newDue),
                 'payment_status' => $paymentStatus,
             ]);
+        });
+    }
+
+    public function cancelQuotation(int $saleId, int $userId): Sale
+    {
+        return DB::transaction(function () use ($saleId, $userId) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+
+            if (!$sale || $sale->status !== SaleStatus::QUOTATION->value) {
+                throw new Exception("Only pending quotations can be cancelled.");
+            }
+
+            // For quotation, stock isn't allocated. So we just mark it as cancelled.
+            $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CANCELLED->value]);
+
+            return $sale;
         });
     }
 
@@ -282,7 +257,7 @@ class SaleService
     }
 
     // =========================================================================
-    // Helper Methods
+    // Private Helpers
     // =========================================================================
 
     private function processCartItems($cartItems): array
@@ -295,7 +270,6 @@ class SaleService
         foreach ($cartItems as $item) {
             $product = $item->product;
             $variation = $item->variation;
-
             if (!$product) continue;
 
             $unitPrice = $item->unit_price;
@@ -304,9 +278,8 @@ class SaleService
 
             $taxType = $variation->tax_type ?? $product->tax_type ?? 'exempt';
             $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
-
             $taxAmount = 0;
-            // 🟢 Tax calculation stopped by hardcoded condition
+
             if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP) {
                 if ($taxType === 'exclusive') {
                     $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
@@ -426,6 +399,38 @@ class SaleService
                 'updated_at' => $now,
             ]);
         }
+    }
+
+    private function processInitialPayments(Sale $sale, array $initialPayments, float $paidAmount, int $userId): void
+    {
+        $paymentCount = 0;
+        $lastPaymentAt = null;
+
+        foreach ($initialPayments as $payment) {
+            if ($payment['amount'] <= 0) continue;
+            $this->saleRepository->createSalePayment([
+                'payment_no' => $this->generatePaymentNo(),
+                'sale_id' => $sale->id,
+                'customer_id' => $userId,
+                'amount' => $payment['amount'],
+                'method' => $payment['method'],
+                'reference_no' => $payment['reference_no'] ?? null,
+                'status' => 'success',
+                'paid_at' => now(),
+                'received_by' => auth()->id(),
+            ]);
+            $paymentCount++;
+            $lastPaymentAt = now();
+        }
+
+        $this->saleRepository->createSalePaymentSummary([
+            'sale_id' => $sale->id,
+            'total_paid' => $paidAmount,
+            'total_refunded' => 0,
+            'net_paid' => $paidAmount,
+            'last_payment_at' => $lastPaymentAt,
+            'payment_count' => $paymentCount,
+        ]);
     }
 
     private function generateInvoiceNo(): string

@@ -8,6 +8,7 @@ use App\Models\SaleItemBatch;
 use App\Models\SalePayment;
 use App\Models\SalePaymentSummary;
 use App\Models\SaleTax;
+use App\Models\SaleReturn;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -43,6 +44,11 @@ class SaleRepository implements SaleRepositoryInterface
         return SalePaymentSummary::create($data);
     }
 
+    public function createSaleReturn(array $data): SaleReturn
+    {
+        return SaleReturn::create($data);
+    }
+
     public function getLatestInvoiceNo(string $prefix): ?string
     {
         return Sale::where('invoice_no', 'like', $prefix . '%')
@@ -73,14 +79,6 @@ class SaleRepository implements SaleRepositoryInterface
         DB::table('payment_ledger')->insert($data);
     }
 
-    public function updateSaleStatus(Sale $sale, string $paymentStatus, string $status): void
-    {
-        $sale->update([
-            'payment_status' => $paymentStatus,
-            'status' => $status
-        ]);
-    }
-    
     public function getPaginatedSales(int $userId, array $filters)
     {
         $query = Sale::where('customer_id', $userId)->current();
@@ -124,11 +122,16 @@ class SaleRepository implements SaleRepositoryInterface
         return Sale::where('customer_id', $userId)
             ->where('is_current', true)
             ->selectRaw("
-                COUNT(CASE WHEN status != 'quotation' THEN 1 END) as total_orders,
+                COUNT(CASE WHEN status NOT IN ('quotation', 'draft', 'cancelled', 'rejected') THEN 1 END) as total_orders,
                 COUNT(CASE WHEN status = 'quotation' THEN 1 END) as total_quotations,
-                SUM(CASE WHEN status != 'quotation' THEN final_amount ELSE 0 END) as total_order_amount,
-                SUM(CASE WHEN status != 'quotation' THEN paid_amount ELSE 0 END) as total_paid_amount,
-                SUM(CASE WHEN status != 'quotation' THEN due_amount ELSE 0 END) as total_due_amount
+                SUM(CASE WHEN status NOT IN ('quotation', 'draft', 'cancelled', 'rejected') THEN final_amount ELSE 0 END) as total_order_amount,
+                SUM(CASE WHEN status NOT IN ('quotation', 'draft', 'cancelled', 'rejected') THEN paid_amount ELSE 0 END) as total_paid_amount,
+                SUM(CASE WHEN status NOT IN ('quotation', 'draft', 'cancelled', 'rejected') THEN due_amount ELSE 0 END) as total_due_amount
             ")->first()->toArray();
+    }
+
+    public function getSaleItemsWithBatches(int $saleId)
+    {
+        return SaleItem::where('sale_id', $saleId)->with('batchAllocations')->get();
     }
 }

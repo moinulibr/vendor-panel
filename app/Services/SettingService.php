@@ -123,12 +123,13 @@ class SettingService
      */
     public function getQuotationExpiryConfig(): array
     {
+        $unit = $this->durationUnit('hours');
+        $unitValue = 24;
         return [
-            'value'          => 7,
-            'unit'           => 'days',         // Options: 'minutes', 'hours', 'days'
-            'expire_in_days' => 7,
+            'value'          => $unitValue,
+            'unit'           => $unit,         // Options: 'minutes', 'hours', 'days'
             'auto_cancel'    => true,
-            'expiry_note'    => 'Quotations will automatically expire after 7 days from generation.'
+            'expiry_note'    => 'Quotations will automatically expire after ' . $unitValue . ' ' . $unit . ' from generation.'
         ];
     }
 
@@ -140,7 +141,12 @@ class SettingService
         $config = $this->getQuotationExpiryConfig();
         return $this->getExpiryTimestamp($config['value'], $config['unit']);
     }
-    
+    public function getQuotationExpiresDuration()
+    {
+        $config = $this->getQuotationExpiryConfig();
+        return $config['value'] . " ". $config['unit'];
+    }
+
 
     /**
      * Get Feature Status, Cart & Quotation Expiry Rules
