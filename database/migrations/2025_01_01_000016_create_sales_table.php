@@ -31,6 +31,7 @@ return new class extends Migration
 
             $table->foreignId('warehouse_id')->nullable()->comment('FK to warehouses table');
             $table->foreignId('sales_person_id')->nullable()->comment('FK to users table');
+            $table->foreignId('shipping_address_id')->nullable()->comment('FK to shipping_addresses table');
 
             $table->decimal('sub_total', 12, 2)->default(0)->comment('Sum of line_subtotal of all items');
             $table->decimal('item_total_discount', 12, 2)->default(0)->comment('Sum of line_discount of all items');

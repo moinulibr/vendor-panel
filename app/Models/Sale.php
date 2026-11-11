@@ -50,6 +50,7 @@ class Sale extends Model
         'sale_date',
         'status',
         'payment_status',
+        'shipping_address_id',
         'shipping_status',
         'quote_valid_until',
         'quote_converted_at',
@@ -185,5 +186,9 @@ class Sale extends Model
     public function quoteConvertedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'quote_converted_by');
+    }
+    public function shippingAddress(): BelongsTo
+    {
+        return $this->belongsTo(ShippingAddress::class, 'shipping_address_id');
     }
 }

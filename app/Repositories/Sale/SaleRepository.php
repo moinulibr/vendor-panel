@@ -103,7 +103,7 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return Sale::where('id', $saleId)
             ->where('customer_id', $userId)
-            ->with(['items.product', 'payments', 'taxes'])
+            ->with(['items.product', 'payments', 'taxes', 'shippingAddress'])
             ->first();
     }
 

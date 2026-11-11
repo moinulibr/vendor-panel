@@ -46,6 +46,7 @@ class SaleResource extends JsonResource
             'status'                   => $this->status,
             'payment_status'           => $this->payment_status,
             'shipping_status'          => $this->shipping_status,
+            'shipping_address_id'      => $this->shipping_address_id,
             'currency'                 => $this->currency,
             'exchange_rate'            => (float) $this->exchange_rate,
             'notes'                    => $this->notes,
@@ -66,7 +67,7 @@ class SaleResource extends JsonResource
                     'id'    => $this->customer?->id,
                     'name'  => $this->customer?->name,
                     'email' => $this->customer?->email,
-                    'phone' => $this->customer?->phone,
+                    'phone' => $this->customer?->mobile,
                 ];
             }),
 
@@ -74,6 +75,16 @@ class SaleResource extends JsonResource
                 return [
                     'id'   => $this->salesperson?->id,
                     'name' => $this->salesperson?->name,
+                ];
+            }),
+
+            'shipping' => $this->whenLoaded('shippingAddress', function () {
+                return [
+                    'id'   => $this->shippingAddress?->id,
+                    'name' => $this->shippingAddress?->title,
+                    'contact_name' => $this->shippingAddress?->contact_person,
+                    'contact_number' => $this->shippingAddress?->contact_mobile,
+                    'address' => $this->shippingAddress?->address,
                 ];
             }),
 

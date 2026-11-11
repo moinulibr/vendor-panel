@@ -45,6 +45,7 @@ interface OrderApiDocInterface
                 properties: [
                     new OA\Property(property: "user_base_id", type: "integer", example: 2, nullable: true),
                     new OA\Property(property: "cart_id", type: "integer", example: 12, nullable: false),
+                    new OA\Property(property: "shipping_address_id", type: "integer", example: 10, nullable: false),
                     new OA\Property(property: "note", type: "string", example: "Please offer best price for bulk quantity")
                 ]
             )
