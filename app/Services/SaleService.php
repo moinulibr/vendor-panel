@@ -162,7 +162,18 @@ class SaleService
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
-            $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CONFIRMED->value]);
+            $quote_converted_at = null;
+            $quote_converted_by = null;
+            if($sale->status == SaleStatus::QUOTATION->value){
+                $quote_converted_at = now();
+                $quote_converted_by = auth()->id();
+            }
+
+            $this->saleRepository->updateSale($sale,
+                [
+                    'status' => SaleStatus::CONFIRMED->value, "quote_converted_at" => $quote_converted_at,
+                    "quote_converted_by" => $quote_converted_by
+                ]);
 
             foreach ($sale->items as $item) {
                 if ($item?->product?->track_batch ?? false) {
