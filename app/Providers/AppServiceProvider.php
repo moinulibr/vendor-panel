@@ -30,6 +30,8 @@ use App\Repositories\Otp\Interface\OtpRepositoryInterface;
 use App\Repositories\Otp\OtpRepository;
 use App\Repositories\Product\Interface\ProductRepositoryInterface;
 use App\Repositories\Product\ProductRepository;
+use App\Repositories\Sale\Interface\SaleReturnRepositoryInterface;
+use App\Repositories\Sale\SaleReturnRepository;
 use App\Repositories\User\Interface\UserRepositoryInterface;
 use App\Repositories\User\UserRepository;
 use Illuminate\Support\Facades\Cache;
@@ -73,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(BatchRepositoryInterface::class, BatchRepository::class);
         $this->app->bind(SaleRepositoryInterface::class, SaleRepository::class);
         $this->app->bind(SaleEditRepositoryInterface::class, SaleEditRepository::class);
+        $this->app->bind(SaleReturnRepositoryInterface::class, SaleReturnRepository::class);
         
     }
 
