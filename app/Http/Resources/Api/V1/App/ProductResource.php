@@ -60,7 +60,8 @@ class ProductResource extends JsonResource
                         'images'       => ProductImageResource::collection($product->images),
                         'category_name' => $product->category?->name ?? "N/L",
                         'brand_name'    => $product->brand?->name ?? "N/L",
-                        'variant_attributes' => $singleVariantAttributes
+                        'variant_attributes' => $singleVariantAttributes,
+                        'vendor_id' => $product->vendor_id ?? $product->user_id
                     ];
                 });
             }
@@ -95,7 +96,8 @@ class ProductResource extends JsonResource
                 'images'       => ProductImageResource::collection($product->images),
                 'category_name' => $product->category?->name ?? "N/L",
                 'brand_name'    => $product->brand?->name ?? "N/L",
-                'variant_attributes' => ""
+                'variant_attributes' => "",
+                'vendor_id' => $product->vendor_id ?? $product->user_id
             ]];
         });
 

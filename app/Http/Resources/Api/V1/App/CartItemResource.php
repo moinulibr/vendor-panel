@@ -58,6 +58,7 @@ class CartItemResource extends JsonResource
             'sub_total'          => (float) $subtotal,
             'total_discount'     => (float) $totalDiscount,
             'net_total'          => (float) max(0, $subtotal - $totalDiscount),
+            'vendor_id'          => (int) $this->vendor_id,
         ];
     }
 

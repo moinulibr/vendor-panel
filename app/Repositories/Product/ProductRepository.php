@@ -130,7 +130,10 @@ class ProductRepository implements ProductRepositoryInterface
             'retail_price',
             'type',
             'status',
-            'is_feature'
+            'is_feature',
+            'user_id',
+            'vendor_id',
+            'has_variants',
         ])->simplePaginate($perPage);
     }
 
@@ -205,7 +208,7 @@ class ProductRepository implements ProductRepositoryInterface
     public function findVariationBySlugOrId(string|int $identifier, ?int $locationId = null): ?Variation
     {
         //$identifier always variation id [vriation_id is focused for product details]
-        $variation = Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price')
+        $variation = Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price','purchase_price','name')
             ->where(function ($q) use ($identifier) {
                 if (is_numeric($identifier)) {
                     $q->where('id', $identifier);
@@ -219,7 +222,7 @@ class ProductRepository implements ProductRepositoryInterface
 
     private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
     {
-        $variation = Variation::select('id', 'product_id', 'sub_sku','mrp','wholesale_price','dealer_price','retail_price','sell_price')
+        $variation = Variation::select('id', 'product_id', 'sub_sku','mrp','wholesale_price','dealer_price','retail_price','sell_price','name')
             ->where(function ($q) use ($identifier) {
                 if (is_numeric($identifier)) {
                     $q->where('id', $identifier);
