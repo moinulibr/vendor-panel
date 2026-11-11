@@ -57,6 +57,7 @@ class SaleController extends BaseApiController
             $sale->load(['items.batchAllocations', 'payments']);
             return $this->jsonResponse(true, $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.', new SaleResource($sale), 201);
         } catch (Exception $e) {
+            Log::error($e);
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }

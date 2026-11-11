@@ -69,7 +69,8 @@ class SaleService
             $paidAmount = collect($initialPayments)->sum('amount');
             $dueAmount = $finalAmount - $paidAmount;
 
-            $isQuotation = $data['status'] ? $data['status'] : SaleStatus::QUOTATION->value;
+            $isQuotation = $data['status'] ?? SaleStatus::QUOTATION->value;
+            //$isQuotation = (($data['status'] ?? 'confirmed') === SaleStatus::QUOTATION->value);
 
             $paymentStatus = $isQuotation ? PaymentStatus::UNPAID->value : ($paidAmount <= 0 ? PaymentStatus::UNPAID->value : ($paidAmount >= $finalAmount ? PaymentStatus::PAID->value : PaymentStatus::PARTIALLY_PAID->value));
             $status = $isQuotation ? SaleStatus::QUOTATION->value : SaleStatus::CONFIRMED->value;
