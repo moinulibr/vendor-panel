@@ -36,7 +36,7 @@ class SettingService
     {
         return [
             'coupon' => [
-                'isApplicable'          => true,
+                'isApplicable'          => false,
                 'minOrderAmount'        => 1000,
                 'maxDiscountAmount'     => 1000,
                 'allowOnDiscountedItem' => false,
@@ -44,7 +44,7 @@ class SettingService
                 'alertMessage'          => 'Minimum order amount for using coupon is ৳500.',
             ],
             'discount' => [
-                'isApplicable'       => true,
+                'isApplicable'       => false,
                 'allowWithCoupon'    => false,
                 'minOrderAmount'     => 1000,
                 'maxDiscountAmount'  => 1000,
