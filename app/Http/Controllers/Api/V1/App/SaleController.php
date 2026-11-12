@@ -48,7 +48,7 @@ class SaleController extends BaseApiController
 
     public function store(StoreSaleRequest $request): JsonResponse
     {
-        Log::info($request->all());
+        //Log::info($request->all());
         try {
             $userId = auth()->id();
             if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
