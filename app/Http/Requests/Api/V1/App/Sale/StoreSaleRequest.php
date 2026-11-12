@@ -19,8 +19,8 @@ class StoreSaleRequest extends FormRequest
         return [
             'user_base_id'    => [$isSR ? 'required' : 'nullable', 'integer', 'exists:users,id'],
             'cart_id'         => 'required|integer|exists:carts,id',
-            'shipping_address_id' => 'nullable|integer|exists:shipping_addresses,id',
-            
+            'shipping_address_id' => 'nullable', //|integer|exists:shipping_addresses,id
+
             'status'          => 'nullable|string|in:draft,quotation,confirmed',
             'channel'         => 'nullable|string|in:admin_pos,web_ecommerce,mobile_dealer_app,sr',
             'warehouse_id'    => 'nullable|integer|exists:warehouses,id',
