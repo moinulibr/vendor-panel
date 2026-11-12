@@ -104,7 +104,7 @@ class SaleService
                 'status' => $status,
                 'payment_status' => $paymentStatus,
                 'shipping_status' => 'pending',
-                'shipping_address_id' => $data['shipping_address_id'],
+                'shipping_address_id' => $data['shipping_address_id'] ?? null,
                 'quote_valid_until' => $quoteValidUntil,
                 'currency' => 'BDT',
                 'exchange_rate' => 1,
