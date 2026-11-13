@@ -130,11 +130,11 @@ class SaleService
                 $this->processInitialPayments($sale, $initialPayments, $paidAmount, $userId);
             }
 
-            // তোমার রিকোয়েস্ট অনুযায়ী কার্ট ক্লিয়ার আপাতত বন্ধ রাখা হলো
-            // $this->cartRepository->clearAllItemFromCart($cart->id);
-            // $this->cartRepository->clearCoupon($cart->id);
-            // $this->cartRepository->clearCartDiscount($cart->id);
-            // $this->cartRepository->clearCart($cart->id);
+            // কার্ট ক্লিয়ার আপাতত বন্ধ রাখা হলো
+             $this->cartRepository->clearAllItemFromCart($cart->id);
+             $this->cartRepository->clearCoupon($cart->id);
+             $this->cartRepository->clearCartDiscount($cart->id);
+             $this->cartRepository->clearCart($cart->id);
 
             return $sale;
         });
