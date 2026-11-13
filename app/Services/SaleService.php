@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\PaymentStatus;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
-use App\Models\SaleReturn;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use App\Utils\Util;
@@ -71,11 +70,10 @@ class SaleService
 
             $isQuotation = $data['status'] ?? SaleStatus::QUOTATION->value;
             //$isQuotation = (($data['status'] ?? 'confirmed') === SaleStatus::QUOTATION->value);
-
+            //$isQuotation = (($data['status'] ?? SaleStatus::QUOTATION->value) === SaleStatus::QUOTATION->value);
             $paymentStatus = $isQuotation ? PaymentStatus::UNPAID->value : ($paidAmount <= 0 ? PaymentStatus::UNPAID->value : ($paidAmount >= $finalAmount ? PaymentStatus::PAID->value : PaymentStatus::PARTIALLY_PAID->value));
             $status = $isQuotation ? SaleStatus::QUOTATION->value : SaleStatus::CONFIRMED->value;
 
-            // 🟢 User Modification Kept
             $quoteValidUntil = $isQuotation ? $this->settingService->getQuotationExpiresDuration() : null;
 
             $sale = $this->saleRepository->createSale([
@@ -121,26 +119,9 @@ class SaleService
                     'status' => 'active'
                 ]));
 
+                // 🟢 Reusable Batch Process
                 if (!$isQuotation && $line['track_batch']) {
-                    $allocations = $this->batchService->allocateFIFO(
-                        $line['product_id'],
-                        $line['variation_id'],
-                        $warehouseId,
-                        $line['qty']
-                    );
-                    foreach ($allocations as $alloc) {
-                        $this->saleRepository->createSaleItemBatch([
-                            'sale_id' => $sale->id,
-                            'sale_item_id' => $saleItem->id,
-                            'batch_id' => $alloc['batch']->id,
-                            'qty_used' => $alloc['qty_used'],
-                            'unit_cost' => $alloc['unit_cost'],
-                            'cost_total' => round($alloc['qty_used'] * $alloc['unit_cost'], 2),
-                            'unit_sale_price' => $line['unit_price_snapshot'],
-                            'total_sale_amount' => round($alloc['qty_used'] * $line['unit_price_snapshot'], 2),
-                            'total_profit' => round(($alloc['qty_used'] * $line['unit_price_snapshot']) - ($alloc['qty_used'] * $alloc['unit_cost']), 2),
-                        ]);
-                    }
+                    $this->processBatchAllocations($sale, $saleItem, $line);
                 }
             }
 
@@ -149,10 +130,12 @@ class SaleService
                 $this->processInitialPayments($sale, $initialPayments, $paidAmount, $userId);
             }
 
-            $this->cartRepository->clearAllItemFromCart($cart->id);
-            $this->cartRepository->clearCoupon($cart->id);
-            $this->cartRepository->clearCartDiscount($cart->id);
-            $this->cartRepository->clearCart($cart->id);
+            // তোমার রিকোয়েস্ট অনুযায়ী কার্ট ক্লিয়ার আপাতত বন্ধ রাখা হলো
+            // $this->cartRepository->clearAllItemFromCart($cart->id);
+            // $this->cartRepository->clearCoupon($cart->id);
+            // $this->cartRepository->clearCartDiscount($cart->id);
+            // $this->cartRepository->clearCart($cart->id);
+
             return $sale;
         });
     }
@@ -166,40 +149,24 @@ class SaleService
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
-            $quote_converted_at = null;
-            $quote_converted_by = null;
-            if($sale->status == SaleStatus::QUOTATION->value){
-                $quote_converted_at = now();
-                $quote_converted_by = auth()->id();
-            }
+            $quote_converted_at = now();
+            $quote_converted_by = auth()->id();
 
-            $this->saleRepository->updateSale($sale,
-                [
-                    'status' => SaleStatus::CONFIRMED->value, "quote_converted_at" => $quote_converted_at,
-                    "quote_converted_by" => $quote_converted_by
-                ]);
+            $this->saleRepository->updateSale($sale, [
+                'status' => SaleStatus::CONFIRMED->value,
+                "quote_converted_at" => $quote_converted_at,
+                "quote_converted_by" => $quote_converted_by
+            ]);
 
             foreach ($sale->items as $item) {
                 if ($item?->product?->track_batch ?? false) {
-                    $allocations = $this->batchService->allocateFIFO(
-                        $item->product_id,
-                        $item->variation_id,
-                        $sale->warehouse_id,
-                        $item->qty
-                    );
-                    foreach ($allocations as $alloc) {
-                        $this->saleRepository->createSaleItemBatch([
-                            'sale_id' => $sale->id,
-                            'sale_item_id' => $item->id,
-                            'batch_id' => $alloc['batch']->id,
-                            'qty_used' => $alloc['qty_used'],
-                            'unit_cost' => $alloc['unit_cost'],
-                            'cost_total' => $alloc['qty_used'] * $alloc['unit_cost'],
-                            'unit_sale_price' => $item->unit_price_snapshot,
-                            'total_sale_amount' => $alloc['qty_used'] * $item->unit_price_snapshot,
-                            'total_profit' => ($alloc['qty_used'] * $item->unit_price_snapshot) - ($alloc['qty_used'] * $alloc['unit_cost'])
-                        ]);
-                    }
+                    $line = [
+                        'product_id' => $item->product_id,
+                        'variation_id' => $item->variation_id,
+                        'qty' => $item->qty,
+                        'unit_price_snapshot' => $item->unit_price_snapshot,
+                    ];
+                    $this->processBatchAllocations($sale, $item, $line);
                 }
             }
 
@@ -253,7 +220,6 @@ class SaleService
                 throw new Exception("Only pending quotations can be cancelled.");
             }
 
-            // For quotation, stock isn't allocated. So we just mark it as cancelled.
             $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CANCELLED->value]);
 
             return $sale;
@@ -272,9 +238,37 @@ class SaleService
         ], array_filter($stats));
     }
 
-    // =========================================================================
-    // Private Helpers
-    // =========================================================================
+
+    private function processBatchAllocations(Sale $sale, $saleItem, array $line): void
+    {
+        $allocations = $this->batchService->allocateFIFO(
+            $line['product_id'],
+            $line['variation_id'],
+            $sale->warehouse_id,
+            $line['qty']
+        );
+
+        foreach ($allocations as $alloc) {
+            $this->saleRepository->createSaleItemBatch([
+                'sale_id' => $sale->id,
+                'sale_item_id' => $saleItem->id,
+                'batch_id' => $alloc['batch']->id,
+                'qty_used' => $alloc['qty_used'],
+                'unit_cost' => $alloc['unit_cost'],
+                'cost_total' => round($alloc['qty_used'] * $alloc['unit_cost'], 2),
+                'unit_sale_price' => $line['unit_price_snapshot'],
+                'total_sale_amount' => round($alloc['qty_used'] * $line['unit_price_snapshot'], 2),
+                'total_profit' => round(($alloc['qty_used'] * $line['unit_price_snapshot']) - ($alloc['qty_used'] * $alloc['unit_cost']), 2),
+            ]);
+
+            $this->batchService->updateBatchSummary(
+                $alloc['batch']->id,
+                $alloc['qty_used'],
+                $alloc['unit_cost'],
+                $line['unit_price_snapshot']
+            );
+        }
+    }
 
     private function processCartItems($cartItems): array
     {

@@ -22,17 +22,30 @@ class SaleEditService
         return DB::transaction(function () use ($saleId, $userId, $newItems) {
             $oldSale = $this->saleRepository->findByIdAndUser($saleId, $userId);
 
-            if (!$oldSale || !in_array($oldSale->status, ['draft', 'quotation', 'confirmed', 'processing'])) {
-                throw new Exception("Sale cannot be edited at this stage.");
+            if (!$oldSale) {
+                throw new Exception("Sale not found.");
             }
 
-            // ১. পুরনো সেল হিস্ট্রি করা
+            $user = auth()->user();
+            if ( !$oldSale->is_editable_for_customer) { //$user->type === 'customer' &&
+                throw new Exception("You are not allowed to edit this sale.");
+            }
+            /* if ($user->type === 'staff' && !$oldSale->is_editable_for_staff) {
+                throw new Exception("Staff cannot edit this sale.");
+            }
+            if ($user->type === 'admin' && !$oldSale->is_editable_for_admin) {
+                throw new Exception("Admin cannot edit this sale.");
+            } */
+
+            if (in_array($oldSale->status, ['cancelled', 'returned', 'refunded'])) {
+                throw new Exception("Cannot edit a cancelled or returned sale.");
+            }
+
+
             $this->saleEditRepository->updateOldSaleToHistory($oldSale);
 
-            // ২. নতুন ডাটা ক্যালকুলেশন
             $subTotal = 0;
             $taxTotal = 0;
-            $totalDiscount = 0;
             $processedLines = [];
 
             foreach ($newItems as $item) {
@@ -40,8 +53,9 @@ class SaleEditService
                 $variation = isset($item['variation_id']) ? \App\Models\Variation::find($item['variation_id']) : null;
 
                 $qty = $item['quantity'];
-                // 🟢 Price Lockdown: যদি পুরনো আইটেম হয়, পুরনো দামই থাকবে। নতুন হলে আজকের দাম।
                 $existingItem = $oldSale->items->where('product_id', $item['product_id'])->where('variation_id', $item['variation_id'] ?? null)->first();
+
+                // Price Lockdown
                 $unitPrice = $existingItem ? $existingItem->unit_price_snapshot : $item['unit_price'];
 
                 $lineSubTotal = $qty * $unitPrice;
@@ -76,7 +90,6 @@ class SaleEditService
             $finalAmount = round($subTotal + $taxTotal + $oldSale->shipping_charge, 2);
             $dueAmount = $finalAmount - $oldSale->paid_amount;
 
-            // ৩. নতুন ভার্সন তৈরি
             $newSaleData = $oldSale->toArray();
             unset($newSaleData['id'], $newSaleData['created_at'], $newSaleData['updated_at'], $newSaleData['items']);
 
@@ -88,7 +101,6 @@ class SaleEditService
 
             $newSale = $this->saleEditRepository->createNewVersion($oldSale, $newSaleData);
 
-            // ৪. নতুন আইটেম ও ব্যাচ অ্যালোকেশন
             foreach ($processedLines as $line) {
                 $saleItem = $this->saleRepository->createSaleItem(array_merge($line, [
                     'sale_id' => $newSale->id,
@@ -113,7 +125,42 @@ class SaleEditService
                 }
             }
 
-            // ৫. এডিট হিস্ট্রি সেভ
+            // 🟢 Line Item level Edit Tracking
+            foreach ($oldSale->items as $oldItem) {
+                $newItem = collect($processedLines)->firstWhere('product_id', $oldItem->product_id);
+
+                if (!$newItem) {
+                    $this->saleEditRepository->createEditItem([
+                        'sale_id' => $oldSale->id,
+                        'sale_item_id' => $oldItem->id,
+                        'change_type' => 'removed',
+                        'old_qty' => $oldItem->qty,
+                        'new_qty' => 0,
+                    ]);
+                } elseif ($newItem['qty'] != $oldItem->qty) {
+                    $this->saleEditRepository->createEditItem([
+                        'sale_id' => $oldSale->id,
+                        'sale_item_id' => $oldItem->id,
+                        'change_type' => $newItem['qty'] > $oldItem->qty ? 'qty_increase' : 'qty_decrease',
+                        'old_qty' => $oldItem->qty,
+                        'new_qty' => $newItem['qty'],
+                    ]);
+                }
+            }
+
+            // 🟢 New items tracking
+            foreach ($processedLines as $newItem) {
+                if (!$oldSale->items->where('product_id', $newItem['product_id'])->first()) {
+                    $this->saleEditRepository->createEditItem([
+                        'sale_id' => $oldSale->id,
+                        'sale_item_id' => null,
+                        'change_type' => 'added',
+                        'old_qty' => 0,
+                        'new_qty' => $newItem['qty'],
+                    ]);
+                }
+            }
+
             $this->saleEditRepository->createEditHistory([
                 'sale_id' => $oldSale->id,
                 'version_from' => $oldSale->version,

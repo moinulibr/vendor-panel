@@ -82,6 +82,7 @@ class SaleController extends BaseApiController
             $sale = $this->saleEditService->editSale($id, $userId, $request->validated()['items'] ?? []);
             return $this->jsonResponse(true, 'Sale updated successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
+            Log::error($e);
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
