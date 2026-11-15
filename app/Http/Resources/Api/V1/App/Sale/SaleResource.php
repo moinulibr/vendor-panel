@@ -58,6 +58,7 @@ class SaleResource extends JsonResource
             //'is_editable_for_staff'    => (bool) $this->is_editable_for_staff,
             'is_editable_for_customer' => (bool) $this->is_editable_for_customer,
             'is_returnable_for_customer' => (bool) $this->is_editable_for_customer,
+            'is_cancelable_for_customer' => (bool) $this->is_editable_for_customer,
             'created_by'               => $this->created_by,
             'created_at'               => $this->created_at?->toDateTimeString(),
             'updated_at'               => $this->updated_at?->toDateTimeString(),
