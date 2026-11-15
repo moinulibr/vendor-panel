@@ -13,4 +13,5 @@ interface SaleReturnRepositoryInterface
     public function createSaleRefund(array $data): SaleRefund;
     public function getLatestReturnNo(string $prefix): ?string;
     public function getLatestRefundNo(string $prefix): ?string;
+    public function getReturnedQtyForItem(int $saleItemId): int;
 }

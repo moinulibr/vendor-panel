@@ -21,14 +21,10 @@ class SaleEditService
     public function editSale(int $saleId, int $userId, array $newItems): Sale
     {
         return DB::transaction(function () use ($saleId, $userId, $newItems) {
-            // sale find
             $baseSale = $this->saleRepository->findByIdAndUser($saleId, $userId);
             if (!$baseSale) throw new Exception("Sale not found.");
 
-            // root sale id
             $rootId = $baseSale->parent_id ?? $baseSale->id;
-
-            // latest version sale find
             $oldSale = $this->saleRepository->findCurrentActiveSale($rootId, $userId);
             if (!$oldSale) throw new Exception("Active sale not found.");
 
@@ -39,7 +35,7 @@ class SaleEditService
                 throw new Exception("Cannot edit a cancelled or returned sale.");
             }
 
-            // old sale stock, batch allocation restore
+            // ১. পুরনো সেলের স্টক ফেরত
             if ($oldSale->status !== 'quotation') {
                 foreach ($oldSale->items as $oldItem) {
                     if ($oldItem->product->track_batch) {
@@ -55,20 +51,21 @@ class SaleEditService
             $this->saleEditRepository->updateOldSaleToHistory($oldSale);
 
             $subTotal = 0;
+            $itemTotalDiscount = 0;
             $taxTotal = 0;
             $processedLines = [];
 
-            // new item list process
+            // ২. নতুন আইটেম লিস্ট প্রসেস
             foreach ($newItems as $item) {
                 $product = \App\Models\Product::find($item['product_id']);
                 $variation = isset($item['variation_id']) ? \App\Models\Variation::find($item['variation_id']) : null;
 
                 $qty = $item['quantity'];
-                if ($qty <= 0) continue; // Qty 0 means removed, skip it
+                if ($qty <= 0) continue;
 
                 $existingItem = $oldSale->items->where('product_id', $item['product_id'])->where('variation_id', $item['variation_id'] ?? null)->first();
 
-                // 🟢 Snapshot Lockdown
+                // Snapshot Lockdown
                 if ($existingItem) {
                     $unitPrice = $existingItem->unit_price_snapshot;
                     $taxType = $existingItem->tax_type_snapshot;
@@ -83,19 +80,22 @@ class SaleEditService
                     $vcValue = $variation->vendor_commission_value ?? $product->vendor_commission_value ?? 0;
                 }
 
+                // 🟢 ১. লাইন ডিসকাউন্ট প্রসেসিং
                 $lineSubTotal = $qty * $unitPrice;
-                $taxAmount = 0;
+                $lineDiscount = $item['discount'] ?? ($existingItem ? $existingItem->line_discount : 0);
+                $taxableAmount = $lineSubTotal - $lineDiscount;
 
+                $taxAmount = 0;
                 if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP) {
                     if ($taxType === 'exclusive') {
-                        $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
+                        $taxAmount = round($taxableAmount * $taxRate / 100, 2);
                     } elseif ($taxType === 'inclusive') {
-                        $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
+                        $taxAmount = round($taxableAmount - ($taxableAmount / (1 + $taxRate / 100)), 2);
                     }
                 }
 
-                $vcAmount = ($vcType === 'percentage') ? round($lineSubTotal * $vcValue / 100, 2) : $vcValue;
-                $vendorPayable = $lineSubTotal - $vcAmount;
+                $vcAmount = ($vcType === 'percentage') ? round($taxableAmount * $vcValue / 100, 2) : $vcValue;
+                $vendorPayable = $taxableAmount - $vcAmount;
 
                 $variantLable = null;
                 if ($product->has_variants) {
@@ -114,12 +114,12 @@ class SaleEditService
                     'unit_price_snapshot' => $unitPrice,
                     'qty' => $qty,
                     'line_subtotal' => $lineSubTotal,
-                    'line_discount' => $existingItem ? $existingItem->line_discount : 0,
-                    'taxable_amount' => $lineSubTotal,
+                    'line_discount' => $lineDiscount,
+                    'taxable_amount' => $taxableAmount,
                     'tax_type_snapshot' => $taxType,
                     'tax_rate_snapshot' => $taxRate,
                     'tax_amount' => $taxAmount,
-                    'line_total' => $lineSubTotal + ($taxType === 'exclusive' ? $taxAmount : 0),
+                    'line_total' => $taxableAmount + ($taxType === 'exclusive' ? $taxAmount : 0),
                     'vendor_commission_type_snapshot' => $vcType,
                     'vendor_commission_value_snapshot' => $vcValue,
                     'vendor_commission_amount' => $vcAmount,
@@ -129,11 +129,30 @@ class SaleEditService
                 ];
 
                 $subTotal += $lineSubTotal;
+                $itemTotalDiscount += $lineDiscount;
                 $taxTotal += $taxAmount;
             }
 
-            // new sale create
-            $finalAmount = round($subTotal + $taxTotal + $oldSale->shipping_charge, 2);
+            // ৩. 🟢 ইনভয়েস ডিসকাউন্ট অ্যালোকেশন (Proportional)
+            $grossTotal = $subTotal - $itemTotalDiscount;
+            $invoiceDiscountAmount = $oldSale->discount_amount; // Assuming invoice discount remains same
+            if ($invoiceDiscountAmount > 0 && $grossTotal > 0) {
+                $allocated = 0;
+                $lastIndex = count($processedLines) - 1;
+                foreach ($processedLines as $i => &$line) {
+                    $share = ($i === $lastIndex) ? round($invoiceDiscountAmount - $allocated, 2) : round(($line['taxable_amount'] / $grossTotal) * $invoiceDiscountAmount, 2);
+                    $line['allocated_inv_disc'] = $share;
+                    $line['line_total'] = round($line['taxable_amount'] - $share + $line['tax_amount'], 2);
+                    $allocated += $share;
+                }
+            } else {
+                foreach ($processedLines as &$line) {
+                    $line['allocated_inv_disc'] = 0;
+                }
+            }
+
+            // ৪. নতুন সেল তৈরি
+            $finalAmount = round(($grossTotal - $invoiceDiscountAmount) + $oldSale->shipping_charge + $taxTotal, 2);
             $dueAmount = $finalAmount - $oldSale->paid_amount;
 
             $newSaleData = $oldSale->toArray();
@@ -144,6 +163,8 @@ class SaleEditService
             $newSaleData['invoice_no'] = $baseInvoiceNo . '-V' . $newSaleData['version'];
 
             $newSaleData['sub_total'] = $subTotal;
+            $newSaleData['item_total_discount'] = $itemTotalDiscount;
+            $newSaleData['gross_total'] = $grossTotal;
             $newSaleData['tax_amount'] = $taxTotal;
             $newSaleData['final_amount'] = $finalAmount;
             $newSaleData['due_amount'] = $dueAmount;
@@ -151,7 +172,7 @@ class SaleEditService
 
             $newSale = $this->saleEditRepository->createNewVersion($oldSale, $newSaleData);
 
-            // new item and stock deduct
+            // ৫. নতুন আইটেম এবং স্টক ডিডাক্ট
             foreach ($processedLines as $line) {
                 $saleItem = $this->saleRepository->createSaleItem(array_merge($line, ['sale_id' => $newSale->id, 'status' => 'active']));
 
@@ -177,12 +198,14 @@ class SaleEditService
                 }
             }
 
-            // 🟢 edit history tracking (Fixed: Added old_price, new_price, old_discount, new_discount)
+            // ৬. 🟢 পেমেন্ট লেজার আপডেট (Delta)
+            $this->updateLedgerDelta($oldSale, $newSale, $processedLines);
+
+            // ৭. এডিট হিস্ট্রি ট্র্যাকিং
             foreach ($oldSale->items as $oldItem) {
                 $newItem = collect($processedLines)->firstWhere('product_id', $oldItem->product_id);
 
                 if (!$newItem) {
-                    // Removed Item
                     $this->saleEditRepository->createEditItem([
                         'sale_id' => $oldSale->id,
                         'sale_item_id' => $oldItem->id,
@@ -195,7 +218,6 @@ class SaleEditService
                         'new_discount' => 0
                     ]);
                 } elseif ($newItem['qty'] != $oldItem->qty) {
-                    // Qty Changed Item
                     $this->saleEditRepository->createEditItem([
                         'sale_id' => $oldSale->id,
                         'sale_item_id' => $oldItem->id,
@@ -209,10 +231,8 @@ class SaleEditService
                     ]);
                 }
             }
-
             foreach ($processedLines as $newItem) {
                 if (!$oldSale->items->where('product_id', $newItem['product_id'])->first()) {
-                    // Added Item
                     $this->saleEditRepository->createEditItem([
                         'sale_id' => $oldSale->id,
                         'sale_item_id' => null,
@@ -239,5 +259,70 @@ class SaleEditService
 
             return $newSale->load('items');
         });
+    }
+
+    // 🟢 নতুন মেথড: লেজারে ডেল্টা এন্ট্রি দেওয়া
+    private function updateLedgerDelta(Sale $oldSale, Sale $newSale, array $processedLines): void
+    {
+        $now = now();
+        $entryDate = $now->toDateString();
+        $deltaAmount = $newSale->final_amount - $oldSale->final_amount;
+
+        // ১. কাস্টমার লেজার আপডেট
+        if ($deltaAmount != 0 && $newSale->customer_id) {
+            $prev = $this->saleRepository->getLatestLedgerBalance('customer', $newSale->customer_id);
+            $this->saleRepository->insertLedgerEntry([
+                'party_type' => 'customer',
+                'party_id' => $newSale->customer_id,
+                'entry_date' => $entryDate,
+                'entry_at' => $now,
+                'entry_type' => 'sale_edit',
+                'reference_type' => 'Sale',
+                'reference_id' => $newSale->id,
+                'reference_no' => $newSale->invoice_no,
+                'debit' => $deltaAmount > 0 ? $deltaAmount : 0,
+                'credit' => $deltaAmount < 0 ? abs($deltaAmount) : 0,
+                'running_balance' => $prev + $deltaAmount,
+                'currency' => 'BDT',
+                'exchange_rate' => 1,
+                'description' => "Sale Edit Delta for {$newSale->invoice_no}",
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // ২. ভেন্ডর লেজার আপডেট
+        $oldVendorTotals = $oldSale->items->groupBy('vendor_id')->map(fn($items) => $items->sum('vendor_payable_amount'));
+        $newVendorTotals = collect($processedLines)->groupBy('vendor_id')->map(fn($items) => $items->sum('vendor_payable_amount'));
+
+        $vendorIds = $oldVendorTotals->keys()->merge($newVendorTotals->keys())->unique();
+        foreach ($vendorIds as $vendorId) {
+            if (!$vendorId) continue;
+            $oldTotal = $oldVendorTotals[$vendorId] ?? 0;
+            $newTotal = $newVendorTotals[$vendorId] ?? 0;
+            $vendorDelta = $newTotal - $oldTotal;
+
+            if ($vendorDelta != 0) {
+                $prev = $this->saleRepository->getLatestLedgerBalance('vendor', $vendorId);
+                $this->saleRepository->insertLedgerEntry([
+                    'party_type' => 'vendor',
+                    'party_id' => $vendorId,
+                    'entry_date' => $entryDate,
+                    'entry_at' => $now,
+                    'entry_type' => 'sale_edit',
+                    'reference_type' => 'Sale',
+                    'reference_id' => $newSale->id,
+                    'reference_no' => $newSale->invoice_no,
+                    'debit' => $vendorDelta < 0 ? abs($vendorDelta) : 0,
+                    'credit' => $vendorDelta > 0 ? $vendorDelta : 0,
+                    'running_balance' => $prev + $vendorDelta,
+                    'currency' => 'BDT',
+                    'exchange_rate' => 1,
+                    'description' => "Vendor Payable Delta for {$newSale->invoice_no}",
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
     }
 }

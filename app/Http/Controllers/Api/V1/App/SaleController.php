@@ -142,14 +142,19 @@ class SaleController extends BaseApiController
     {
         try {
             $userId = auth()->id();
-            $sale = $this->saleReturnService->createReturn(
+            $saleReturn = $this->saleReturnService->createReturn(
                 $id,
                 $userId,
                 $request->validated()['items'],
                 $request->validated()['reason'] ?? 'Customer Return'
             );
 
-            return $this->jsonResponse(true, 'Items returned successfully.', new SaleResource($sale->load('items')), 200);
+            return $this->jsonResponse(
+                true,
+                'Items returned successfully.',
+                $saleReturn->load('sale'),
+                200
+            );
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }

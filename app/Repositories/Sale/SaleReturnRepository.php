@@ -13,12 +13,10 @@ class SaleReturnRepository implements SaleReturnRepositoryInterface
     {
         return SaleReturn::create($data);
     }
-
     public function createSaleReturnItem(array $data): SaleReturnItem
     {
         return SaleReturnItem::create($data);
     }
-
     public function createSaleRefund(array $data): SaleRefund
     {
         return SaleRefund::create($data);
@@ -26,17 +24,16 @@ class SaleReturnRepository implements SaleReturnRepositoryInterface
 
     public function getLatestReturnNo(string $prefix): ?string
     {
-        return SaleReturn::where('return_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->lockForUpdate()
-            ->value('return_no');
+        return SaleReturn::where('return_no', 'like', $prefix . '%')->orderBy('id', 'desc')->lockForUpdate()->value('return_no');
     }
 
     public function getLatestRefundNo(string $prefix): ?string
     {
-        return SaleRefund::where('refund_no', 'like', $prefix . '%')
-            ->orderBy('id', 'desc')
-            ->lockForUpdate()
-            ->value('refund_no');
+        return SaleRefund::where('refund_no', 'like', $prefix . '%')->orderBy('id', 'desc')->lockForUpdate()->value('refund_no');
+    }
+
+    public function getReturnedQtyForItem(int $saleItemId): int
+    {
+        return (int) SaleReturnItem::where('sale_item_id', $saleItemId)->sum('qty_returned');
     }
 }
