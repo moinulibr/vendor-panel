@@ -17,7 +17,8 @@ class SaleService
         protected BatchService $batchService,
         protected SaleRepositoryInterface $saleRepository,
         protected CartRepositoryInterface $cartRepository,
-        protected SettingService $settingService
+        protected SettingService $settingService,
+        protected InventoryService $inventoryService
     ) {}
 
     public function getUserSales(int $userId, array $filters)
@@ -119,9 +120,12 @@ class SaleService
                     'status' => 'active'
                 ]));
 
-                // 🟢 Reusable Batch Process
-                if (!$isQuotation && $line['track_batch']) {
-                    $this->processBatchAllocations($sale, $saleItem, $line);
+                if (!$isQuotation) {
+                    if ($line['track_batch']) {
+                        $this->processBatchAllocations($sale, $saleItem, $line);
+                    }
+                    // 🟢 Deduct Stock from Product & Variation
+                    $this->inventoryService->deductStock($line['product_id'], $line['variation_id'], $line['qty']);
                 }
             }
 
@@ -130,7 +134,6 @@ class SaleService
                 $this->processInitialPayments($sale, $initialPayments, $paidAmount, $userId);
             }
 
-            // কার্ট ক্লিয়ার আপাতত বন্ধ রাখা হলো
              $this->cartRepository->clearAllItemFromCart($cart->id);
              $this->cartRepository->clearCoupon($cart->id);
              $this->cartRepository->clearCartDiscount($cart->id);
@@ -149,13 +152,10 @@ class SaleService
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
-            $quote_converted_at = now();
-            $quote_converted_by = auth()->id();
-
             $this->saleRepository->updateSale($sale, [
                 'status' => SaleStatus::CONFIRMED->value,
-                "quote_converted_at" => $quote_converted_at,
-                "quote_converted_by" => $quote_converted_by
+                "quote_converted_at" => now(),
+                "quote_converted_by" => auth()->id()
             ]);
 
             foreach ($sale->items as $item) {
@@ -168,6 +168,8 @@ class SaleService
                     ];
                     $this->processBatchAllocations($sale, $item, $line);
                 }
+                // 🟢 Deduct Stock on Confirmation
+                $this->inventoryService->deductStock($item->product_id, $item->variation_id, $item->qty);
             }
 
             $linesForLedger = $sale->items->map(fn($item) => [
@@ -215,13 +217,10 @@ class SaleService
     {
         return DB::transaction(function () use ($saleId, $userId) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
-
             if (!$sale || $sale->status !== SaleStatus::QUOTATION->value) {
                 throw new Exception("Only pending quotations can be cancelled.");
             }
-
             $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CANCELLED->value]);
-
             return $sale;
         });
     }
@@ -237,7 +236,6 @@ class SaleService
             'total_due_amount' => 0
         ], array_filter($stats));
     }
-
 
     private function processBatchAllocations(Sale $sale, $saleItem, array $line): void
     {
@@ -291,11 +289,8 @@ class SaleService
             $taxAmount = 0;
 
             if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP) {
-                if ($taxType === 'exclusive') {
-                    $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
-                } elseif ($taxType === 'inclusive') {
-                    $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
-                }
+                if ($taxType === 'exclusive') $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
+                elseif ($taxType === 'inclusive') $taxAmount = round($lineSubTotal - ($lineSubTotal / (1 + $taxRate / 100)), 2);
             }
 
             $vcType = $variation->vendor_commission_type ?? $product->vendor_commission_type;

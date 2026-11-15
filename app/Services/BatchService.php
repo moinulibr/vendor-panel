@@ -71,4 +71,23 @@ class BatchService
             }
         }
     }
+
+    public function reverseBatchSummary(int $batchId, int $qty, float $unitCost, float $unitSalePrice): void
+    {
+        $summary = \App\Models\BatchSummary::where('product_batch_id', $batchId)->first();
+
+        if ($summary) {
+            $summary->decrement('total_sold', $qty);
+            $summary->decrement('total_cogs', $qty * $unitCost);
+            $summary->decrement('total_revenue', $qty * $unitSalePrice);
+            $summary->decrement('total_profit', ($qty * $unitSalePrice) - ($qty * $unitCost));
+            $summary->increment('total_available', $qty);
+
+            if ($summary->total_revenue > 0) {
+                $summary->update([
+                    'profit_margin_percent' => ($summary->total_profit / $summary->total_revenue) * 100
+                ]);
+            }
+        }
+    }
 }

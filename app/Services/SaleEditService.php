@@ -14,7 +14,8 @@ class SaleEditService
     public function __construct(
         protected SaleRepositoryInterface $saleRepository,
         protected SaleEditRepositoryInterface $saleEditRepository,
-        protected BatchService $batchService
+        protected BatchService $batchService,
+        protected InventoryService $inventoryService
     ) {}
 
     public function editSale(int $saleId, int $userId, array $newItems): Sale
@@ -22,25 +23,28 @@ class SaleEditService
         return DB::transaction(function () use ($saleId, $userId, $newItems) {
             $oldSale = $this->saleRepository->findByIdAndUser($saleId, $userId);
 
-            if (!$oldSale) {
-                throw new Exception("Sale not found.");
-            }
+            if (!$oldSale) throw new Exception("Sale not found.");
 
-            $user = auth()->user();
-            if ( !$oldSale->is_editable_for_customer) { //$user->type === 'customer' &&
+            if (!$oldSale->is_editable_for_customer) {
                 throw new Exception("You are not allowed to edit this sale.");
             }
-            /* if ($user->type === 'staff' && !$oldSale->is_editable_for_staff) {
-                throw new Exception("Staff cannot edit this sale.");
-            }
-            if ($user->type === 'admin' && !$oldSale->is_editable_for_admin) {
-                throw new Exception("Admin cannot edit this sale.");
-            } */
-
             if (in_array($oldSale->status, ['cancelled', 'returned', 'refunded'])) {
                 throw new Exception("Cannot edit a cancelled or returned sale.");
             }
 
+            // Restore Stock (Batch + Product/Variation)
+            if ($oldSale->status !== 'quotation') {
+                foreach ($oldSale->items as $oldItem) {
+                    if ($oldItem->product->track_batch) {
+                        foreach ($oldItem->batchAllocations as $alloc) {
+                            $this->batchService->restoreStock($alloc->batch_id, $alloc->qty_used);
+                            $this->batchService->reverseBatchSummary($alloc->batch_id, $alloc->qty_used, $alloc->unit_cost, $alloc->unit_sale_price);
+                        }
+                    }
+                    // 🟢 Restore Main Inventory
+                    $this->inventoryService->restoreStock($oldItem->product_id, $oldItem->variation_id, $oldItem->qty);
+                }
+            }
 
             $this->saleEditRepository->updateOldSaleToHistory($oldSale);
 
@@ -53,18 +57,18 @@ class SaleEditService
                 $variation = isset($item['variation_id']) ? \App\Models\Variation::find($item['variation_id']) : null;
 
                 $qty = $item['quantity'];
-                $existingItem = $oldSale->items->where('product_id', $item['product_id'])->where('variation_id', $item['variation_id'] ?? null)->first();
+                if ($qty <= 0) continue; // Qty 0 means removed
 
-                // Price Lockdown
-                $unitPrice = $existingItem ? $existingItem->unit_price_snapshot : $item['unit_price'];
+                $existingItem = $oldSale->items->where('product_id', $item['product_id'])->where('variation_id', $item['variation_id'] ?? null)->first();
+                $unitPrice = $existingItem ? $existingItem->unit_price_snapshot : $item['unit_price']; // Price Lockdown
 
                 $lineSubTotal = $qty * $unitPrice;
                 $taxType = $variation->tax_type ?? $product->tax_type ?? 'exempt';
                 $taxRate = $variation->tax_rate ?? $product->tax_rate ?? 0;
                 $taxAmount = 0;
 
-                if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP) {
-                    if ($taxType === 'exclusive') $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
+                if (Util::IS_TAX_APPLICABLE_FOR_MOBILE_APP && $taxType === 'exclusive') {
+                    $taxAmount = round($lineSubTotal * $taxRate / 100, 2);
                 }
 
                 $processedLines[] = [
@@ -93,6 +97,11 @@ class SaleEditService
             $newSaleData = $oldSale->toArray();
             unset($newSaleData['id'], $newSaleData['created_at'], $newSaleData['updated_at'], $newSaleData['items']);
 
+            // 🟢 FIX UNIQUE CONSTRAINT: Append version to invoice_no
+            $newSaleData['version'] = $oldSale->version + 1;
+            $baseInvoiceNo = preg_replace('/-V\d+$/', '', $oldSale->invoice_no);
+            $newSaleData['invoice_no'] = $baseInvoiceNo . '-V' . $newSaleData['version'];
+
             $newSaleData['sub_total'] = $subTotal;
             $newSaleData['tax_amount'] = $taxTotal;
             $newSaleData['final_amount'] = $finalAmount;
@@ -102,62 +111,43 @@ class SaleEditService
             $newSale = $this->saleEditRepository->createNewVersion($oldSale, $newSaleData);
 
             foreach ($processedLines as $line) {
-                $saleItem = $this->saleRepository->createSaleItem(array_merge($line, [
-                    'sale_id' => $newSale->id,
-                    'status' => 'active'
-                ]));
+                $saleItem = $this->saleRepository->createSaleItem(array_merge($line, ['sale_id' => $newSale->id, 'status' => 'active']));
 
-                if ($line['track_batch'] && $newSale->status === 'confirmed') {
-                    $allocations = $this->batchService->allocateFIFO($line['product_id'], $line['variation_id'], $newSale->warehouse_id, $line['qty']);
-                    foreach ($allocations as $alloc) {
-                        $this->saleRepository->createSaleItemBatch([
-                            'sale_id' => $newSale->id,
-                            'sale_item_id' => $saleItem->id,
-                            'batch_id' => $alloc['batch']->id,
-                            'qty_used' => $alloc['qty_used'],
-                            'unit_cost' => $alloc['unit_cost'],
-                            'cost_total' => $alloc['qty_used'] * $alloc['unit_cost'],
-                            'unit_sale_price' => $line['unit_price_snapshot'],
-                            'total_sale_amount' => $alloc['qty_used'] * $line['unit_price_snapshot'],
-                            'total_profit' => ($alloc['qty_used'] * $line['unit_price_snapshot']) - ($alloc['qty_used'] * $alloc['unit_cost'])
-                        ]);
+                if ($newSale->status === 'confirmed') {
+                    if ($line['track_batch']) {
+                        $allocations = $this->batchService->allocateFIFO($line['product_id'], $line['variation_id'], $newSale->warehouse_id, $line['qty']);
+                        foreach ($allocations as $alloc) {
+                            $this->saleRepository->createSaleItemBatch([
+                                'sale_id' => $newSale->id,
+                                'sale_item_id' => $saleItem->id,
+                                'batch_id' => $alloc['batch']->id,
+                                'qty_used' => $alloc['qty_used'],
+                                'unit_cost' => $alloc['unit_cost'],
+                                'cost_total' => $alloc['qty_used'] * $alloc['unit_cost'],
+                                'unit_sale_price' => $line['unit_price_snapshot'],
+                                'total_sale_amount' => $alloc['qty_used'] * $line['unit_price_snapshot'],
+                                'total_profit' => ($alloc['qty_used'] * $line['unit_price_snapshot']) - ($alloc['qty_used'] * $alloc['unit_cost'])
+                            ]);
+                            $this->batchService->updateBatchSummary($alloc['batch']->id, $alloc['qty_used'], $alloc['unit_cost'], $line['unit_price_snapshot']);
+                        }
                     }
+                    // 🟢 Deduct Main Inventory for new version
+                    $this->inventoryService->deductStock($line['product_id'], $line['variation_id'], $line['qty']);
                 }
             }
 
-            // 🟢 Line Item level Edit Tracking
+            // Edit History Tracking
             foreach ($oldSale->items as $oldItem) {
                 $newItem = collect($processedLines)->firstWhere('product_id', $oldItem->product_id);
-
                 if (!$newItem) {
-                    $this->saleEditRepository->createEditItem([
-                        'sale_id' => $oldSale->id,
-                        'sale_item_id' => $oldItem->id,
-                        'change_type' => 'removed',
-                        'old_qty' => $oldItem->qty,
-                        'new_qty' => 0,
-                    ]);
+                    $this->saleEditRepository->createEditItem(['sale_id' => $oldSale->id, 'sale_item_id' => $oldItem->id, 'change_type' => 'removed', 'old_qty' => $oldItem->qty, 'new_qty' => 0]);
                 } elseif ($newItem['qty'] != $oldItem->qty) {
-                    $this->saleEditRepository->createEditItem([
-                        'sale_id' => $oldSale->id,
-                        'sale_item_id' => $oldItem->id,
-                        'change_type' => $newItem['qty'] > $oldItem->qty ? 'qty_increase' : 'qty_decrease',
-                        'old_qty' => $oldItem->qty,
-                        'new_qty' => $newItem['qty'],
-                    ]);
+                    $this->saleEditRepository->createEditItem(['sale_id' => $oldSale->id, 'sale_item_id' => $oldItem->id, 'change_type' => $newItem['qty'] > $oldItem->qty ? 'qty_increase' : 'qty_decrease', 'old_qty' => $oldItem->qty, 'new_qty' => $newItem['qty']]);
                 }
             }
-
-            // 🟢 New items tracking
             foreach ($processedLines as $newItem) {
                 if (!$oldSale->items->where('product_id', $newItem['product_id'])->first()) {
-                    $this->saleEditRepository->createEditItem([
-                        'sale_id' => $oldSale->id,
-                        'sale_item_id' => null,
-                        'change_type' => 'added',
-                        'old_qty' => 0,
-                        'new_qty' => $newItem['qty'],
-                    ]);
+                    $this->saleEditRepository->createEditItem(['sale_id' => $oldSale->id, 'sale_item_id' => null, 'change_type' => 'added', 'old_qty' => 0, 'new_qty' => $newItem['qty']]);
                 }
             }
 

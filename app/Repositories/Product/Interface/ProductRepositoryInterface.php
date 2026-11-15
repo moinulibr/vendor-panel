@@ -15,4 +15,6 @@ interface ProductRepositoryInterface
     public function getBrands();
     public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product;
     public function findVariationBySlugOrId(string|int $identifier, ?int $locationId = null): ?Variation;
+    public function deductStock(int $productId, ?int $variationId, int $qty): void;
+    public function restoreStock(int $productId, ?int $variationId, int $qty): void;
 }

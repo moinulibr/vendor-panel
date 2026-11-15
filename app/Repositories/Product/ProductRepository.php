@@ -14,10 +14,7 @@ class ProductRepository implements ProductRepositoryInterface
 {
     protected $variableStatus = 1;
     protected $isEnableForMobileApp = 1;
-    /**
-     * Get optimized products list for POS search.
-     * Handles single and variable products seamlessly up to 10M records.
-     */
+
     public function getFilteredProducts(array $filters, int $perPage = 20): Paginator
     {
         $variableStatus = $this->variableStatus;
@@ -29,11 +26,8 @@ class ProductRepository implements ProductRepositoryInterface
             ->where('status', 1)
             ->where('is_mobile_app', $this->isEnableForMobileApp);
 
-        // 1. Base Filters
         if (!empty($filters['category_ids'])) {
-            $categoryIds = is_array($filters['category_ids'])
-                ? $filters['category_ids']
-                : explode(',', $filters['category_ids']);
+            $categoryIds = is_array($filters['category_ids']) ? $filters['category_ids'] : explode(',', $filters['category_ids']);
             $query->whereIn('category_id', $categoryIds);
         }
 
@@ -49,14 +43,11 @@ class ProductRepository implements ProductRepositoryInterface
             $query->whereBetween('min_price', [$filters['min_price'], $filters['max_price']]);
         }
 
-        // 2. High-Performance Search Execution
         if ($search) {
             $query->where(function (Builder $mainQuery) use ($search, $variableStatus) {
-                // Check Main Product Match (SKU, Name, Bangla Name)
                 $mainQuery->where('sku', 'LIKE', "{$search}%")
                     ->orWhere('name', 'LIKE', "{$search}%")
                     ->orWhere('name_bangla', 'LIKE', "{$search}%")
-                    // Check Variation Match via Fast Subquery EXISTS (Sub-SKU, Barcode, Name)
                     ->orWhereExists(function ($subQuery) use ($search, $variableStatus) {
                         $subQuery->selectRaw(1)
                             ->from('variations as pv')
@@ -71,41 +62,33 @@ class ProductRepository implements ProductRepositoryInterface
                     });
             });
 
-            // Smart Relations Loading (Single Product + Variable Product Conditional Load)
             $query->with(['variations' => function ($v) use ($search, $locationId, $variableStatus) {
                 $v->where('status', $variableStatus)->whereNull('deleted_at');
-
                 $v->where(function ($q) use ($search) {
-                    // Match Specific Variation
                     $q->where('sub_sku', 'LIKE', "{$search}%")
                         ->orWhere('barcode', 'LIKE', "{$search}%")
                         ->orWhere('name', 'LIKE', "{$search}%")
-                        // Or Load All Variations (Including Default Single Variation) if Parent Matches
                         ->orWhereHas('product', function ($p) use ($search) {
                             $p->where('sku', 'LIKE', "{$search}%")
                                 ->orWhere('name', 'LIKE', "{$search}%")
                                 ->orWhere('name_bangla', 'LIKE', "{$search}%");
                         });
                 });
-
                 $this->applyStockRelation($v, $locationId);
             }]);
         } else {
-            // Default Eager Load without search term
             $query->with(['variations' => function ($v) use ($locationId, $variableStatus) {
                 $v->where('status', $variableStatus)->whereNull('deleted_at');
                 $this->applyStockRelation($v, $locationId);
             }]);
         }
 
-        // 3. Selective Eager Loading for Base Relations
         $query->with([
             'category:id,name,slug,image',
             'brand:id,name,image',
             'images:id,product_id,variation_id,image',
         ]);
 
-        // 4. Sorting
         $sortBy = $filters['sort_by'] ?? 'latest';
         match ($sortBy) {
             'name_asc'  => $query->orderBy('name', 'asc'),
@@ -113,7 +96,6 @@ class ProductRepository implements ProductRepositoryInterface
             default     => $query->orderBy('id', 'desc'),
         };
 
-        // 5. Select Essential Columns & Paginate
         return $query->select([
             'id',
             'name',
@@ -137,30 +119,20 @@ class ProductRepository implements ProductRepositoryInterface
         ])->simplePaginate($perPage);
     }
 
-    /**
-     * Helper to apply stock relation based on location
-     */
     private function applyStockRelation($query, ?int $locationId)
     {
         if ($locationId) {
             $query->with(['stocks' => function ($sq) use ($locationId) {
-                $sq->where('location_id', $locationId)
-                    ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                $sq->where('location_id', $locationId)->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
             }]);
         } else {
             $query->with('stocks:id,product_id,variation_id,location_id,qty_available');
         }
     }
 
-    /**
-     * Fetch Product Details by Identifier
-     */
     public function findBySlugOrId(string|int $identifier, ?int $locationId = null): ?Product
     {
-        //$identifier always variation id [vriation_id is focused for product details]
         $selectedVariationId = null;
-        $product = null;
-
         $product = $this->fetchByVariationIdentifier($identifier, $selectedVariationId);
 
         if ($product) {
@@ -170,71 +142,47 @@ class ProductRepository implements ProductRepositoryInterface
                 'unit:id,name',
                 'images:id,product_id,variation_id,image',
                 'variations' => function ($q) use ($locationId) {
-                    $q->select([
-                        'id',
-                        'product_id',
-                        'name',
-                        'sub_sku',
-                        'purchase_price',
-                        'sell_price',
-                        'wholesale_price',
-                        'dealer_price',
-                        'mrp',
-                        'image',
-                        'barcode',
-                        'custom_code',
-                        'created_at'
-                    ]);
-
+                    $q->select(['id', 'product_id', 'name', 'sub_sku', 'purchase_price', 'sell_price', 'wholesale_price', 'dealer_price', 'mrp', 'image', 'barcode', 'custom_code', 'created_at']);
                     if ($locationId) {
                         $q->with(['stocks' => function ($sq) use ($locationId) {
-                            $sq->where('location_id', $locationId)
-                                ->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
+                            $sq->where('location_id', $locationId)->select(['id', 'product_id', 'variation_id', 'location_id', 'qty_available']);
                         }]);
                     } else {
                         $q->with('stocks:id,product_id,variation_id,location_id,qty_available');
                     }
                 }
             ]);
-
             $product->selected_variation_id = $selectedVariationId;
         }
 
         return $product;
     }
-    /**
-     * Fetch Variation Details by Identifier
-     */
+
     public function findVariationBySlugOrId(string|int $identifier, ?int $locationId = null): ?Variation
     {
-        //$identifier always variation id [vriation_id is focused for product details]
-        $variation = Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price','purchase_price','name')
+        return Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price', 'purchase_price', 'name')
             ->where(function ($q) use ($identifier) {
                 if (is_numeric($identifier)) {
                     $q->where('id', $identifier);
                 } else {
                     $q->where('sub_sku', $identifier);
                 }
-            })
-            ->first();
-        return $variation;
+            })->first();
     }
 
     private function fetchByVariationIdentifier(string|int $identifier, ?int &$selectedVariationId): ?Product
     {
-        $variation = Variation::select('id', 'product_id', 'sub_sku','mrp','wholesale_price','dealer_price','retail_price','sell_price','name')
+        $variation = Variation::select('id', 'product_id', 'sub_sku', 'mrp', 'wholesale_price', 'dealer_price', 'retail_price', 'sell_price', 'name')
             ->where(function ($q) use ($identifier) {
                 if (is_numeric($identifier)) {
                     $q->where('id', $identifier);
                 } else {
                     $q->where('sub_sku', $identifier);
                 }
-            })
-            ->first();
+            })->first();
 
         if ($variation) {
             $selectedVariationId = $variation->id;
-
             return Product::query()
                 ->where('status', 1)
                 ->where('is_mobile_app', $this->isEnableForMobileApp)
@@ -245,7 +193,6 @@ class ProductRepository implements ProductRepositoryInterface
         return null;
     }
 
-
     private function fetchByProductIdentifier(string|int $identifier): ?Product
     {
         return Product::query()
@@ -255,29 +202,60 @@ class ProductRepository implements ProductRepositoryInterface
                 if (is_numeric($identifier)) {
                     $q->where('id', $identifier);
                 } else {
-                    $q->where('slug', $identifier)
-                        ->orWhere('sku', $identifier);
+                    $q->where('slug', $identifier)->orWhere('sku', $identifier);
                 }
-            })
-            ->first();
+            })->first();
     }
-
-
 
     public function getCategories()
     {
         return Category::select('id', 'name', 'bd_name', 'slug', 'image', 'parent_id')
-            ->where('is_new', 0)
-            ->whereNull('parent_id')
-            //->with('children:id,name,slug,parent_id')
-            ->get();
+            ->where('is_new', 0)->whereNull('parent_id')->get();
     }
 
     public function getBrands()
     {
         return Brand::select('id', 'name', 'bd_name', 'image')
-            ->where('is_new', 0)
-            ->orderBy('name', 'asc')
-            ->get();
+            ->where('is_new', 0)->orderBy('name', 'asc')->get();
+    }
+
+    // =========================================================================
+    // 🟢 NEW METHODS FOR INVENTORY (Moved from Service to Repository)
+    // =========================================================================
+
+    public function deductStock(int $productId, ?int $variationId, int $qty): void
+    {
+        $product = Product::find($productId);
+        if ($product && ($product->track_stock || $product->stock_manage)) {
+            $product->decrement('stock_quantity', $qty);
+            $product->increment('total_sold', $qty);
+            $product->update(['last_sale_at' => now()]);
+        }
+
+        if ($variationId) {
+            $variation = Variation::find($variationId);
+            if ($variation) {
+                $variation->decrement('stock_quantity', $qty);
+                $variation->increment('total_sold', $qty);
+                $variation->update(['last_sale_at' => now()]);
+            }
+        }
+    }
+
+    public function restoreStock(int $productId, ?int $variationId, int $qty): void
+    {
+        $product = Product::find($productId);
+        if ($product && ($product->track_stock || $product->stock_manage)) {
+            $product->increment('stock_quantity', $qty);
+            $product->decrement('total_sold', $qty);
+        }
+
+        if ($variationId) {
+            $variation = Variation::find($variationId);
+            if ($variation) {
+                $variation->increment('stock_quantity', $qty);
+                $variation->decrement('total_sold', $qty);
+            }
+        }
     }
 }

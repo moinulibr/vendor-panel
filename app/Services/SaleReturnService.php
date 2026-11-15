@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Sale;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleReturnRepositoryInterface;
 use Exception;
@@ -13,10 +12,11 @@ class SaleReturnService
     public function __construct(
         protected SaleRepositoryInterface $saleRepository,
         protected SaleReturnRepositoryInterface $returnRepository,
-        protected BatchService $batchService
+        protected BatchService $batchService,
+        protected InventoryService $inventoryService
     ) {}
 
-    public function createReturn(int $saleId, int $userId, array $returnItems, string $reason): Sale
+    public function createReturn(int $saleId, int $userId, array $returnItems, string $reason): \App\Models\Sale
     {
         return DB::transaction(function () use ($saleId, $userId, $returnItems, $reason) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
@@ -27,7 +27,6 @@ class SaleReturnService
 
             $totalRefund = 0;
 
-            // ১. রিটার্ন হেডার তৈরি
             $saleReturn = $this->returnRepository->createSaleReturn([
                 'return_no' => $this->generateReturnNo(),
                 'sale_id' => $sale->id,
@@ -40,16 +39,14 @@ class SaleReturnService
                 'created_by' => auth()->id(),
             ]);
 
-            // ২. আইটেম প্রসেসিং
             foreach ($returnItems as $reqItem) {
                 $saleItem = $sale->items()->find($reqItem['sale_item_id']);
                 if (!$saleItem || $reqItem['qty_returned'] > $saleItem->qty) {
                     throw new Exception("Invalid return quantity for item ID {$reqItem['sale_item_id']}.");
                 }
 
-                // Proportional Refund Calculation
                 $ratio = $reqItem['qty_returned'] / $saleItem->qty;
-                $lineRefund = $saleItem->line_subtotal * $ratio;
+                $lineRefund = ($saleItem->line_subtotal - $saleItem->allocated_inv_disc) * $ratio;
                 $taxReversal = $saleItem->tax_amount * $ratio;
                 $netRefund = $lineRefund + $taxReversal;
                 $totalRefund += $netRefund;
@@ -68,22 +65,26 @@ class SaleReturnService
                     'condition' => 'good',
                 ]);
 
-                // 🟢 স্টক ফেরত (Restock)
-                if ($saleItem->track_batch ?? $saleItem->product->track_batch) {
+                if ($saleItem->product->track_batch) {
                     $batchAllocs = $saleItem->batchAllocations;
                     $qtyToRestore = $reqItem['qty_returned'];
 
                     foreach ($batchAllocs as $alloc) {
                         if ($qtyToRestore <= 0) break;
                         $restoreQty = min($alloc->qty_used, $qtyToRestore);
+
                         $this->batchService->restoreStock($alloc->batch_id, $restoreQty);
+                        $this->batchService->reverseBatchSummary($alloc->batch_id, $restoreQty, $alloc->unit_cost, $alloc->unit_sale_price);
+
                         $qtyToRestore -= $restoreQty;
                     }
                 }
+
+                // 🟢 Restore Main Inventory (Products & Variations)
+                $this->inventoryService->restoreStock($saleItem->product_id, $saleItem->variation_id, $reqItem['qty_returned']);
             }
 
-            // ৩. সেল স্ট্যাটাস আপডেট
-            $newStatus = $saleReturn->return_type === 'full' ? 'returned' : 'processing'; // partial return
+            $newStatus = $saleReturn->return_type === 'full' ? 'returned' : 'processing';
             $newDueAmount = max(0, $sale->due_amount - $totalRefund);
 
             $this->saleRepository->updateSale($sale, [
@@ -92,38 +93,38 @@ class SaleReturnService
                 'payment_status' => $newDueAmount <= 0 ? 'paid' : 'partially_paid'
             ]);
 
-            // ৪. রিফান্ড এন্ট্রি
-            $this->returnRepository->createSaleRefund([
-                'refund_no' => $this->generateRefundNo(),
-                'return_id' => $saleReturn->id,
-                'customer_id' => $userId,
-                'amount' => $totalRefund,
-                'method' => 'original_method',
-                'status' => 'success',
-                'refunded_by' => auth()->id(),
-                'refunded_at' => now(),
-            ]);
+            if ($totalRefund > 0) {
+                $this->returnRepository->createSaleRefund([
+                    'refund_no' => $this->generateRefundNo(),
+                    'return_id' => $saleReturn->id,
+                    'customer_id' => $userId,
+                    'amount' => $totalRefund,
+                    'method' => 'original_method',
+                    'status' => 'success',
+                    'refunded_by' => auth()->id(),
+                    'refunded_at' => now(),
+                ]);
 
-            // ৫. লেজার এন্ট্রি (Customer Credit)
-            $prevBalance = $this->saleRepository->getLatestLedgerBalance('customer', $userId);
-            $this->saleRepository->insertLedgerEntry([
-                'party_type' => 'customer',
-                'party_id' => $userId,
-                'entry_date' => now()->toDateString(),
-                'entry_at' => now(),
-                'entry_type' => 'refund_paid',
-                'reference_type' => 'SaleReturn',
-                'reference_id' => $saleReturn->id,
-                'reference_no' => $saleReturn->return_no,
-                'debit' => 0,
-                'credit' => $totalRefund,
-                'running_balance' => $prevBalance - $totalRefund,
-                'currency' => 'BDT',
-                'exchange_rate' => 1,
-                'description' => "Refund for Return {$saleReturn->return_no}",
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                $prevBalance = $this->saleRepository->getLatestLedgerBalance('customer', $userId);
+                $this->saleRepository->insertLedgerEntry([
+                    'party_type' => 'customer',
+                    'party_id' => $userId,
+                    'entry_date' => now()->toDateString(),
+                    'entry_at' => now(),
+                    'entry_type' => 'refund_paid',
+                    'reference_type' => 'SaleReturn',
+                    'reference_id' => $saleReturn->id,
+                    'reference_no' => $saleReturn->return_no,
+                    'debit' => 0,
+                    'credit' => $totalRefund,
+                    'running_balance' => $prevBalance - $totalRefund,
+                    'currency' => 'BDT',
+                    'exchange_rate' => 1,
+                    'description' => "Refund for Return {$saleReturn->return_no}",
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             return $sale;
         });

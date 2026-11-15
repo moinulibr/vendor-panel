@@ -77,6 +77,7 @@ class SaleController extends BaseApiController
 
     public function update(UpdateSaleRequest $request, int $id): JsonResponse
     {
+        Log::info($request->all());
         try {
             $userId = auth()->id();
             $sale = $this->saleEditService->editSale($id, $userId, $request->validated()['items'] ?? []);
@@ -123,30 +124,6 @@ class SaleController extends BaseApiController
         }
     }
 
-    public function returnSale(StoreSaleReturnRequest $request, int $id): JsonResponse
-    {
-        try {
-            $request->validate([
-                'items' => 'required|array',
-                'items.*.sale_item_id' => 'required|integer',
-                'items.*.qty_returned' => 'required|integer|min:1',
-                'reason' => 'nullable|string|max:500'
-            ]);
-
-            $userId = auth()->id();
-            $sale = $this->saleReturnService->createReturn(
-                $id,
-                $userId,
-                $request->items,
-                $request->reason ?? 'Customer Return'
-            );
-
-            return $this->jsonResponse(true, 'Sale returned successfully.', new SaleResource($sale), 200);
-        } catch (Exception $e) {
-            return $this->jsonResponse(false, $e->getMessage(), 400);
-        }
-    }
-
     public function summaryReport(): JsonResponse
     {
         try {
@@ -155,6 +132,23 @@ class SaleController extends BaseApiController
             return $this->jsonResponse(true, 'Summary report retrieved successfully.', $summary, 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 422);
+        }
+    }
+
+    public function returnSale(StoreSaleReturnRequest $request, int $id): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $sale = $this->saleReturnService->createReturn(
+                $id,
+                $userId,
+                $request->validated()['items'],
+                $request->validated()['reason'] ?? 'Customer Return'
+            );
+
+            return $this->jsonResponse(true, 'Items returned successfully.', new SaleResource($sale->load('items')), 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
 
