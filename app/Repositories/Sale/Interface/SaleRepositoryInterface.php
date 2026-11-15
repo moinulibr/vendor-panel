@@ -31,4 +31,5 @@ interface SaleRepositoryInterface
     public function updateSale(Sale $sale, array $data): bool;
     public function getSummaryStats(int $userId): array;
     public function getSaleItemsWithBatches(int $saleId); // For Return
+    public function findCurrentActiveSale(int $rootSaleId, int $userId): ?Sale;
 }

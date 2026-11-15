@@ -77,9 +77,12 @@ class SaleController extends BaseApiController
 
     public function update(UpdateSaleRequest $request, int $id): JsonResponse
     {
-        Log::info($request->all());
+        //Log::info($request->all());
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             $sale = $this->saleEditService->editSale($id, $userId, $request->validated()['items'] ?? []);
             return $this->jsonResponse(true, 'Sale updated successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {

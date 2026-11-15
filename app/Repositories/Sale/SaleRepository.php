@@ -134,4 +134,15 @@ class SaleRepository implements SaleRepositoryInterface
     {
         return SaleItem::where('sale_id', $saleId)->with('batchAllocations')->get();
     }
+
+    public function findCurrentActiveSale(int $rootSaleId, int $userId): ?Sale
+    {
+        return Sale::where(function ($q) use ($rootSaleId) {
+            $q->where('id', $rootSaleId)->orWhere('parent_id', $rootSaleId);
+        })
+            ->where('customer_id', $userId)
+            ->where('is_current', true)
+            ->with(['items.product', 'items.batchAllocations', 'payments', 'taxes'])
+            ->first();
+    }
 }
