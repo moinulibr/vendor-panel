@@ -8,16 +8,18 @@ use App\Http\Requests\Api\V1\App\Sale\StoreSaleReturnRequest;
 use App\Http\Requests\Api\V1\App\Sale\SubmitPaymentRequest;
 use App\Http\Requests\Api\V1\App\Sale\UpdateSaleRequest;
 use App\Http\Resources\Api\V1\App\Sale\SaleResource;
+use App\Http\Swagger\SaleApiDocInterface;
 use App\Services\SaleService;
 use App\Services\SaleEditService;
 use App\Services\SaleReturnService;
 use App\Utils\UserType;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Log;
 
-class SaleController extends BaseApiController
+class SaleController extends BaseApiController implements SaleApiDocInterface
 {
     public function __construct(
         protected SaleService $saleService,
@@ -45,6 +47,7 @@ class SaleController extends BaseApiController
             return $this->jsonResponse(false, $e->getMessage(), 500);
         }
     }
+
 
     public function store(StoreSaleRequest $request): JsonResponse
     {
@@ -91,10 +94,13 @@ class SaleController extends BaseApiController
         }
     }
 
-    public function confirmQuotation(int $id): JsonResponse
+    public function confirmSaleFromQuotation(Request $request, int $id): JsonResponse
     {
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             $sale = $this->saleService->confirmQuotation($id, $userId);
             return $this->jsonResponse(true, 'Quotation confirmed to Sale successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
@@ -102,10 +108,13 @@ class SaleController extends BaseApiController
         }
     }
 
-    public function cancelQuotation(int $id): JsonResponse
+    public function cancelQuotation( Request $request, int $id): JsonResponse
     {
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             $sale = $this->saleService->cancelQuotation($id, $userId);
             return $this->jsonResponse(true, 'Quotation cancelled successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
@@ -117,6 +126,9 @@ class SaleController extends BaseApiController
     {
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             if ($request->hasFile('document')) {
                 $request->file('document')->store('payment_receipts', 'public');
             }
@@ -127,10 +139,13 @@ class SaleController extends BaseApiController
         }
     }
 
-    public function summaryReport(): JsonResponse
+    public function summaryReport(Request $request): JsonResponse
     {
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             $summary = $this->saleService->getSummaryReport($userId);
             return $this->jsonResponse(true, 'Summary report retrieved successfully.', $summary, 200);
         } catch (Exception $e) {
@@ -142,6 +157,9 @@ class SaleController extends BaseApiController
     {
         try {
             $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
             $saleReturn = $this->saleReturnService->createReturn(
                 $id,
                 $userId,
@@ -159,5 +177,17 @@ class SaleController extends BaseApiController
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
-
+    public function cancelConfirmedSale(Request $request, int $id): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
+                $userId = $request->user_base_id;
+            }
+            // TODO: $this->saleService->cancelConfirmedSale($id, $userId, $request->validated());
+            return $this->jsonResponse(true, 'Confirmed sale cancelled successfully.', null, 200);
+        } catch (Exception $e) {
+            return $this->jsonResponse(false, $e->getMessage(), 400);
+        }
+    }
 }

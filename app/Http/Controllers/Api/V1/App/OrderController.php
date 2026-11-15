@@ -15,7 +15,7 @@ use App\Utils\UserType;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
-class OrderController extends BaseApiController implements OrderApiDocInterface
+class OrderController extends BaseApiController
 {
     public function __construct(protected OrderService $orderService) {}
 

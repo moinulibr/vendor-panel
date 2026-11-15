@@ -133,14 +133,14 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/quotation', [SaleController::class, 'store']); // Cart to Sale/Quotation
             Route::get('/summary-report', [SaleController::class, 'summaryReport']);
             Route::get('/{id}', [SaleController::class, 'show']);
-            Route::put('/{id}', [SaleController::class, 'update']);
             
             Route::put('/{id}', [SaleController::class, 'update']); // Edit Sale/Quotation
-            Route::post('/{id}/confirm', [SaleController::class, 'confirmQuotation']);
+            Route::post('/{id}/confirm', [SaleController::class, 'confirmSaleFromQuotation']);
             Route::post('/{id}/cancel/quotation', [SaleController::class, 'cancelQuotation']);
             Route::post('/{id}/payment', [SaleController::class, 'submitPayment']);
             Route::post('/{id}/return', [SaleController::class, 'returnSale']); // Return items
             Route::post('/{id}/refund', [SaleController::class, 'refundSale']); // Refund money
+            Route::post('/{id}/cancel-sale', [SaleController::class, 'cancelConfirmedSale']);
 
         });
 

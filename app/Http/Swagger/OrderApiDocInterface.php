@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Swagger;
+/* namespace App\Http\Swagger;
 
-use App\Http\Requests\Api\V1\App\GetOrderSummaryReportRequest;
-use App\Http\Requests\Api\V1\App\Order\CreateQuotationRequest;
-use App\Http\Requests\Api\V1\App\Order\OrderListRequest;
-use App\Http\Requests\Api\V1\App\Order\SubmitPaymentRequest;
-use App\Http\Requests\Api\V1\App\Order\UpdateQuotationRequest;
+use App\Http\Requests\Api\V1\App\Sale\SaleListRequest;
+use App\Http\Requests\Api\V1\App\Sale\StoreSaleRequest;
+use App\Http\Requests\Api\V1\App\Sale\SubmitPaymentRequest;
+use App\Http\Requests\Api\V1\App\Sale\UpdateSaleRequest;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 
@@ -31,7 +30,7 @@ interface OrderApiDocInterface
             new OA\Response(response: 401, description: "Unauthenticated")
         ]
     )]
-    public function index(OrderListRequest $request);
+    public function index(SaleListRequest $request);
 
     #[OA\Post(
         path: "/api/v1/app/orders/quotation",
@@ -55,7 +54,7 @@ interface OrderApiDocInterface
             new OA\Response(response: 422, description: "Validation Error / Empty Cart")
         ]
     )]
-    public function storeQuotation(CreateQuotationRequest $request);
+    public function store(StoreSaleRequest $request);
 
     #[OA\Get(
         path: "/api/v1/app/orders/{id}",
@@ -106,7 +105,7 @@ interface OrderApiDocInterface
             new OA\Response(response: 400, description: "Cannot update non-pending order")
         ]
     )]
-    public function update(UpdateQuotationRequest $request, int $id);
+    public function update(UpdateSaleRequest $request, int $id);
 
     #[OA\Post(
         path: "/api/v1/app/orders/{id}/confirm",
@@ -122,7 +121,7 @@ interface OrderApiDocInterface
             new OA\Response(response: 400, description: "Invalid transaction state")
         ]
     )]
-    public function confirmOrder(int $id);
+    public function confirmSaleFromQuotation(Request $request,int $id);
 
     #[OA\Post(
         path: "/api/v1/app/orders/{id}/payment",
@@ -209,5 +208,5 @@ interface OrderApiDocInterface
             new OA\Response(response: 422, description: "Validation Error")
         ]
     )]
-    public function getOrderSummaryReport(GetOrderSummaryReportRequest $request);
-}
+    public function summaryReport();
+} */

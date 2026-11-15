@@ -7,6 +7,7 @@ use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
 use App\Repositories\Sale\Interface\SaleRepositoryInterface;
+use App\Repositories\Sale\Interface\SaleReturnRepositoryInterface;
 use App\Utils\Util;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,8 @@ class SaleService
         protected SaleRepositoryInterface $saleRepository,
         protected CartRepositoryInterface $cartRepository,
         protected SettingService $settingService,
-        protected InventoryService $inventoryService
+        protected InventoryService $inventoryService,
+        protected SaleReturnRepositoryInterface $returnRepository
     ) {}
 
     public function getUserSales(int $userId, array $filters)
@@ -221,6 +223,146 @@ class SaleService
                 throw new Exception("Only pending quotations can be cancelled.");
             }
             $this->saleRepository->updateSale($sale, ['status' => SaleStatus::CANCELLED->value]);
+            return $sale;
+        });
+    }
+
+    public function cancelConfirmedSale(int $saleId, int $userId, string $reason): Sale
+    {
+        return DB::transaction(function () use ($saleId, $userId, $reason) {
+            $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
+
+            if (!$sale || !in_array($sale->status, ['confirmed', 'processing', 'partially_paid', 'paid'])) {
+                throw new Exception("Only confirmed or processing sales can be cancelled.");
+            }
+
+            // ১. স্টক এবং ব্যাচ রিভার্স
+            foreach ($sale->items as $item) {
+                if ($item->product->track_batch) {
+                    foreach ($item->batchAllocations as $alloc) {
+                        $this->batchService->restoreStock($alloc->batch_id, $alloc->qty_used);
+                        $this->batchService->reverseBatchSummary($alloc->batch_id, $alloc->qty_used, $alloc->unit_cost, $alloc->unit_sale_price);
+                    }
+                }
+                $this->inventoryService->restoreStock($item->product_id, $item->variation_id, $item->qty);
+            }
+
+            // ২. ডামি Sale Return তৈরি করা (যাতে Refund টেবিলে Foreign Key Error না আসে)
+            $saleReturn = $this->returnRepository->createSaleReturn([
+                'return_no' => "RET-" . now()->format('Y') . "-" . rand(1000, 9999),
+                'sale_id' => $sale->id,
+                'customer_id' => $userId,
+                'warehouse_id' => $sale->warehouse_id,
+                'return_type' => 'full',
+                'settlement_type' => 'original_method',
+                'status' => 'completed',
+                'reason' => "Sale Cancelled: " . $reason,
+                'created_by' => auth()->id(),
+            ]);
+
+            // ৩. সেল স্ট্যাটাস আপডেট
+            $newPaymentStatus = $sale->paid_amount > 0 ? PaymentStatus::RETURNED->value : PaymentStatus::UNPAID->value;
+            $this->saleRepository->updateSale($sale, [
+                'status' => SaleStatus::CANCELLED->value,
+                'payment_status' => $newPaymentStatus,
+                'due_amount' => 0,
+                'notes' => $sale->notes . " | Cancelled Reason: " . $reason,
+            ]);
+
+            // ৪. লেজার রিভার্স (Customer & Vendor)
+            $now = now();
+            $entryDate = $now->toDateString();
+
+            // কাস্টমার লেজার: আগে ডেবিট করা টাকা এখন ক্রেডিট হবে (বিল বাতিল)
+            $prevCustBal = $this->saleRepository->getLatestLedgerBalance('customer', $userId);
+            $this->saleRepository->insertLedgerEntry([
+                'party_type' => 'customer',
+                'party_id' => $userId,
+                'entry_date' => $entryDate,
+                'entry_at' => $now,
+                'entry_type' => 'sale_cancelled',
+                'reference_type' => 'Sale',
+                'reference_id' => $sale->id,
+                'reference_no' => $sale->invoice_no,
+                'debit' => 0,
+                'credit' => $sale->final_amount,
+                'running_balance' => $prevCustBal - $sale->final_amount,
+                'currency' => 'BDT',
+                'exchange_rate' => 1,
+                'description' => "Sale Cancelled (Ref: {$sale->invoice_no})",
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            // টাকা ফেরত (Refund) - যদি কাস্টমার আগে পেমেন্ট করে থাকে
+            if ($sale->paid_amount > 0) {
+                $this->returnRepository->createSaleRefund([
+                    'refund_no' => "REF-" . now()->format('Y') . "-" . rand(1000, 9999),
+                    'return_id' => $saleReturn->id, // 🟢 ডামি রিটার্ন আইডি
+                    'customer_id' => $userId,
+                    'amount' => $sale->paid_amount,
+                    'method' => 'original_method',
+                    'status' => 'success',
+                    'refunded_by' => auth()->id(),
+                    'refunded_at' => now(),
+                ]);
+
+                // 🟢 কাস্টমারকে টাকা ফেরত দেওয়ার লেজার এন্ট্রি (Debit)
+                $newCustBal = $prevCustBal - $sale->final_amount; // বিল বাতিলের পর ব্যালেন্স
+                $this->saleRepository->insertLedgerEntry([
+                    'party_type' => 'customer',
+                    'party_id' => $userId,
+                    'entry_date' => $entryDate,
+                    'entry_at' => $now,
+                    'entry_type' => 'refund_paid',
+                    'reference_type' => 'SaleReturn',
+                    'reference_id' => $saleReturn->id,
+                    'reference_no' => $saleReturn->return_no,
+                    'debit' => $sale->paid_amount,
+                    'credit' => 0,
+                    'running_balance' => $newCustBal + $sale->paid_amount,
+                    'currency' => 'BDT',
+                    'exchange_rate' => 1,
+                    'description' => "Cash Refund for Sale Cancel",
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            // ভেন্ডর লেজার: আগে ক্রেডিট করা টাকা এখন ডেবিট হবে (আমরা ভেন্ডরকে আর টাকা দিব না)
+            $vendorTotals = $sale->items->groupBy('vendor_id')->map(fn($items) => $items->sum('vendor_payable_amount'));
+            foreach ($vendorTotals as $vendorId => $payable) {
+                if (!$vendorId || $payable <= 0) continue;
+                $prevVendBal = $this->saleRepository->getLatestLedgerBalance('vendor', $vendorId);
+                $this->saleRepository->insertLedgerEntry([
+                    'party_type' => 'vendor',
+                    'party_id' => $vendorId,
+                    'entry_date' => $entryDate,
+                    'entry_at' => $now,
+                    'entry_type' => 'sale_cancelled',
+                    'reference_type' => 'Sale',
+                    'reference_id' => $sale->id,
+                    'reference_no' => $sale->invoice_no,
+                    'debit' => $payable,
+                    'credit' => 0,
+                    'running_balance' => $prevVendBal - $payable,
+                    'currency' => 'BDT',
+                    'exchange_rate' => 1,
+                    'description' => "Vendor Payable Reversed for Cancel",
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            // ৫. সেলসপারসন কমিশন রিভার্স (যদি থাকে)
+            $commissions = \App\Models\SalespersonCommission::where('sale_id', $sale->id)->get();
+            foreach ($commissions as $comm) {
+                $comm->update([
+                    'status' => 'reversed',
+                    'reversed_amount' => $comm->commission_amount
+                ]);
+            }
+
             return $sale;
         });
     }
