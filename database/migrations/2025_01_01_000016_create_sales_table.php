@@ -85,6 +85,14 @@ return new class extends Migration
             $table->boolean('is_editable_for_staff')->default(true)->comment('Can staff edit this sale?');
             $table->boolean('is_editable_for_customer')->default(true)->comment('Can customer edit this sale?');
 
+            $table->boolean('is_returnable_for_admin')->default(true)->comment('Can admin return this sale?');
+            $table->boolean('is_returnable_for_staff')->default(true)->comment('Can staff return this sale?');
+            $table->boolean('is_returnable_for_customer')->default(true)->comment('Can customer return this sale?');
+
+            $table->boolean('is_cancelable_for_admin')->default(true)->comment('Can admin cancel this sale?');
+            $table->boolean('is_cancelable_for_staff')->default(true)->comment('Can staff cancel this sale?');
+            $table->boolean('is_cancelable_for_customer')->default(true)->comment('Can customer cancel this sale?');
+
             $table->foreignId('created_by')->nullable()->comment('FK to users table');
             $table->timestamps();
 

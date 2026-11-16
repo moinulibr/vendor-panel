@@ -62,6 +62,12 @@ class Sale extends Model
         'is_editable_for_admin',
         'is_editable_for_staff',
         'is_editable_for_customer',
+        'is_returnable_for_admin',
+        'is_returnable_for_staff',
+        'is_returnable_for_customer',
+        'is_cancelable_for_admin',
+        'is_cancelable_for_staff',
+        'is_cancelable_for_customer',
         'created_by',
     ];
 
@@ -93,6 +99,12 @@ class Sale extends Model
         'is_editable_for_admin' => 'boolean',
         'is_editable_for_staff' => 'boolean',
         'is_editable_for_customer' => 'boolean',
+        'is_returnable_for_admin' => 'boolean',
+        'is_returnable_for_staff' => 'boolean',
+        'is_returnable_for_customer' => 'boolean',
+        'is_cancelable_for_admin' => 'boolean',
+        'is_cancelable_for_staff' => 'boolean',
+        'is_cancelable_for_customer' => 'boolean',
     ];
 
     // --------------------------------------------------------------------------

@@ -112,6 +112,12 @@ class SaleService
                 'is_editable_for_admin' => true,
                 'is_editable_for_staff' => true,
                 'is_editable_for_customer' => true,
+                'is_returnable_for_admin' => true,
+                'is_returnable_for_staff' => true,
+                'is_returnable_for_customer' => true,
+                'is_cancelable_for_admin' => true,
+                'is_cancelable_for_staff' => true,
+                'is_cancelable_for_customer' => true,
                 'quote_notes' => $data['note'] ?? null,
                 'created_by' => auth()->id(),
             ]);
