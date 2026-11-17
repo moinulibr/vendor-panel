@@ -142,10 +142,10 @@ class SaleService
                 $this->processInitialPayments($sale, $initialPayments, $paidAmount, $userId);
             }
 
-             $this->cartRepository->clearAllItemFromCart($cart->id);
+             /* $this->cartRepository->clearAllItemFromCart($cart->id);
              $this->cartRepository->clearCoupon($cart->id);
              $this->cartRepository->clearCartDiscount($cart->id);
-             $this->cartRepository->clearCart($cart->id);
+             $this->cartRepository->clearCart($cart->id); */
 
             return $sale;
         });
@@ -194,7 +194,7 @@ class SaleService
     {
         DB::transaction(function () use ($saleId, $userId, $data) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
-            if (!$sale || $sale->status === SaleStatus::QUOTATION->value) {
+            if (!$sale || $sale->status === SaleStatus::QUOTATION->value || $sale->status === SaleStatus::CANCELLED->value) {
                 throw new Exception("Cannot submit payment for this sale.");
             }
 
@@ -238,7 +238,7 @@ class SaleService
         return DB::transaction(function () use ($saleId, $userId, $reason) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
 
-            if (!$sale || !in_array($sale->status, ['confirmed', 'processing', 'partially_paid', 'paid'])) {
+            if (!$sale || !in_array($sale->status, ['confirmed', 'processing'])) {
                 throw new Exception("Only confirmed or processing sales can be cancelled.");
             }
 
@@ -361,13 +361,13 @@ class SaleService
             }
 
             // ৫. সেলসপারসন কমিশন রিভার্স (যদি থাকে)
-            $commissions = \App\Models\SalespersonCommission::where('sale_id', $sale->id)->get();
+            /* $commissions = \App\Models\SalespersonCommission::where('sale_id', $sale->id)->get();
             foreach ($commissions as $comm) {
                 $comm->update([
                     'status' => 'reversed',
                     'reversed_amount' => $comm->commission_amount
                 ]);
-            }
+            } */
 
             return $sale;
         });

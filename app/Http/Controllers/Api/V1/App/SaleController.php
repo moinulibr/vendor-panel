@@ -184,7 +184,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
                 $userId = $request->user_base_id;
             }
-            // TODO: $this->saleService->cancelConfirmedSale($id, $userId, $request->validated());
+            $this->saleService->cancelConfirmedSale($id, $userId, $request->reason ?? 'No need now');
             return $this->jsonResponse(true, 'Confirmed sale cancelled successfully.', null, 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
