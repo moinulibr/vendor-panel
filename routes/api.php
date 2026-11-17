@@ -139,7 +139,7 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/{id}/cancel/quotation', [SaleController::class, 'cancelQuotation']);
             Route::post('/{id}/payment', [SaleController::class, 'submitPayment']);
             Route::post('/{id}/return', [SaleController::class, 'returnSale']); // Return items
-            Route::post('/{id}/refund', [SaleController::class, 'refundSale']); // Refund money
+            Route::post('/{id}/refund', [SaleController::class, 'refundSale']); // not ready, have to ready
             Route::post('/{id}/cancel-sale', [SaleController::class, 'cancelConfirmedSale']);
 
         });
