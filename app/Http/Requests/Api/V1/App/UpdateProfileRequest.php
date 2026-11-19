@@ -42,7 +42,7 @@ class UpdateProfileRequest extends FormRequest
             ],
             'address'       => ['nullable', 'string'],
             'trade_license' => ['nullable', 'string', 'max:100'],
-            'license_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'license_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }
 
