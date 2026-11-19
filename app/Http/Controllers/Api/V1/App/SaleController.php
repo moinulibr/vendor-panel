@@ -218,6 +218,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             return $this->jsonResponse(false, $e->getMessage(), 500);
         }
     }
+    
     public function getInvoiceDownloadUrl(int $id): JsonResponse
     {
         try {

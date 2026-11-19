@@ -311,6 +311,22 @@ interface SaleApiDocInterface
         ]
     )]
     public function returnSale(StoreSaleReturnRequest $request, int $id);
+    #[OA\Get(
+        path: "/api/v1/app/orders/{id}/invoice-url",
+        summary: "Get URL for download invoice",
+        description: "Get generated URL for download sale invoice.",
+        tags: ["Orders"],
+        security: [["sanctum" => []]],
+        parameters: [
+            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
+        ],
+        responses: [
+            new OA\Response(response: 200, description: "Sale invoice generated URL fetched successfully"),
+            new OA\Response(response: 404, description: "Sale not found")
+        ]
+    )]
+    public function downloadDirectInvoice(int $id);
+
 
     /* #[OA\Post(
         path: "/api/v1/app/orders/{id}/refund",
