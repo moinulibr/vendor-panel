@@ -142,6 +142,8 @@ Route::prefix('v1/app')->group(function () {
             Route::post('/{id}/refund', [SaleController::class, 'refundSale']); // not ready, have to ready
             Route::post('/{id}/cancel-sale', [SaleController::class, 'cancelConfirmedSale']);
 
+            Route::get('/{id}/invoice-url', [SaleController::class, 'getInvoiceDownloadUrl']);
+            Route::get('/{id}/invoice-download', [SaleController::class, 'downloadDirectInvoice']);//template type
         });
 
         //setting static data [temporary]

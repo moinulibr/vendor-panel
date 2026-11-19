@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers as CN;
-
+use App\Http\Controllers\Api\V1\App\SaleController;
 //for product image size restore
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -197,7 +197,10 @@ Route::group(['middleware' => ['auth']], function() {
     Route::post('/products/import-excel', [CN\ProductController::class, 'importExcel'])->name('products.importExcel');
 });
 
-
+//sale invoice pdf download - specially mobile app
+Route::get('/invoice/{id}/download', [SaleController::class, 'downloadInvoice'])
+    ->name('invoice.download')
+    ->middleware('signed');
 
 
 
