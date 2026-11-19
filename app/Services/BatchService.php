@@ -63,11 +63,13 @@ class BatchService
             $summary->increment('total_revenue', $qtyUsed * $unitSalePrice);
             $summary->increment('total_profit', ($qtyUsed * $unitSalePrice) - ($qtyUsed * $unitCost));
             $summary->decrement('total_available', $qtyUsed);
-
+            
             if ($summary->total_revenue > 0) {
                 $summary->update([
                     'profit_margin_percent' => ($summary->total_profit / $summary->total_revenue) * 100
                 ]);
+            } else {
+                $summary->update(['profit_margin_percent' => 0]);
             }
         }
     }
@@ -87,6 +89,8 @@ class BatchService
                 $summary->update([
                     'profit_margin_percent' => ($summary->total_profit / $summary->total_revenue) * 100
                 ]);
+            } else {
+                $summary->update(['profit_margin_percent' => 0]);
             }
         }
     }
