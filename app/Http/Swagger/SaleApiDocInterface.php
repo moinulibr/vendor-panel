@@ -321,7 +321,7 @@ interface SaleApiDocInterface
             new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
         ],
         responses: [
-            new OA\Response(response: 200, description: "Sale invoice generated URL fetched successfully"),
+            new OA\Response(response: 200, description: "Get generated URL fetched successfully"),
             new OA\Response(response: 404, description: "Sale not found")
         ]
     )]
