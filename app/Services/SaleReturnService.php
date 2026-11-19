@@ -23,7 +23,7 @@ class SaleReturnService
         return DB::transaction(function () use ($saleId, $userId, $returnItems, $reason) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
 
-            if (!$sale || (!in_array($sale->status, ['completed'])) ||  ($sale->status === SaleStatus::CANCELLED->value)) {
+            if (!$sale || ($sale->status ==  SaleStatus::COMPLETED->value) ||  ($sale->status == SaleStatus::CANCELLED->value)) {
                 throw new Exception("This sale is not eligible for return.");
             }
 
