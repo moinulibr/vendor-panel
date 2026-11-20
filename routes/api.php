@@ -115,7 +115,7 @@ Route::prefix('v1/app')->group(function () {
         Route::get('/favorites', [FavoriteController::class, 'index']);
         Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
 
-        // Order & Quotation Routes
+        // not used this section - Order & Quotation Routes
         Route::prefix('sales')->group(function () {
             Route::get('/', [OrderController::class, 'index']);
             Route::post('/quotation', [OrderController::class, 'storeQuotation']);
