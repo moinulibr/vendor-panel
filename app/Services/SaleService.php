@@ -588,7 +588,7 @@ class SaleService
 
     private function generateInvoiceNo(): string
     {
-        $prefix = "INV-" . now()->format('Y') . "-";
+        $prefix = "INV-" . now()->format('Ymd') . "-";
         $latest = $this->saleRepository->getLatestInvoiceNo($prefix);
         $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
         return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
@@ -596,7 +596,7 @@ class SaleService
 
     private function generatePaymentNo(): string
     {
-        $prefix = "PAY-" . now()->format('Y') . "-";
+        $prefix = "PAY-" . now()->format('Ymd') . "-";
         $latest = $this->saleRepository->getLatestPaymentNo($prefix);
         $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
         return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
