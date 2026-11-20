@@ -288,17 +288,16 @@ interface SaleApiDocInterface
             content: new OA\JsonContent(
                 required: ["items"],
                 properties: [
-                    new OA\Property(property: "reason", type: "string", example: "Damaged product"),
+                    new OA\Property(property: "reason", type: "string", maxLength: 500, nullable: true, example: "Damaged product"),
                     new OA\Property(
                         property: "items",
                         type: "array",
+                        minItems: 1,
                         items: new OA\Items(
-                            required: ["product_id", "quantity"],
+                            required: ["sale_item_id", "qty_returned"],
                             properties: [
-                                new OA\Property(property: "product_id", type: "integer", example: 10),
-                                new OA\Property(property: "variation_id", type: "integer", example: 5, nullable: true),
-                                new OA\Property(property: "quantity", type: "integer", example: 2),
-                                new OA\Property(property: "reason", type: "string", example: "Damaged", nullable: true)
+                                new OA\Property(property: "sale_item_id", type: "integer", example: 1),
+                                new OA\Property(property: "qty_returned", type: "integer", minimum: 1, example: 2)
                             ]
                         )
                     )
@@ -311,6 +310,7 @@ interface SaleApiDocInterface
         ]
     )]
     public function returnSale(StoreSaleReturnRequest $request, int $id);
+    
     #[OA\Get(
         path: "/api/v1/app/orders/{id}/invoice-url",
         summary: "Get URL for download invoice",
@@ -327,33 +327,4 @@ interface SaleApiDocInterface
     )]
     public function downloadDirectInvoice(int $id);
 
-
-    /* #[OA\Post(
-        path: "/api/v1/app/orders/{id}/refund",
-        summary: "Refund Sale Payment",
-        description: "Initiate a monetary refund for a sale (full or partial). Returns refund amount & status.",
-        tags: ["Orders"],
-        security: [["sanctum" => []]],
-        parameters: [
-            new OA\Parameter(name: "id", in: "path", required: true, schema: new OA\Schema(type: "integer"))
-        ],
-        requestBody: new OA\RequestBody(
-            required: true,
-            content: new OA\JsonContent(
-                required: ["amount", "method"],
-                properties: [
-                    new OA\Property(property: "amount", type: "number", format: "float", example: 1500.00, description: "Refund amount (must not exceed due/refundable amount)"),
-                    new OA\Property(property: "method", type: "string", example: "bkash", description: "Refund channel"),
-                    new OA\Property(property: "reference_no", type: "string", example: "REF987654321", nullable: true),
-                    new OA\Property(property: "note", type: "string", example: "Customer requested partial refund", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(response: 200, description: "Refund processed/submitted successfully"),
-            new OA\Response(response: 400, description: "Invalid refund request / exceeds refundable amount"),
-            new OA\Response(response: 404, description: "Sale not found")
-        ]
-    )]
-    public function refundSale(int $id); */
 }
