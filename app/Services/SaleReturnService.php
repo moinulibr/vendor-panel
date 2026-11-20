@@ -183,7 +183,7 @@ class SaleReturnService
 
     private function generateReturnNo(): string
     {
-        $prefix = "RET-" . now()->format('Y') . "-";
+        $prefix = "RET-" . now()->format('Ymd') . "-";
         $latest = $this->returnRepository->getLatestReturnNo($prefix);
         $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
         return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
@@ -191,7 +191,7 @@ class SaleReturnService
 
     private function generateRefundNo(): string
     {
-        $prefix = "REF-" . now()->format('Y') . "-";
+        $prefix = "REF-" . now()->format('Ymd') . "-";
         $latest = $this->returnRepository->getLatestRefundNo($prefix);
         $next = $latest ? ((int) substr($latest, strlen($prefix))) + 1 : 1;
         return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
