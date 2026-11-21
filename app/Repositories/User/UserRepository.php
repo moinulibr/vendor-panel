@@ -203,7 +203,7 @@ class UserRepository implements UserRepositoryInterface
         return UserDetail::where('id', $userDetailId)->where('status', '!=', 'deleted')->first();
     }
 
-
+    //shipping address
     public function createShippingAddress(array $data): ShippingAddress
     {
         if (!empty($data['is_default']) && $data['is_default']) {
