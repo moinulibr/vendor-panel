@@ -247,6 +247,7 @@ class UserRepository implements UserRepositoryInterface
         return $shippingAddress;
     }
     
+    //delete  shipping address
     public function deleteShippingAddress(int $addressId, int $userId, int $userDetailId): bool
     {
         $result = ShippingAddress::where('id', $addressId)->where('user_id', $userId)->where('user_detail_id', $userDetailId)->first();
