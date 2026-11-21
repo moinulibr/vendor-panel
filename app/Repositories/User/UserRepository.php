@@ -192,7 +192,7 @@ class UserRepository implements UserRepositoryInterface
         return true;
     }
 
-
+    // user profile update
     public function updateProfilePicture(User $user, string $avatarPath): bool
     {
         return $user->update(['image' => $avatarPath]);
