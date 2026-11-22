@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 
 class SaleService
 {
+    public $isQuotationReturnableForCustomer = false;
+
     public function __construct(
         protected BatchService $batchService,
         protected SaleRepositoryInterface $saleRepository,
@@ -77,7 +79,7 @@ class SaleService
             //$isQuotation = (($data['status'] ?? SaleStatus::QUOTATION->value) === SaleStatus::QUOTATION->value);
             $paymentStatus = $isQuotation ? PaymentStatus::UNPAID->value : ($paidAmount <= 0 ? PaymentStatus::UNPAID->value : ($paidAmount >= $finalAmount ? PaymentStatus::PAID->value : PaymentStatus::PARTIALLY_PAID->value));
             $status = $isQuotation ? SaleStatus::QUOTATION->value : SaleStatus::CONFIRMED->value;
-
+            $this->isQuotationReturnableForCustomer = $status == SaleStatus::QUOTATION->value ? false: true;
             $quoteValidUntil = $isQuotation ? $this->settingService->getQuotationExpiresDuration() : null;
 
             $sale = $this->saleRepository->createSale([
@@ -115,7 +117,7 @@ class SaleService
                 'is_editable_for_customer' => true,
                 'is_returnable_for_admin' => true,
                 'is_returnable_for_staff' => true,
-                'is_returnable_for_customer' => true,
+                'is_returnable_for_customer' => $this->isQuotationReturnableForCustomer,
                 'is_cancelable_for_admin' => true,
                 'is_cancelable_for_staff' => true,
                 'is_cancelable_for_customer' => true,
@@ -161,10 +163,13 @@ class SaleService
                 throw new Exception("Quotation not found or already confirmed.");
             }
 
+            $this->isQuotationReturnableForCustomer = true; //$sale->status == SaleStatus::QUOTATION->value ? false :
+
             $this->saleRepository->updateSale($sale, [
                 'status' => SaleStatus::CONFIRMED->value,
                 "quote_converted_at" => now(),
-                "quote_converted_by" => auth()->id()
+                "quote_converted_by" => auth()->id(),
+                'is_cancelable_for_customer' => $this->isQuotationReturnableForCustomer
             ]);
 
             foreach ($sale->items as $item) {
