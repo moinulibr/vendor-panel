@@ -11,6 +11,7 @@ use App\Repositories\Sale\Interface\SaleReturnRepositoryInterface;
 use App\Utils\Util;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class SaleService
 {
@@ -190,14 +191,14 @@ class SaleService
         });
     }
 
-    public function submitPayment(int $saleId, int $userId, array $data): void
+    public function submitPayment(int $saleId, int $userId, array $data, $documentFile): void
     {
-        DB::transaction(function () use ($saleId, $userId, $data) {
+        DB::transaction(function () use ($saleId, $userId, $data, $documentFile) {
             $sale = $this->saleRepository->findByIdAndUser($saleId, $userId);
             if (!$sale || $sale->status === SaleStatus::QUOTATION->value || $sale->status === SaleStatus::CANCELLED->value) {
                 throw new Exception("Cannot submit payment for this sale.");
             }
-
+            $file = $this->fileUploadOnSalePayment($documentFile);
             $this->saleRepository->createSalePayment([
                 'payment_no' => $this->generatePaymentNo(),
                 'sale_id' => $sale->id,
@@ -206,6 +207,7 @@ class SaleService
                 'method' => $data['method'],
                 'reference_no' => $data['reference_no'] ?? null,
                 'status' => 'pending',
+                'file' => $file,
                 'paid_at' => now(),
             ]);
 
@@ -219,6 +221,23 @@ class SaleService
                 'payment_status' => $paymentStatus,
             ]);
         });
+    }
+    public function fileUploadOnSalePayment($imageFile)
+    {
+        // Handle license image upload if present
+        if (isset($imageFile) && $imageFile instanceof \Illuminate\Http\UploadedFile) {
+            // Delete old image if exists
+            /* if ($user->image && $imageFile) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->image);
+            } */
+
+            // Store new image
+            $path = $imageFile->store('payment_receipts', 'public');
+            return asset(Storage::url($path));
+        }
+        /* if ($request->hasFile('document')) {
+            $request->file('document')->store('payment_receipts', 'public');
+        } */
     }
 
     public function cancelQuotation(int $saleId, int $userId): Sale

@@ -29,6 +29,7 @@ class SalePayment extends Model
         'received_by',
         'register_session_id',
         'notes',
+        'file'
     ];
 
     /**

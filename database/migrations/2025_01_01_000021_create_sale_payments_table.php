@@ -27,6 +27,7 @@ return new class extends Migration
             $table->foreignId('received_by')->nullable()->comment('FK to users — cashier/receiver');
             $table->unsignedBigInteger('register_session_id')->nullable()->comment('FK to cash_register_sessions');
             $table->text('notes')->nullable();
+            $table->string('file')->nullable()->comment('document or photo');
             $table->timestamps();
 
             $table->index(['sale_id', 'status']);
