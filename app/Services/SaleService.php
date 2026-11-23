@@ -215,7 +215,7 @@ class SaleService
                 'method' => $data['method'],
                 'reference_no' => $data['reference_no'] ?? null,
                 'status' => SalePaymentStatus::SUCCESS->value,
-                'file' => $file,
+                'file' => $file ?? 'nai',
                 'paid_at' => now(),
             ]);
 
