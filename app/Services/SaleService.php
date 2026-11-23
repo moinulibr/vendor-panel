@@ -213,7 +213,7 @@ class SaleService
                 'customer_id' => $userId,
                 'amount' => $data['amount'],
                 'method' => $data['method'],
-                'reference_no' => $data['reference_no'] ?? null,
+                'reference_no' => $data['transaction_no'] ?? null,
                 'status' => SalePaymentStatus::SUCCESS->value,
                 'file' => $file,
                 'paid_at' => now(),

@@ -16,7 +16,7 @@ class SubmitPaymentRequest extends FormRequest
         return [
             'amount'         => 'required|numeric|gt:0',
             'method'         => 'required|string',
-            'reference_no'   => 'nullable|string|max:100',
+            'transaction_no' => 'nullable|string|max:100',
             'note'          => 'nullable|string|max:200',
             'document'       => 'nullable|image|mimes:jpeg,png,jpg,pdf|max:5120',
         ];
