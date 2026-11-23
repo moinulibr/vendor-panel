@@ -138,7 +138,7 @@ class SaleResource extends JsonResource
             }),
 
             'payments' => $this->whenLoaded('allPayments', function () {
-                return $this->payments->map(function ($pay) {
+                return $this->allPayments->map(function ($pay) {
                     return [
                         'id'           => $pay->id,
                         'payment_no'   => $pay->payment_no,
