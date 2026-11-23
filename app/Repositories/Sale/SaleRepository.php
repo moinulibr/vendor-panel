@@ -96,14 +96,14 @@ class SaleRepository implements SaleRepositoryInterface
             $query->whereDate('sale_date', '<=', $filters['date_to']);
         }
 
-        return $query->with(['items.product', 'payments'])->latest('id')->paginate($filters['per_page'] ?? 15);
+        return $query->with(['items.product', 'allPayments'])->latest('id')->paginate($filters['per_page'] ?? 15);
     }
 
     public function findByIdAndUser(int $saleId, int $userId): ?Sale
     {
         return Sale::where('id', $saleId)
             ->where('customer_id', $userId)
-            ->with(['items.product', 'payments', 'taxes', 'shippingAddress'])
+            ->with(['items.product', 'allPayments', 'allReturns', 'taxes', 'shippingAddress'])
             ->first();
     }
 
@@ -142,7 +142,7 @@ class SaleRepository implements SaleRepositoryInterface
         })
             ->where('customer_id', $userId)
             ->where('is_current', true)
-            ->with(['items.product', 'items.batchAllocations', 'payments', 'taxes'])
+            ->with(['items.product', 'items.batchAllocations', 'allPayments', 'allReturns', 'taxes'])
             ->first();
     }
 }

@@ -144,7 +144,26 @@ class Sale extends Model
     {
         return $this->hasMany(SaleReturn::class, 'sale_id');
     }
-
+    public function allPayments()
+    {
+        $rootId = $this->parent_id ?? $this->id;
+        return $this->hasMany(SalePayment::class, 'sale_id', 'id')
+            ->whereIn('sale_id', function ($query) use ($rootId) {
+                $query->select('id')->from('sales')
+                    ->where('id', $rootId)
+                    ->orWhere('parent_id', $rootId);
+            });
+    }
+    public function allReturns()
+    {
+        $rootId = $this->parent_id ?? $this->id;
+        return $this->hasMany(SaleReturn::class, 'sale_id', 'id')
+            ->whereIn('sale_id', function ($query) use ($rootId) {
+                $query->select('id')->from('sales')
+                    ->where('id', $rootId)
+                    ->orWhere('parent_id', $rootId);
+            });
+    }
     public function taxes(): HasMany
     {
         return $this->hasMany(SaleTax::class, 'sale_id');
