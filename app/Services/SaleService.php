@@ -219,7 +219,7 @@ class SaleService
                 'paid_at' => now(),
                 //received_by
                 //register_session_id
-                'notes' => $data['note']
+                'notes' => $data['note'] ?? null
             ]);
 
             $newPaid = $sale->paid_amount + $data['amount'];
