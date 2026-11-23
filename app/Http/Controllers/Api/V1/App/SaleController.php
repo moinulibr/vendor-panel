@@ -62,7 +62,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
                 $userId = $request->user_base_id;
             }
             $sale = $this->saleService->createSaleFromCart($userId, $request->validated());
-            $sale->load(['items.batchAllocations', 'payments', 'taxes', 'shippingAddress']);
+            $sale->load(['items.batchAllocations', 'allPayments', 'taxes', 'shippingAddress']);
             return $this->jsonResponse(true, $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.', new SaleResource($sale), 201);
         } catch (Exception $e) {
             Log::error($e);
@@ -75,7 +75,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
         try {
             $userId = auth()->id();
             $sale = $this->saleService->getSaleDetails($id, $userId);
-            $sale->load(['items.batchAllocations', 'payments']);
+            $sale->load(['items.batchAllocations', 'allPayments']);
             return $this->jsonResponse(true, 'Details fetched successfully.', new SaleResource($sale), 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 404);
@@ -199,7 +199,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
         try {
             $userId = auth()->id();
             $sale = $this->saleService->getSaleDetails($id, $userId);
-            $sale->load(['items.product', 'items.variation', 'customer', 'payments', 'shippingAddress']);
+            $sale->load(['items.product', 'items.variation', 'customer', 'allPayments', 'shippingAddress']);
             $data = [
                 'sale' => $sale,
                 'company_name' => 'Original Ponno',
