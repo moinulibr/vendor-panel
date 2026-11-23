@@ -215,8 +215,11 @@ class SaleService
                 'method' => $data['method'],
                 'reference_no' => $data['reference_no'] ?? null,
                 'status' => SalePaymentStatus::SUCCESS->value,
-                'file' => $file ?? 'nai',
+                'file' => $file,
                 'paid_at' => now(),
+                //received_by
+                //register_session_id
+                'notes' => $data['note']
             ]);
 
             $newPaid = $sale->paid_amount + $data['amount'];

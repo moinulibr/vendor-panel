@@ -133,7 +133,9 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             if (auth()->user()->user_type == UserType::SR && $request->filled('user_base_id')) {
                 $userId = $request->user_base_id;
             }
-            
+            if ($request->hasFile('document')) {
+                $request->file('document')->store('payment_receipts', 'public');
+            }
             $this->saleService->submitPayment($id, $userId, $request->validated(), $request->file('document'));
             return $this->jsonResponse(true, 'Payment submitted Successfully.', null, 200);
             return $this->jsonResponse(true, 'Payment submitted for verification.', null, 200);
