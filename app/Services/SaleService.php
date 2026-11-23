@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\SalePaymentStatus;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Repositories\Cart\Interface\CartRepositoryInterface;
@@ -203,7 +204,9 @@ class SaleService
             if (!$sale || $sale->status === SaleStatus::QUOTATION->value || $sale->status === SaleStatus::CANCELLED->value) {
                 throw new Exception("Cannot submit payment for this sale.");
             }
+
             $file = $this->fileUploadOnSalePayment($documentFile);
+
             $this->saleRepository->createSalePayment([
                 'payment_no' => $this->generatePaymentNo(),
                 'sale_id' => $sale->id,
@@ -211,7 +214,7 @@ class SaleService
                 'amount' => $data['amount'],
                 'method' => $data['method'],
                 'reference_no' => $data['reference_no'] ?? null,
-                'status' => 'pending',
+                'status' => SalePaymentStatus::SUCCESS->value,
                 'file' => $file,
                 'paid_at' => now(),
             ]);
@@ -227,6 +230,7 @@ class SaleService
             ]);
         });
     }
+
     public function fileUploadOnSalePayment($imageFile)
     {
         // Handle license image upload if present
@@ -238,7 +242,8 @@ class SaleService
 
             // Store new image
             $path = $imageFile->store('payment_receipts', 'public');
-            return asset(Storage::url($path));
+            //return asset(Storage::url($path));
+            return $path;
         }
         /* if ($request->hasFile('document')) {
             $request->file('document')->store('payment_receipts', 'public');

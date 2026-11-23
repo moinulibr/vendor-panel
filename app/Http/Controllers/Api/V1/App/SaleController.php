@@ -135,6 +135,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             }
             
             $this->saleService->submitPayment($id, $userId, $request->validated(), $request->file('document'));
+            return $this->jsonResponse(true, 'Payment submitted Successfully.', null, 200);
             return $this->jsonResponse(true, 'Payment submitted for verification.', null, 200);
         } catch (Exception $e) {
             return $this->jsonResponse(false, $e->getMessage(), 400);
