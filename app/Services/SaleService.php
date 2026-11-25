@@ -217,7 +217,7 @@ class SaleService
                 'status' => SalePaymentStatus::SUCCESS->value,
                 'file' => $file,
                 'paid_at' => now(),
-                //received_by
+                //received_by //it will be used when admin (from admin panel) recive the request
                 //register_session_id
                 'notes' => $data['note'] ?? null
             ]);
