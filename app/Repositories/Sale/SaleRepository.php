@@ -101,15 +101,24 @@ class SaleRepository implements SaleRepositoryInterface
 
     public function findByIdAndUser(int $saleId, int $userId): ?Sale
     {
-        return Sale::where('id', $saleId)
+        $sale = Sale::where('id', $saleId)
             ->where('customer_id', $userId)
-            ->with(['items.product', 'allPayments', 'allReturns', 'taxes', 'shippingAddress'])
+            ->with(['items.product', 'taxes', 'shippingAddress']) //'allPayments', 'allReturns',
             ->first();
+        if ($sale) {
+            $this->loadHistoricalRelations($sale);
+        }
+
+        return $sale;
     }
 
     public function findSaleById(int $saleId): ?Sale
     {
-        return Sale::with('items')->find($saleId);
+        $sale = Sale::with('items')->find($saleId);
+        if ($sale) {
+            $this->loadHistoricalRelations($sale);
+        }
+        return $sale;
     }
 
     public function updateSale(Sale $sale, array $data): bool
@@ -137,12 +146,27 @@ class SaleRepository implements SaleRepositoryInterface
 
     public function findCurrentActiveSale(int $rootSaleId, int $userId): ?Sale
     {
-        return Sale::where(function ($q) use ($rootSaleId) {
+        $sale =  Sale::where(function ($q) use ($rootSaleId) {
             $q->where('id', $rootSaleId)->orWhere('parent_id', $rootSaleId);
         })
             ->where('customer_id', $userId)
             ->where('is_current', true)
-            ->with(['items.product', 'items.batchAllocations', 'allPayments', 'allReturns', 'taxes'])
+            ->with(['items.product', 'items.batchAllocations', 'taxes']) // 'allPayments', 'allReturns',
             ->first();
+        if ($sale) {
+            $this->loadHistoricalRelations($sale);
+        }
+
+        return $sale;
     }
+
+    private function loadHistoricalRelations(Sale $sale): void
+    {
+        $rootId = $sale->parent_id ?? $sale->id;
+        $saleIds = Sale::where('id', $rootId)->orWhere('parent_id', $rootId)->pluck('id')->toArray();
+
+        $sale->setRelation('allPayments', SalePayment::whereIn('sale_id', $saleIds)->orderBy('id', 'asc')->get());
+        $sale->setRelation('allReturns', SaleReturn::whereIn('sale_id', $saleIds)->orderBy('id', 'asc')->get());
+    }
+    
 }

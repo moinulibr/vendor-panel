@@ -136,7 +136,7 @@ class SaleService
                     if ($line['track_batch']) {
                         $this->processBatchAllocations($sale, $saleItem, $line);
                     }
-                    // 🟢 Deduct Stock from Product & Variation
+                    //Deduct Stock from Product & Variation
                     $this->inventoryService->deductStock($line['product_id'], $line['variation_id'], $line['qty']);
                 }
             }

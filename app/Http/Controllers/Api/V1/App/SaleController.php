@@ -62,7 +62,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
                 $userId = $request->user_base_id;
             }
             $sale = $this->saleService->createSaleFromCart($userId, $request->validated());
-            $sale->load(['items.batchAllocations', 'allPayments', 'taxes', 'shippingAddress']);
+            $sale->load(['items.batchAllocations', 'allPayments', 'allReturns', 'taxes', 'shippingAddress']);
             return $this->jsonResponse(true, $sale->status === 'quotation' ? 'Quotation created successfully.' : 'Sale created successfully.', new SaleResource($sale), 201);
         } catch (Exception $e) {
             Log::error($e);
