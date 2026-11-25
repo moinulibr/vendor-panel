@@ -234,6 +234,7 @@ class SaleService
         });
     }
 
+    //when use manual payment
     public function fileUploadOnSalePayment($imageFile)
     {
         // Handle license image upload if present
@@ -248,9 +249,6 @@ class SaleService
             //return asset(Storage::url($path));
             return $path;
         }
-        /* if ($request->hasFile('document')) {
-            $request->file('document')->store('payment_receipts', 'public');
-        } */
     }
 
     public function cancelQuotation(int $saleId, int $userId): Sale
