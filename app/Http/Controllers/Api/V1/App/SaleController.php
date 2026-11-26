@@ -220,6 +220,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
         }
     }
     
+    //get invoice download url
     public function getInvoiceDownloadUrl(int $id): JsonResponse
     {
         try {
@@ -237,7 +238,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
 
     public function downloadInvoice(int $id, InvoiceService $invoiceService)
     {
-        $sale = Sale::findOrFail($id);
+        $sale = Sale::findOrFail($id); // it's will be shifted in invoice service
         return $invoiceService->generatePdf($sale);
     }
 }
