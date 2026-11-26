@@ -180,7 +180,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
-    
+
     public function cancelConfirmedSale(Request $request, int $id): JsonResponse
     {
         try {
@@ -195,6 +195,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
         }
     }
 
+    //direct download invoice
     public function downloadDirectInvoice(int $id)
     {
         try {
@@ -204,7 +205,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             $data = [
                 'sale' => $sale,
                 'company_name' => 'Original Ponno',
-                // 🟢 NOTE: এখানে ডাটাবেস থেকে কোম্পানির আসল ঠিকানা, ফোন, লোগো আনো (Settings Table থেকে)
+                // NOTE: এখানে ডাটাবেস থেকে কোম্পানির আসল ঠিকানা, ফোন, লোগো আনো (Settings Table থেকে)
                 'company_address' => 'Mirpur-1, Dhaka-1216 • BIN: 004829104-0203',
                 'company_phone' => '+880 1712-794033',
             ];
