@@ -180,6 +180,7 @@ class SaleController extends BaseApiController implements SaleApiDocInterface
             return $this->jsonResponse(false, $e->getMessage(), 400);
         }
     }
+    
     public function cancelConfirmedSale(Request $request, int $id): JsonResponse
     {
         try {

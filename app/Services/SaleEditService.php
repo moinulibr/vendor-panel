@@ -261,7 +261,7 @@ class SaleEditService
         });
     }
 
-    // 🟢 নতুন মেথড: লেজারে ডেল্টা এন্ট্রি দেওয়া
+    // নতুন মেথড: লেজারে ডেল্টা এন্ট্রি দেওয়া
     private function updateLedgerDelta(Sale $oldSale, Sale $newSale, array $processedLines): void
     {
         $now = now();
