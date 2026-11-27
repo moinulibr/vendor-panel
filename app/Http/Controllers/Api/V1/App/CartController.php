@@ -26,6 +26,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
         protected SettingService $settingService
         ) {}
 
+    // It's return only a single user's and his single cart into
     public function index(AddToCartListRequest $request): JsonResponse
     {
         try {
