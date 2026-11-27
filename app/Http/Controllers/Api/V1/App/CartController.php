@@ -100,6 +100,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
     }
 
 
+    //apply coupon 
     public function applyCoupon(ApplyCouponRequest $request): JsonResponse
     {
         try {
@@ -125,6 +126,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
         }
     }
 
+    //remove coupon
     public function removeCoupon(ApplyCouponRemoveRequest $request): JsonResponse
     {
         try {
