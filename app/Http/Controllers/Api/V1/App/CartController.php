@@ -52,6 +52,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
         }
     }
 
+    //cart store with items
     public function store(AddToCartRequest $request): JsonResponse
     {
         try {
@@ -77,6 +78,7 @@ class CartController extends BaseApiController implements CartApiDocInterface
         }
     }
 
+    //cart update
     public function update(UpdateToCartRequest $request, int $cartItemId): JsonResponse
     {
         try {
